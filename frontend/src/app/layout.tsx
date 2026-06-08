@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Source_Serif_4, Inter } from "next/font/google";
+import ToastContainer from "@/components/Toast";
 import "./globals.css";
 
 const sourceSerif = Source_Serif_4({
@@ -41,6 +42,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         {children}
+        <ToastContainer />
       </body>
     </html>
   );
