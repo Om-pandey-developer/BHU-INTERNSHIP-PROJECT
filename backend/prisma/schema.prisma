@@ -1,0 +1,135 @@
+// ============================================================
+// BHU Email Registration & Auto-Provisioning Portal
+// Prisma Schema — PostgreSQL
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// Enums — strict data types at the DB level
+// ─────────────────────────────────────────────
+
+enum Role {
+  APPLICANT
+  HOD
+  CC_ADMIN
+}
+
+enum ApplicationStatus {
+  DRAFT
+  PENDING_HOD
+  APPROVED_HOD
+  REJECTED_HOD
+  PENDING_CC
+  PROVISIONED
+  FAILED_PROVISIONING
+}
+
+// ─────────────────────────────────────────────
+// Models
+// ─────────────────────────────────────────────
+
+/// Represents all users of the system: applicants, HODs, and CC admins.
+model User {
+  id             String        @id @default(uuid())
+  alternateEmail String        @unique /// Personal email used for login and credential delivery
+  bhuEmail       String?       @unique /// @bhu.ac.in email — populated post-provisioning
+  passwordHash   String        /// Argon2 hashed password
+  refreshToken   String?       /// Hashed refresh token for session management
+  firstName      String
+  lastName       String
+  role           Role          @default(APPLICANT)
+
+  // Relations
+  departmentId   String?
+  department     Department?   @relation(fields: [departmentId], references: [id])
+
+  // Application relations
+  applications   Application[] @relation("ApplicantApplications")
+  approvedApps   Application[] @relation("HODApprovals")
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([alternateEmail])
+  @@index([role])
+}
+
+/// University departments with an assigned HOD.
+model Department {
+  id           String        @id @default(uuid())
+  code         String        @unique /// e.g., "COMP_SCI", "PHYSICS"
+  name         String        /// Full department name
+  hodId        String?       @unique /// One HOD per department (User.id)
+
+  users        User[]
+  applications Application[]
+}
+
+/// An email account application submitted by an applicant.
+model Application {
+  id               String            @id @default(uuid())
+
+  /// Auto-generated tracking ID in format BHU-YYYYMMDD-XXXX
+  trackingId       String            @unique @default(dbgenerated("concat('BHU-', to_char(now(), 'YYYYMMDD'), '-', floor(random() * 9000 + 1000)::text)"))
+
+  // Applicant relation
+  applicantId      String
+  applicant        User              @relation("ApplicantApplications", fields: [applicantId], references: [id], onDelete: Cascade)
+
+  // Department relation
+  departmentId     String
+  department       Department        @relation(fields: [departmentId], references: [id])
+
+  status           ApplicationStatus @default(PENDING_HOD)
+
+  /// JSONB — dynamic form fields depending on category (Teaching, PG Student, etc.)
+  applicantDetails Json
+
+  /// Disk path or cloud URL to the uploaded certified photograph
+  photoStoragePath String
+
+  // ── Workflow tracking ──
+
+  /// HOD who reviewed this application
+  hodId            String?
+  hod              User?             @relation("HODApprovals", fields: [hodId], references: [id])
+  hodRemarks       String?
+  hodApprovedAt    DateTime?
+
+  /// CC Admin processing
+  ccAdminRemarks   String?
+  provisionedAt    DateTime?
+  quotaAssignedGB  Int?              /// Storage quota in GB assigned during provisioning
+
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  /// Composite index for fast HOD dashboard queries (filter by status + department)
+  @@index([status, departmentId])
+  @@index([applicantId])
+}
+
+/// Immutable audit trail for compliance and security forensics.
+model AuditLog {
+  id          String   @id @default(uuid())
+  entityType  String   /// "APPLICATION", "USER", "PROVISIONING"
+  entityId    String   /// ID of the affected entity
+  action      String   /// e.g., "STATUS_CHANGED_TO_APPROVED_HOD", "ACCOUNT_PROVISIONED"
+  performedBy String   /// User ID who performed the action
+  ipAddress   String   /// Client IP address
+  payload     Json?    /// Optional before/after state diff
+
+  createdAt   DateTime @default(now())
+
+  @@index([entityId])
+  @@index([performedBy])
+  @@index([createdAt])
+}
