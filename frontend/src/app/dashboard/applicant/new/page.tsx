@@ -153,9 +153,7 @@ export default function NewApplicationPage() {
       formData.append("details", JSON.stringify(details));
       formData.append("photo", photo);
 
-      const { data } = await api.post("/applications", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const { data } = await api.post("/applications", formData);
 
       const result = data.success ? data.data : data;
       addToast({

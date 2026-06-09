@@ -1,4 +1,5 @@
 import {
+  Allow,
   IsEnum,
   IsNotEmpty,
   IsObject,
@@ -43,4 +44,8 @@ export class CreateApplicationDto {
   @IsString()
   @IsNotEmpty()
   details: string;
+
+  @ApiProperty({ type: 'string', format: 'binary', required: true })
+  @Allow()
+  photo?: any;
 }

@@ -11,7 +11,6 @@ import {
   UploadedFile,
   ParseFilePipe,
   MaxFileSizeValidator,
-  FileTypeValidator,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -56,6 +55,15 @@ export class ApplicationsController {
           cb(null, `photo-${uniqueSuffix}${extname(file.originalname)}`);
         },
       }),
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.match(/\/(jpeg|jpg|png)$/i)) {
+          return cb(
+            new Error('Only JPEG and PNG image files are allowed'),
+            false,
+          );
+        }
+        cb(null, true);
+      },
     }),
   )
   @ApiOperation({ summary: 'Submit a new email account application' })
@@ -67,7 +75,6 @@ export class ApplicationsController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 2 * 1024 * 1024 }), // 2MB
-          new FileTypeValidator({ fileType: /(jpeg|jpg|png)$/i }),
         ],
       }),
     )

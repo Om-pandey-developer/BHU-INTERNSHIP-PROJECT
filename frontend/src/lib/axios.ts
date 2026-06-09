@@ -17,7 +17,7 @@ const api = axios.create({
   },
 });
 
-// ── Request Interceptor: Attach JWT ──
+// ── Request Interceptor: Attach JWT & handle FormData ──
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
@@ -26,6 +26,13 @@ api.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
+
+    // When sending FormData, remove Content-Type so the browser
+    // auto-sets multipart/form-data with the correct boundary
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
