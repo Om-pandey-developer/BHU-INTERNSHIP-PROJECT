@@ -133,3 +133,17 @@ model AuditLog {
   @@index([performedBy])
   @@index([createdAt])
 }
+
+/// Stores hashed email verification OTPs with expiry.
+/// One active OTP per email (upsert on re-send).
+model OtpVerification {
+  id        String   @id @default(uuid())
+  email     String   @unique  /// One active OTP per email
+  otpHash   String             /// Argon2 hashed OTP
+  expiresAt DateTime           /// 5-minute window
+  attempts  Int      @default(0) /// Failed verification attempts (max 5)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([expiresAt])
+}

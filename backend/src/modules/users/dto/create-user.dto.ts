@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsString,
   MinLength,
+  Length,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
@@ -43,4 +44,10 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   departmentId?: string;
+
+  @ApiProperty({ example: '123456', description: 'Email verification OTP' })
+  @IsString()
+  @IsNotEmpty()
+  @Length(6, 6)
+  otp: string;
 }

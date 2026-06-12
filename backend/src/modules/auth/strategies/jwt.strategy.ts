@@ -31,6 +31,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     role: string;
     firstName: string;
     lastName: string;
+    departmentId: string | null;
   }) {
     return {
       userId: payload.sub,
@@ -38,6 +39,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role: payload.role,
       firstName: payload.firstName,
       lastName: payload.lastName,
+      departmentId: payload.departmentId,
     };
   }
 }

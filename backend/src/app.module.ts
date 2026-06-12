@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { DepartmentsModule } from './modules/departments/departments.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
 import { GoogleWorkspaceModule } from './modules/google-workspace/google-workspace.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
@@ -22,6 +24,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
  */
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
     // ── Rate Limiting: 10 requests per 60 seconds per IP ──
     ThrottlerModule.forRoot([
       {
@@ -36,6 +39,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     // ── Feature Modules ──
     AuthModule,
     UsersModule,
+    DepartmentsModule,
     ApplicationsModule,
     GoogleWorkspaceModule,
     AnalyticsModule,
