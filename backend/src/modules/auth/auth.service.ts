@@ -54,6 +54,7 @@ export class AuthService {
       user.role,
       user.firstName,
       user.lastName,
+      user.departmentId,
     );
 
     // Hash and store the refresh token in the database
@@ -75,6 +76,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        departmentId: user.departmentId,
       },
     };
   }
@@ -104,6 +106,7 @@ export class AuthService {
       user.role,
       user.firstName,
       user.lastName,
+      user.departmentId,
     );
 
     // Update stored refresh token hash
@@ -141,6 +144,7 @@ export class AuthService {
     role: string,
     firstName: string,
     lastName: string,
+    departmentId: string | null,
   ) {
     const payload = {
       sub: userId,
@@ -148,6 +152,7 @@ export class AuthService {
       role,
       firstName,
       lastName,
+      departmentId,
     };
 
     // expiresIn must be a number (seconds) for @nestjs/jwt v11+
