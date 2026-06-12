@@ -13,17 +13,20 @@ interface NavItem {
 const applicantNav: NavItem[] = [
   { label: "My Applications", icon: "description", href: "/dashboard/applicant" },
   { label: "New Application", icon: "add_circle", href: "/dashboard/applicant/new" },
+  { label: "Settings", icon: "settings", href: "/dashboard/settings" },
 ];
 
 const hodNav: NavItem[] = [
   { label: "Pending Reviews", icon: "pending_actions", href: "/dashboard/hod" },
   { label: "Reviewed", icon: "task_alt", href: "/dashboard/hod/reviewed" },
+  { label: "Settings", icon: "settings", href: "/dashboard/settings" },
 ];
 
 const adminNav: NavItem[] = [
   { label: "Provisioning Queue", icon: "queue", href: "/dashboard/admin" },
   { label: "Analytics", icon: "analytics", href: "/dashboard/admin/analytics" },
   { label: "Users", icon: "group", href: "/dashboard/admin/users" },
+  { label: "Settings", icon: "settings", href: "/dashboard/settings" },
 ];
 
 /**

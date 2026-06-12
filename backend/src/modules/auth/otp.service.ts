@@ -64,6 +64,35 @@ export class OtpService {
   }
 
   /**
+   * Generate and send an OTP specifically for password reset.
+   * Same generation/storage logic as registration OTP, but uses
+   * the password reset email template for contextual clarity.
+   */
+  async generateAndSendPasswordReset(email: string): Promise<void> {
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpHash = await argon2.hash(otp);
+    const expiresAt = new Date(Date.now() + this.expiryMinutes * 60 * 1000);
+
+    await this.prisma.otpVerification.upsert({
+      where: { email },
+      create: {
+        email,
+        otpHash,
+        expiresAt,
+        attempts: 0,
+      },
+      update: {
+        otpHash,
+        expiresAt,
+        attempts: 0,
+      },
+    });
+
+    await this.mailService.sendPasswordResetOtp(email, otp);
+    this.logger.log(`Password reset OTP generated and sent for ${email}`);
+  }
+
+  /**
    * Verify an OTP against the stored hash.
    * Checks: existence → expiry → attempt limit → hash match.
    * On success: deletes the record.

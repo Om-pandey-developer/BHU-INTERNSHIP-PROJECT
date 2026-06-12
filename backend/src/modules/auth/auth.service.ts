@@ -1,12 +1,16 @@
 import {
   Injectable,
   UnauthorizedException,
+  NotFoundException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { OtpService } from './otp.service';
 
 /**
  * AuthService handles:
@@ -15,6 +19,7 @@ import { LoginDto } from './dto/login.dto';
  * 3. JWT refresh token generation (7d expiry, stored hashed in DB)
  * 4. Token refresh flow
  * 5. Logout (invalidates refresh token)
+ * 6. Password reset via OTP verification
  */
 @Injectable()
 export class AuthService {
@@ -23,6 +28,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly otpService: OtpService,
   ) {}
 
   /**
@@ -133,6 +139,89 @@ export class AuthService {
 
     this.logger.log(`User ${userId} logged out`);
     return { message: 'Logged out successfully' };
+  }
+
+  /**
+   * Reset a user's password after OTP verification.
+   *
+   * Flow:
+   * 1. Verify the OTP (delegates to OtpService — handles expiry, brute-force, hash match)
+   * 2. Look up the user by alternateEmail
+   * 3. Hash the new password with Argon2
+   * 4. Update the passwordHash and invalidate the refreshToken (forces re-login)
+   */
+  async resetPassword(email: string, otp: string, newPassword: string) {
+    // 1. Verify OTP — throws on invalid/expired/too-many-attempts
+    await this.otpService.verify(email, otp);
+
+    // 2. Find the user
+    const user = await this.prisma.user.findUnique({
+      where: { alternateEmail: email },
+    });
+
+    if (!user) {
+      throw new NotFoundException('No account found with this email address.');
+    }
+
+    // 3. Hash the new password
+    const passwordHash = await argon2.hash(newPassword);
+
+    // 4. Update password and invalidate refresh token
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash,
+        refreshToken: null, // Force re-login
+      },
+    });
+
+    this.logger.log(`Password reset successfully for ${email}`);
+    return { message: 'Password reset successfully. Please log in with your new password.' };
+  }
+
+  /**
+   * Change password for an already authenticated user.
+   * 
+   * Flow:
+   * 1. Look up user by ID.
+   * 2. Verify current password.
+   * 3. Hash new password.
+   * 4. Update database and invalidate refresh token (forces re-login).
+   */
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+
+    // Verify current password
+    const isPasswordValid = await argon2.verify(user.passwordHash, dto.currentPassword);
+    if (!isPasswordValid) {
+      throw new BadRequestException('Incorrect current password.');
+    }
+
+    // Check if new password is the same as the old one (optional but good practice)
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException('New password must be different from current password.');
+    }
+
+    // Hash the new password
+    const passwordHash = await argon2.hash(dto.newPassword);
+
+    // Update password and invalidate refresh token
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash,
+        refreshToken: null, // Force re-login
+      },
+    });
+
+    this.logger.log(`Password changed successfully for user ${userId}`);
+    return { message: 'Password changed successfully. Please log in with your new password.' };
   }
 
   /**
