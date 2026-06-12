@@ -36,10 +36,6 @@ export default function HodReviewedPage() {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [filter, setFilter] = useState<"all" | "approved" | "rejected">("all");
 
-  useEffect(() => {
-    fetchReviewed();
-  }, []);
-
   async function fetchReviewed() {
     setLoading(true);
     try {
@@ -56,6 +52,11 @@ export default function HodReviewedPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchReviewed();
+  }, []);
 
   const filtered =
     filter === "all"

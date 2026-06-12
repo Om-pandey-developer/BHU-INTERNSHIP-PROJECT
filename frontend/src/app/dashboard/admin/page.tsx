@@ -88,9 +88,10 @@ export default function AdminDashboard() {
 
       setSelectedApp(null);
       fetchQueue();
-    } catch (err: any) {
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } } };
       addToast({
-        message: err.response?.data?.message || "Provisioning failed.",
+        message: error.response?.data?.message || "Provisioning failed.",
         variant: "error",
         duration: 6000,
       });

@@ -37,10 +37,6 @@ export default function ApplicantDashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
 
-  useEffect(() => {
-    fetchApplications();
-  }, []);
-
   async function fetchApplications() {
     setLoading(true);
     try {
@@ -52,6 +48,11 @@ export default function ApplicantDashboard() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchApplications();
+  }, []);
 
   if (loading) {
     return (

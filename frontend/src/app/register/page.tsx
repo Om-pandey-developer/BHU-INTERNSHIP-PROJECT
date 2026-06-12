@@ -7,9 +7,7 @@ import { useAuthStore } from "@/lib/store";
 import Button from "@/components/Button";
 import Input from "@/components/Input";
 
-const categories = [
-  { value: "APPLICANT", label: "Applicant (Student / Staff)" },
-];
+
 
 /**
  * Registration page for new users to create an account on the portal.
@@ -26,9 +24,24 @@ export default function RegisterPage() {
     confirmPassword: "",
     departmentId: "",
   });
-  const [departments, setDepartments] = useState<
+  const [departments] = useState<
     { id: string; name: string; code: string }[]
-  >([]);
+  >([
+    { id: "dept-cs", name: "Computer Science", code: "COMP_SCI" },
+    { id: "dept-phy", name: "Physics", code: "PHYSICS" },
+    { id: "dept-chem", name: "Chemistry", code: "CHEMISTRY" },
+    { id: "dept-math", name: "Mathematics", code: "MATHEMATICS" },
+    { id: "dept-bio", name: "Biological Sciences", code: "BIO_SCI" },
+    { id: "dept-eng", name: "English", code: "ENGLISH" },
+    { id: "dept-hist", name: "History", code: "HISTORY" },
+    { id: "dept-eco", name: "Economics", code: "ECONOMICS" },
+    { id: "dept-law", name: "Law", code: "LAW" },
+    { id: "dept-med", name: "Medical Sciences", code: "MEDICAL" },
+    { id: "dept-edu", name: "Education", code: "EDUCATION" },
+    { id: "dept-mech", name: "Mechanical Engineering", code: "MECH_ENG" },
+    { id: "dept-civil", name: "Civil Engineering", code: "CIVIL_ENG" },
+    { id: "dept-elec", name: "Electrical Engineering", code: "ELEC_ENG" },
+  ]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -42,28 +55,6 @@ export default function RegisterPage() {
       router.push("/dashboard/applicant");
     }
   }, [isAuthenticated, router]);
-
-  // Fetch departments for the dropdown
-  useEffect(() => {
-    // In a real setup, we'd fetch from /api/v1/departments
-    // For now, provide some placeholder departments
-    setDepartments([
-      { id: "dept-cs", name: "Computer Science", code: "COMP_SCI" },
-      { id: "dept-phy", name: "Physics", code: "PHYSICS" },
-      { id: "dept-chem", name: "Chemistry", code: "CHEMISTRY" },
-      { id: "dept-math", name: "Mathematics", code: "MATHEMATICS" },
-      { id: "dept-bio", name: "Biological Sciences", code: "BIO_SCI" },
-      { id: "dept-eng", name: "English", code: "ENGLISH" },
-      { id: "dept-hist", name: "History", code: "HISTORY" },
-      { id: "dept-eco", name: "Economics", code: "ECONOMICS" },
-      { id: "dept-law", name: "Law", code: "LAW" },
-      { id: "dept-med", name: "Medical Sciences", code: "MEDICAL" },
-      { id: "dept-edu", name: "Education", code: "EDUCATION" },
-      { id: "dept-mech", name: "Mechanical Engineering", code: "MECH_ENG" },
-      { id: "dept-civil", name: "Civil Engineering", code: "CIVIL_ENG" },
-      { id: "dept-elec", name: "Electrical Engineering", code: "ELEC_ENG" },
-    ]);
-  }, []);
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -100,9 +91,10 @@ export default function RegisterPage() {
         setSuccess(true);
         setTimeout(() => router.push("/login"), 2500);
       }
-    } catch (err: any) {
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } } };
       setError(
-        err.response?.data?.message ||
+        error.response?.data?.message ||
           "Registration failed. Please try again."
       );
     } finally {

@@ -161,9 +161,10 @@ export default function NewApplicationPage() {
         variant: "success",
       });
       router.push("/dashboard/applicant");
-    } catch (err: any) {
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } } };
       setError(
-        err.response?.data?.message || "Failed to submit application. Please try again."
+        error.response?.data?.message || "Failed to submit application. Please try again."
       );
     } finally {
       setSubmitting(false);

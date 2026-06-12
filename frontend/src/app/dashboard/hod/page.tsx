@@ -100,9 +100,10 @@ export default function HodDashboard() {
       setActionType(null);
       setRemarks("");
       fetchQueue();
-    } catch (err: any) {
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } } };
       addToast({
-        message: err.response?.data?.message || "Action failed.",
+        message: error.response?.data?.message || "Action failed.",
         variant: "error",
       });
     } finally {

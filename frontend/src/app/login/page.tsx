@@ -28,13 +28,6 @@ export default function LoginPage() {
     hydrate();
   }, [hydrate]);
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      redirectByRole(user.role);
-    }
-  }, [isAuthenticated, user]);
-
   function redirectByRole(role: string) {
     switch (role) {
       case "HOD":
@@ -48,6 +41,14 @@ export default function LoginPage() {
     }
   }
 
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      redirectByRole(user.role);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -59,9 +60,10 @@ export default function LoginPage() {
         login(data.data.user, data.data.accessToken, data.data.refreshToken);
         redirectByRole(data.data.user.role);
       }
-    } catch (err: any) {
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } } };
       setError(
-        err.response?.data?.message || "Login failed. Please check your credentials."
+        error.response?.data?.message || "Login failed. Please check your credentials."
       );
     } finally {
       setLoading(false);
