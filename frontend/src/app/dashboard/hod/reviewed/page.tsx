@@ -36,25 +36,22 @@ export default function HodReviewedPage() {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [filter, setFilter] = useState<"all" | "approved" | "rejected">("all");
 
-  async function fetchReviewed() {
-    setLoading(true);
-    try {
-      // Fetch all applications and filter client-side for reviewed ones
-      const { data } = await api.get("/applications/hod-queue");
-      const all = data.success ? data.data : data;
-      // For reviewed, we'd typically have a separate endpoint.
-      // For now we'll also try to get admin-queue to show approved ones.
-      // This is a simplified version — in production, add a backend endpoint.
-      setApplications([]);
-    } catch {
-      // empty
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    async function fetchReviewed() {
+      try {
+        // Fetch all applications and filter client-side for reviewed ones
+        const { data } = await api.get("/applications/hod-queue");
+        void (data.success ? data.data : data);
+        // For reviewed, we'd typically have a separate endpoint.
+        // For now we'll also try to get admin-queue to show approved ones.
+        // This is a simplified version — in production, add a backend endpoint.
+        setApplications([]);
+      } catch {
+        // empty
+      } finally {
+        setLoading(false);
+      }
+    }
     fetchReviewed();
   }, []);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/lib/store";
@@ -90,7 +90,6 @@ const departments = [
  */
 export default function NewApplicationPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
   const { addToast } = useToastStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -161,7 +160,7 @@ export default function NewApplicationPage() {
         variant: "success",
       });
       router.push("/dashboard/applicant");
-    } catch (err) {
+    } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       setError(
         error.response?.data?.message || "Failed to submit application. Please try again."
