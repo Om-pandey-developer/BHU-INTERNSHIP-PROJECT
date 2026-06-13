@@ -6,6 +6,7 @@ import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
 import Timeline, { buildTimelineSteps } from "@/components/Timeline";
+import { generateApplicationPdf } from "@/lib/pdfGenerator";
 
 interface Application {
   id: string;
@@ -68,7 +69,7 @@ export default function ApplicantDashboard() {
   return (
     <div className="animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1
             className="text-2xl font-bold text-foreground"
@@ -80,11 +81,28 @@ export default function ApplicantDashboard() {
             Track the status of your email account applications
           </p>
         </div>
-        <a href="/dashboard/applicant/new">
-          <Button icon="add_circle" size="md">
-            New Application
-          </Button>
-        </a>
+      </div>
+
+      {/* Steps to Follow */}
+      <div className="bg-primary-container/20 rounded-2xl border border-primary/15 p-5 mb-8">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center shrink-0">
+            <span className="material-symbols-rounded text-[22px] text-primary">
+              lightbulb
+            </span>
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-foreground mb-2">Steps to Follow</h3>
+            <ol className="text-xs text-outline space-y-1.5 list-decimal list-inside">
+              <li>Fill and submit the application form with required documents.</li>
+              <li>Your application will be forwarded to the Head of Department (HOD) for approval.</li>
+              <li>After HOD approval, CC Admin will provision your email account.</li>
+              <li className="text-primary font-medium">
+                You will receive your @bhu.ac.in credentials via email from Google Workspace.
+              </li>
+            </ol>
+          </div>
+        </div>
       </div>
 
       {/* Applications List */}
@@ -126,7 +144,7 @@ export default function ApplicantDashboard() {
                   <div>
                     <div className="flex items-center gap-2.5 mb-1">
                       <p className="font-semibold text-foreground text-sm">
-                        {app.trackingId}
+                        Ref. No: {app.trackingId}
                       </p>
                       <StatusBadge status={app.status} size="sm" />
                     </div>
@@ -252,6 +270,18 @@ export default function ApplicantDashboard() {
                 )}
               </div>
             )}
+
+            {/* Download PDF */}
+            <div className="pt-2 border-t border-outline-variant">
+              <Button
+                variant="outlined"
+                icon="download"
+                size="md"
+                onClick={() => generateApplicationPdf(selectedApp)}
+              >
+                Download PDF
+              </Button>
+            </div>
           </div>
         )}
       </Modal>

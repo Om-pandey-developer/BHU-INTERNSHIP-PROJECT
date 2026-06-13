@@ -12,7 +12,6 @@ interface NavItem {
 
 const applicantNav: NavItem[] = [
   { label: "My Applications", icon: "description", href: "/dashboard/applicant" },
-  { label: "New Application", icon: "add_circle", href: "/dashboard/applicant/new" },
   { label: "Settings", icon: "settings", href: "/dashboard/settings" },
 ];
 
@@ -122,10 +121,12 @@ export default function DashboardLayout({
         {/* Sidebar header */}
         <div className="p-5 border-b border-outline-variant">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shrink-0">
-              <span className="material-symbols-rounded text-[22px] text-white">
-                school
-              </span>
+            <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0">
+              <img
+                src="/bhu-logo.png"
+                alt="BHU Logo"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="min-w-0">
               <h2 className="font-bold text-sm text-foreground truncate">
@@ -210,6 +211,16 @@ export default function DashboardLayout({
           </button>
 
           <div className="flex-1" />
+
+          {user.role === "APPLICANT" && (
+            <a
+              href="/dashboard/applicant/new"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark transition-colors"
+            >
+              <span className="material-symbols-rounded text-[18px]">add_circle</span>
+              New Application
+            </a>
+          )}
 
           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${roleBg}`}>
             {roleLabel}
