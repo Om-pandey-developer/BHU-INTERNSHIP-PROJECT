@@ -6,7 +6,9 @@ import api from "@/lib/axios";
 import { useAuthStore } from "@/lib/store";
 import Button from "@/components/Button";
 import Input from "@/components/Input";
+import Modal from "@/components/Modal";
 import { useToastStore } from "@/components/Toast";
+import { generateApplicationPdf } from "@/lib/pdfGenerator";
 
 const categories = [
   {
@@ -15,7 +17,11 @@ const categories = [
     icon: "admin_panel_settings",
     desc: "IAS, IPS, Group A government officers",
     quota: "20 GB",
-    fields: ["designation", "employeeId", "dateOfJoining"],
+    fields: [
+      "designation", "dateOfAppointment", "facultyInstituteCentre",
+      "employeeId", "dateOfBirth", "typeOfEmployment",
+      "nationality", "dateOfRetirement", "mobileNo", "emailChoice",
+    ],
   },
   {
     value: "TEACHING_STAFF",
@@ -23,7 +29,11 @@ const categories = [
     icon: "school",
     desc: "Professors, Associate & Assistant Professors",
     quota: "20 GB",
-    fields: ["designation", "employeeId", "dateOfJoining", "specialization"],
+    fields: [
+      "designation", "dateOfAppointment", "facultyInstituteCentre",
+      "employeeId", "dateOfBirth", "typeOfEmployment",
+      "nationality", "dateOfRetirement", "mobileNo", "emailChoice",
+    ],
   },
   {
     value: "NON_TEACHING_STAFF",
@@ -31,7 +41,11 @@ const categories = [
     icon: "badge",
     desc: "Administrative and support staff",
     quota: "5 GB",
-    fields: ["designation", "employeeId", "dateOfJoining"],
+    fields: [
+      "designation", "dateOfAppointment", "facultyInstituteCentre",
+      "employeeId", "dateOfBirth", "typeOfEmployment",
+      "nationality", "dateOfRetirement", "mobileNo", "emailChoice",
+    ],
   },
   {
     value: "RESEARCH_SCHOLAR",
@@ -39,7 +53,11 @@ const categories = [
     icon: "science",
     desc: "PhD and research students",
     quota: "10 GB",
-    fields: ["enrollmentNo", "supervisor", "researchTopic", "yearOfAdmission"],
+    fields: [
+      "programEnrolled", "admissionAcademicYear", "facultyInstituteCentre",
+      "enrollmentNo", "dateOfBirth", "courseCompletionYear",
+      "nationality", "mobileNo", "emailChoice",
+    ],
   },
   {
     value: "POST_GRADUATE_STUDENT",
@@ -47,20 +65,32 @@ const categories = [
     icon: "menu_book",
     desc: "MA, MSc, MCA, MBA and other PG students",
     quota: "5 GB",
-    fields: ["enrollmentNo", "course", "yearOfAdmission"],
+    fields: [
+      "programEnrolled", "admissionAcademicYear", "facultyInstituteCentre",
+      "enrollmentNo", "dateOfBirth", "courseCompletionYear",
+      "nationality", "mobileNo", "emailChoice",
+    ],
   },
 ];
 
 const fieldLabels: Record<string, { label: string; icon: string; type?: string }> = {
-  designation: { label: "Designation", icon: "work" },
-  employeeId: { label: "Employee ID", icon: "badge" },
-  dateOfJoining: { label: "Date of Joining", icon: "calendar_month", type: "date" },
-  specialization: { label: "Specialization", icon: "psychology" },
-  enrollmentNo: { label: "Enrollment Number", icon: "tag" },
-  supervisor: { label: "Research Supervisor", icon: "person" },
-  researchTopic: { label: "Research Topic", icon: "biotech" },
-  yearOfAdmission: { label: "Year of Admission", icon: "event", type: "number" },
-  course: { label: "Course / Programme", icon: "menu_book" },
+  // ── Staff fields ──
+  designation:            { label: "Designation", icon: "work" },
+  dateOfAppointment:      { label: "Date of Appointment", icon: "calendar_month", type: "date" },
+  employeeId:             { label: "Employee ID", icon: "badge" },
+  typeOfEmployment:       { label: "Type of Employment", icon: "work_history" },
+  dateOfRetirement:       { label: "Date of Retirement", icon: "event_busy", type: "date" },
+  // ── Student fields ──
+  programEnrolled:        { label: "Program Enrolled", icon: "menu_book" },
+  admissionAcademicYear:  { label: "Admission Academic Year", icon: "event", type: "number" },
+  enrollmentNo:           { label: "Enrollment Number", icon: "tag" },
+  courseCompletionYear:   { label: "Course Completion Year", icon: "school", type: "number" },
+  // ── Common fields ──
+  facultyInstituteCentre: { label: "Faculty / Institute / Centre", icon: "domain" },
+  dateOfBirth:            { label: "Date of Birth", icon: "cake", type: "date" },
+  nationality:            { label: "Nationality", icon: "public" },
+  mobileNo:               { label: "Mobile Number", icon: "phone", type: "tel" },
+  emailChoice:            { label: "Choice of Email Id", icon: "alternate_email", type: "custom" },
 };
 
 const departments = [
@@ -103,6 +133,9 @@ export default function NewApplicationPage() {
   const [policyAccepted, setPolicyAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [submittedApp, setSubmittedApp] = useState<any>(null);
 
   const categoryConfig = categories.find((c) => c.value === selectedCategory);
 
@@ -135,7 +168,12 @@ export default function NewApplicationPage() {
     if (!categoryConfig) return false;
     if (!departmentId) return false;
     for (const field of categoryConfig.fields) {
-      if (!details[field]?.trim()) return false;
+      if (field === "emailChoice") {
+        // emailChoice needs at least the 1st preference filled
+        if (!details["emailChoice1"]?.trim()) return false;
+      } else {
+        if (!details[field]?.trim()) return false;
+      }
     }
     if (!photo) return false;
     return true;
@@ -160,7 +198,8 @@ export default function NewApplicationPage() {
         message: `Application ${result.trackingId} submitted successfully!`,
         variant: "success",
       });
-      router.push("/dashboard/applicant");
+      setSubmittedApp(result);
+      setStep(4);
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } } };
       setError(
@@ -172,8 +211,10 @@ export default function NewApplicationPage() {
   }
 
   return (
+    <>
     <div className="max-w-3xl mx-auto animate-fade-in">
       {/* Header */}
+      {step < 4 && (
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-4">
           <a
@@ -232,6 +273,7 @@ export default function NewApplicationPage() {
           <span className="text-[11px] text-outline">Review</span>
         </div>
       </div>
+      )}
 
       {/* ═══ STEP 1: Category Selection ═══ */}
       {step === 1 && (
@@ -348,6 +390,44 @@ export default function NewApplicationPage() {
           <div className="space-y-4">
             {categoryConfig.fields.map((field) => {
               const config = fieldLabels[field];
+
+              // Special rendering for Email Choice (3 preferences)
+              if (field === "emailChoice") {
+                return (
+                  <div key={field} className="bg-surface-variant/30 rounded-xl p-5 border border-outline-variant">
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="material-symbols-rounded text-[20px] text-primary">
+                        alternate_email
+                      </span>
+                      <p className="text-sm font-semibold text-foreground">
+                        Choice of Email Id *
+                      </p>
+                    </div>
+                    <p className="text-xs text-outline mb-4">
+                      Enter your preferred email handles (e.g., firstname.lastname). Default is your full name.
+                    </p>
+                    <div className="space-y-3">
+                      {["1st", "2nd", "3rd"].map((label, idx) => (
+                        <div key={label} className="flex items-center gap-3">
+                          <span className="text-xs font-semibold text-outline w-8 shrink-0">
+                            {label}
+                          </span>
+                          <Input
+                            label={`${label} Choice`}
+                            icon="mail"
+                            value={details[`emailChoice${idx + 1}`] || ""}
+                            onChange={(e) =>
+                              handleDetailChange(`emailChoice${idx + 1}`, e.target.value)
+                            }
+                            required={idx === 0}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <Input
                   key={field}
@@ -408,6 +488,16 @@ export default function NewApplicationPage() {
                       className="text-xs text-error font-medium mt-1 hover:underline cursor-pointer"
                     >
                       Remove
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPhotoModalOpen(true);
+                      }}
+                      className="text-xs text-primary font-medium mt-1 hover:underline cursor-pointer ml-3"
+                    >
+                      View Full Size
                     </button>
                   </div>
                   <span className="material-symbols-rounded text-[24px] text-success">
@@ -491,16 +581,36 @@ export default function NewApplicationPage() {
 
             {/* Details grid */}
             <div className="p-5 grid grid-cols-2 gap-3">
-              {categoryConfig.fields.map((field) => (
-                <div key={field} className="bg-surface-variant/40 rounded-lg px-3 py-2">
-                  <p className="text-[10px] uppercase tracking-wider text-outline font-medium">
-                    {fieldLabels[field].label}
-                  </p>
-                  <p className="text-sm text-foreground font-medium">
-                    {details[field]}
-                  </p>
-                </div>
-              ))}
+              {categoryConfig.fields.map((field) => {
+                if (field === "emailChoice") {
+                  return (
+                    <div key={field} className="col-span-2 bg-surface-variant/40 rounded-lg px-3 py-2">
+                      <p className="text-[10px] uppercase tracking-wider text-outline font-medium mb-1">
+                        Choice of Email Id
+                      </p>
+                      <div className="space-y-0.5">
+                        {[1, 2, 3].map((n) => (
+                          details[`emailChoice${n}`] && (
+                            <p key={n} className="text-sm text-foreground font-medium">
+                              {n === 1 ? "1st" : n === 2 ? "2nd" : "3rd"}: {details[`emailChoice${n}`]}
+                            </p>
+                          )
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={field} className="bg-surface-variant/40 rounded-lg px-3 py-2">
+                    <p className="text-[10px] uppercase tracking-wider text-outline font-medium">
+                      {fieldLabels[field].label}
+                    </p>
+                    <p className="text-sm text-foreground font-medium">
+                      {details[field]}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Photo preview */}
@@ -570,22 +680,103 @@ export default function NewApplicationPage() {
             </div>
           )}
 
-          <div className="flex justify-between pt-2">
+          <div className="flex items-center justify-between pt-2">
             <Button variant="outlined" onClick={() => setStep(2)}>
               Back
             </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outlined"
+                icon="download"
+                onClick={() => {
+                  const previewData = {
+                    trackingId: "PREVIEW",
+                    status: "DRAFT",
+                    createdAt: new Date().toISOString(),
+                    department: departments.find((d) => d.id === departmentId),
+                    applicantDetails: { ...details, category: selectedCategory },
+                  };
+                  generateApplicationPdf(previewData, {
+                    firstName: user?.firstName || "",
+                    lastName: user?.lastName || "",
+                  });
+                }}
+              >
+                Download Preview
+              </Button>
+              <Button
+                icon="send"
+                disabled={!policyAccepted || submitting}
+                loading={submitting}
+                onClick={handleSubmit}
+                size="lg"
+              >
+                Submit Application
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ STEP 4: Success ═══ */}
+      {step === 4 && submittedApp && (
+        <div className="space-y-6 text-center py-10 animate-fade-in">
+          <div className="w-20 h-20 rounded-full bg-success-container flex items-center justify-center mx-auto mb-6">
+            <span className="material-symbols-rounded text-[40px] text-success">
+              check_circle
+            </span>
+          </div>
+          <h2 className="text-2xl font-bold text-foreground mb-2">
+            Application Submitted
+          </h2>
+          <p className="text-sm text-outline max-w-md mx-auto mb-8">
+            Your application for BHU institutional email has been successfully submitted.
+            Your Reference ID is <strong className="text-foreground">{submittedApp.trackingId}</strong>.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
-              icon="send"
-              disabled={!policyAccepted || submitting}
-              loading={submitting}
-              onClick={handleSubmit}
+              variant="outlined"
+              icon="download"
               size="lg"
+              onClick={() => {
+                generateApplicationPdf(submittedApp, {
+                  firstName: user?.firstName || "",
+                  lastName: user?.lastName || "",
+                });
+              }}
             >
-              Submit Application
+              Download Form
+            </Button>
+            <Button
+              icon="arrow_forward"
+              size="lg"
+              onClick={() => router.push("/dashboard/applicant")}
+            >
+              Go to My Applications
             </Button>
           </div>
         </div>
       )}
     </div>
+
+    {/* Photo Preview Modal */}
+    <Modal
+      isOpen={photoModalOpen}
+      onClose={() => setPhotoModalOpen(false)}
+      title="Photo Preview"
+      size="md"
+    >
+      {photoPreview && (
+        <div className="flex justify-center p-4">
+          <img
+            src={photoPreview}
+            alt="Full Size Preview"
+            className="max-w-full max-h-[60vh] rounded-xl object-contain border border-outline-variant"
+          />
+        </div>
+      )}
+    </Modal>
+    </>
   );
 }
