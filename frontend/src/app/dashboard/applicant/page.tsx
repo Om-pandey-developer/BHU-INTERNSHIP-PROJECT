@@ -38,20 +38,17 @@ export default function ApplicantDashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
 
-  async function fetchApplications() {
-    setLoading(true);
-    try {
-      const { data } = await api.get("/applications/my");
-      setApplications(data.success ? data.data : data);
-    } catch {
-      // Will show empty state
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    async function fetchApplications() {
+      try {
+        const { data } = await api.get("/applications/my");
+        setApplications(data.success ? data.data : data);
+      } catch {
+        // Will show empty state
+      } finally {
+        setLoading(false);
+      }
+    }
     fetchApplications();
   }, []);
 

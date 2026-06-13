@@ -71,22 +71,22 @@ export default function DashboardLayout({
     user.role === "CC_ADMIN"
       ? adminNav
       : user.role === "HOD"
-      ? hodNav
-      : applicantNav;
+        ? hodNav
+        : applicantNav;
 
   const roleLabel =
     user.role === "CC_ADMIN"
       ? "CC Admin"
       : user.role === "HOD"
-      ? "Head of Dept"
-      : "Applicant";
+        ? "Head of Dept"
+        : "Applicant";
 
   const roleBg =
     user.role === "CC_ADMIN"
       ? "bg-tertiary-container text-tertiary"
       : user.role === "HOD"
-      ? "bg-secondary-container text-secondary"
-      : "bg-primary-container text-on-primary-container";
+        ? "bg-secondary-container text-secondary"
+        : "bg-primary-container text-on-primary-container";
 
   function handleLogout() {
     logout();
@@ -94,8 +94,13 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen flex bg-background">
-      {/* ── Sidebar Overlay (mobile) ── */}
+    // ── 1. PAGE CONTAINER ──
+    // The 'page-dashboard' class links to globals.css for specific backgrounds/colors.
+    // 'min-h-screen flex' provides the layout foundation for Sidebar + Main Content.
+    <div className="page-dashboard min-h-screen flex bg-background">
+
+      {/* ── 2. MOBILE SIDEBAR OVERLAY ──
+          Darkens the background when the sidebar is open on mobile devices. */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/30 lg:hidden"
@@ -103,7 +108,9 @@ export default function DashboardLayout({
         />
       )}
 
-      {/* ── Sidebar ── */}
+      {/* ── 3. RESPONSIVE SIDEBAR ──
+          'fixed lg:sticky' makes it stick to the side on desktop but overlay on mobile.
+          'w-72 bg-surface' sets the width and distinct surface color. */}
       <aside
         className={`
           fixed lg:sticky top-0 left-0 z-50 h-screen w-72 bg-surface border-r border-outline-variant
@@ -142,17 +149,15 @@ export default function DashboardLayout({
                 className={`
                   flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
                   transition-all duration-200
-                  ${
-                    active
-                      ? "bg-primary-container text-on-primary-container"
-                      : "text-foreground/70 hover:bg-surface-variant hover:text-foreground"
+                  ${active
+                    ? "bg-primary-container text-on-primary-container"
+                    : "text-foreground/70 hover:bg-surface-variant hover:text-foreground"
                   }
                 `}
               >
                 <span
-                  className={`material-symbols-rounded text-[20px] ${
-                    active ? "text-primary" : ""
-                  }`}
+                  className={`material-symbols-rounded text-[20px] ${active ? "text-primary" : ""
+                    }`}
                 >
                   {item.icon}
                 </span>
@@ -191,10 +196,13 @@ export default function DashboardLayout({
         </div>
       </aside>
 
-      {/* ── Main Content ── */}
+      {/* ── 4. MAIN CONTENT AREA ──
+          'flex-1' ensures this area takes the rest of the available screen space. */}
       <main className="flex-1 flex flex-col min-h-screen">
-        {/* Top bar */}
-        <header className="sticky top-0 z-30 bg-surface/80 backdrop-blur-md border-b border-outline-variant px-6 py-3 flex items-center gap-4">
+
+        {/* ── 5. TOP NAVIGATION BAR ── 
+            'sticky top-0 z-30 bg-surface/80 backdrop-blur-md' creates a glass header. */}
+        <header className="site-header sticky top-0 z-30 bg-surface/80 backdrop-blur-md border-b border-outline-variant px-6 py-3 flex items-center gap-4">
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden p-1.5 rounded-lg hover:bg-surface-variant transition-colors cursor-pointer"
@@ -219,7 +227,8 @@ export default function DashboardLayout({
           </span>
         </header>
 
-        {/* Page content */}
+        {/* ── 6. PAGE INJECTION POINT ── 
+            This is where specific dashboard pages (Admin, HOD, Applicant) are rendered. */}
         <div className="flex-1 p-6 lg:p-8">{children}</div>
       </main>
     </div>

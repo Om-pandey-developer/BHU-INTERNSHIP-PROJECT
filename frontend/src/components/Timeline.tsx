@@ -159,7 +159,6 @@ export function buildTimelineSteps(
     }
 
     // Handle active state for current step
-    const currentStepIndex = statusOrder.indexOf(status);
     if (status === "PENDING_HOD" && i === 1) stepStatus = "active";
     if ((status === "APPROVED_HOD" || status === "PENDING_CC") && i === 2)
       stepStatus = "active";

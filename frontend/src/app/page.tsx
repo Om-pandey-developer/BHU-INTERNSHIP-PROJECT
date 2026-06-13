@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store";
 
@@ -32,35 +33,45 @@ export default function Home() {
   }, [isLoading, isAuthenticated, user, router]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      {/* ── Nav ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-surface/80 backdrop-blur-md border-b border-outline-variant">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-              <span className="material-symbols-rounded text-[22px] text-white">
+    // ── 1. PAGE CONTAINER ──
+    // The 'page-home' class ties to globals.css for specific backgrounds/colors.
+    // 'min-h-screen flex flex-col' makes it a full-height flex column.
+    // 'bg-background' applies the CSS variable for the base color.
+    <div className="home-page bg-black/70 min-h-screen flex flex-col bg-background">
+
+      {/* ── 2. NAVIGATION BAR ── 
+          'fixed z-50' keeps it on top. 'backdrop-blur-md' gives a glass effect. */}
+
+      <nav className="site-header fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-amber-500/30">
+        <div className="max-w-6xl mx-auto px-0 py-2.5 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Image src="/favicon.ico" alt="BHU Logo" width={40} height={40} className="rounded-xl" />
+
+            {/* <div className="w-10\ h-10 rounded-xl bg-amber-500 flex items-center justify-center">
+              <span className="material-symbols-rounded text-[204px] text-blue">
                 school
               </span>
-            </div>
+            </div> */}
+
             <div>
-              <h1 className="font-bold text-sm text-foreground">
+              <h1 className="font-bold text-[15px] text-amber-900">
                 BHU Email Portal
               </h1>
-              <p className="text-[10px] text-outline">
+              <p className="text-[10px] text-amber-600">
                 Banaras Hindu University
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-right gap-2.5">
             <a
               href="/login"
-              className="px-5 py-2 text-sm font-medium text-primary hover:bg-primary/5 rounded-lg transition-colors"
+              className="px-5 py-2 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors border border-amber-500/40"
             >
               Sign In
             </a>
             <a
               href="/register"
-              className="px-5 py-2 text-sm font-medium text-on-primary bg-primary hover:bg-primary-dark rounded-lg transition-colors shadow-sm"
+              className="px-5 py-2 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors shadow-sm"
             >
               Register
             </a>
@@ -68,26 +79,39 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* ── Hero Section ── */}
+      {/* ── 3. HERO SECTION ──
+          'flex-1' makes it take the remaining height. 
+          'relative overflow-hidden' contains the decorative background gradients. */}
       <section className="flex-1 flex items-center justify-center relative overflow-hidden pt-16">
-        {/* Background decorative elements */}
+
+        {/* Background Video and decorative overlay */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-primary/8 to-tertiary/5" />
-          <div className="absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-secondary/8 to-primary/3" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-gradient-radial from-primary/3 to-transparent" />
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute top-0 left-0 w-full h-full object-cover opacity-90"
+          >
+            <source src="/BHUTour.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-primary/8 to-tertiary/5 mix-blend-overlay" />
+          <div className="absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-secondary/8 to-primary/3 mix-blend-overlay" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-gradient-radial from-primary/3 to-transparent mix-blend-overlay" />
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto px-6 py-20 text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container text-xs font-semibold mb-8 animate-fade-in">
+          {/* <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container text-xs font-semibold mb-8 animate-fade-in">
             <span className="material-symbols-rounded text-[16px]">
               verified
             </span>
             Official University Portal
-          </div>
+          </div> */}
 
           <h1
-            className="text-5xl md:text-6xl font-bold text-foreground mb-6 leading-tight animate-fade-in"
+            className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight animate-fade-in drop-shadow-lg"
             style={{
               fontFamily: "var(--font-serif)",
               animationDelay: "0.1s",
@@ -96,16 +120,16 @@ export default function Home() {
           >
             Institutional Email
             <br />
-            <span className="bg-gradient-to-r from-primary to-tertiary bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-amber-400 to-yellow-300 bg-clip-text text-transparent">
               Registration Portal
             </span>
           </h1>
 
           <p
-            className="text-lg text-outline max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in"
+            className="text-lg text-white/80 max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in"
             style={{ animationDelay: "0.2s", animationFillMode: "backwards" }}
           >
-            Apply for your official <strong>@bhu.ac.in</strong> email account.
+            Apply for your official <a href="https://www.bhu.ac.in/Site/Home/1_2_16_Main-Site" target="_blank" rel="noopener noreferrer" className="text-amber-300 font-bold hover:underline">@bhu.ac.in</a> email account.
             Fully digital, paperless workflow with automated provisioning via
             Google Workspace.
           </p>
@@ -117,27 +141,30 @@ export default function Home() {
           >
             <a
               href="/register"
-              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-primary text-on-primary font-semibold rounded-xl hover:bg-primary-dark transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
+              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-amber-500 text-white font-semibold rounded-xl hover:bg-amber-700 transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98]"
             >
-              <span className="material-symbols-rounded text-[20px]">
+              <span className="material-symbols-rounded text-[25px]">
                 person_add
               </span>
               Register Now
             </a>
             <a
               href="/login"
-              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 border-2 border-primary text-primary font-semibold rounded-xl hover:bg-primary/5 transition-all duration-200"
+              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 border-2 border-white/80 text-white font-semibold rounded-xl hover:bg-white/40 transition-all duration-200"
             >
-              <span className="material-symbols-rounded text-[20px]">
+              <span className="material-symbols-rounded text-[25px]">
                 login
               </span>
               Sign In
             </a>
           </div>
 
-          {/* Feature Cards */}
+
+
+          {/* ── 4. FEATURE CARDS ── 
+              'grid-cols-1 md:grid-cols-3' creates a responsive 3-column layout. */}
           <div
-            className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-20 animate-fade-in"
+            className=" grid grid-cols-1 md:grid-cols-3 gap-8 mt-20 animate-fade-in "
             style={{ animationDelay: "0.4s", animationFillMode: "backwards" }}
           >
             {[
@@ -162,21 +189,21 @@ export default function Home() {
             ].map((feature) => (
               <div
                 key={feature.title}
-                className="bg-surface rounded-2xl border border-outline-variant p-6 text-left hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                className="bg-black/8 backdrop-blur-sm rounded-2xl border border-white/10 p-6 text-left hover:shadow-lg hover:-translate-y-1 transition-all duration-300 hover:border-amber-500/30"
               >
                 <div
-                  className={`w-12 h-12 rounded-xl bg-${feature.color}-container flex items-center justify-center mb-4`}
+                  className={`w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center mb-4`}
                 >
                   <span
-                    className={`material-symbols-rounded text-[24px] text-${feature.color}`}
+                    className={`material-symbols-rounded text-[24px] text-amber-400`}
                   >
                     {feature.icon}
                   </span>
                 </div>
-                <h3 className="font-bold text-foreground mb-2">
+                <h3 className="font-bold text-white mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-sm text-outline leading-relaxed">
+                <p className="text-sm text-white/60 leading-relaxed">
                   {feature.desc}
                 </p>
               </div>
@@ -185,9 +212,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="border-t border-outline-variant py-6 px-6 text-center">
-        <p className="text-xs text-outline">
+      {/* ── 5. FOOTER ── */}
+      <footer className="site-footer border-t border-white/2s0 bg-blue-900 backdrop-blur-sm py-6 px-6 text-center opacity-80 ">
+        <p className="text-[14px] text-amber-200/60">
           © {new Date().getFullYear()} Banaras Hindu University — Computer
           Centre. All rights reserved.
         </p>

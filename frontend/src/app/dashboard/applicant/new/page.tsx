@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/lib/store";
@@ -200,7 +200,7 @@ export default function NewApplicationPage() {
       });
       setSubmittedApp(result);
       setStep(4);
-    } catch (err) {
+    } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       setError(
         error.response?.data?.message || "Failed to submit application. Please try again."

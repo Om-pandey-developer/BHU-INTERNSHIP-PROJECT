@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Turnstile } from "@marsidev/react-turnstile";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/lib/store";
@@ -9,6 +10,7 @@ import Button from "@/components/Button";
 import Input from "@/components/Input";
 import PasswordStrength from "@/components/PasswordStrength";
 
+// Login page for the BHU Email Portal.
 const TURNSTILE_SITE_KEY =
   process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
   "1x00000000000000000000AA"; // Cloudflare test key (always passes)
@@ -16,10 +18,10 @@ const TURNSTILE_SITE_KEY =
 type Phase = "LOGIN" | "FORGOT_EMAIL" | "FORGOT_OTP" | "RESET_PASSWORD";
 
 const PHASE_CONFIG: Record<Phase, { step: number; label: string; icon: string }> = {
-  LOGIN:          { step: 1, label: "Sign In",          icon: "login" },
-  FORGOT_EMAIL:   { step: 2, label: "Enter Email",      icon: "mail" },
-  FORGOT_OTP:     { step: 3, label: "Verify Code",      icon: "pin" },
-  RESET_PASSWORD: { step: 4, label: "New Password",     icon: "lock_reset" },
+  LOGIN: { step: 1, label: "Sign In", icon: "login" },
+  FORGOT_EMAIL: { step: 2, label: "Enter Email", icon: "mail" },
+  FORGOT_OTP: { step: 3, label: "Verify Code", icon: "pin" },
+  RESET_PASSWORD: { step: 4, label: "New Password", icon: "lock_reset" },
 };
 
 /**
@@ -84,7 +86,7 @@ export default function LoginPage() {
     if (isAuthenticated && user) {
       redirectByRole(user.role);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, user]);
 
   // ── Countdown timer for OTP resend ──
@@ -330,29 +332,31 @@ export default function LoginPage() {
   const currentPhaseConfig = PHASE_CONFIG[phase];
 
   return (
+    // ---PAGE CONTAINER---
     <div className="min-h-screen flex">
       {/* ── Left Panel: Branding ── */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-primary-dark to-on-primary-container relative overflow-hidden">
-        {/* Decorative circles */}
-        <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-white/5" />
-        <div className="absolute bottom-10 right-10 w-64 h-64 rounded-full bg-white/5" />
-        <div className="absolute top-1/3 right-1/4 w-40 h-40 rounded-full bg-white/8" />
+      <div className="hidden lg:flex lg:w-5/11  relative overflow-hidden">
+        {/* Background image*/}
+        <Image
+          src="/BHU PTMADAN.jpg"
+          alt="BHU Campus Buildings"
+          fill
+          className="object-cover"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/5 to-transparent pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col justify-center px-16 text-white">
+        <div className="relative z-10 flex flex-col justify-end px-14 pb-15 text-white">
           {/* University Emblem */}
-          <div className="w-20 h-20 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center mb-8 shadow-lg">
-            <span className="material-symbols-rounded text-[40px]">school</span>
-          </div>
-
           <h1
-            className="text-4xl font-bold mb-3 leading-tight"
+            className="text-4xl font-bold mb-3 leading-tight text-[50px]"
             style={{ fontFamily: "var(--font-serif)" }}
           >
             Banaras Hindu
             <br />
             University
           </h1>
-          <p className="text-lg text-white/70 mb-8">Capital of Knowledge</p>
+          <p className="text-lg text-white/90 mb-8 text-[20px]">Capital of Knowledge</p>
 
           <div className="space-y-4 text-white/80">
             <div className="flex items-center gap-3">
@@ -386,13 +390,12 @@ export default function LoginPage() {
                   return (
                     <React.Fragment key={p}>
                       <div
-                        className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold transition-all duration-300 ${
-                          isCurrent
-                            ? "bg-white text-primary scale-110"
-                            : isActive
-                              ? "bg-white/40 text-white"
-                              : "bg-white/15 text-white/40"
-                        }`}
+                        className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold transition-all duration-300 ${isCurrent
+                          ? "bg-white text-primary scale-110"
+                          : isActive
+                            ? "bg-white/40 text-white"
+                            : "bg-white/15 text-white/40"
+                          }`}
                       >
                         {isActive && !isCurrent ? (
                           <span className="material-symbols-rounded text-[16px]">check</span>
@@ -402,9 +405,8 @@ export default function LoginPage() {
                       </div>
                       {i < 2 && (
                         <div
-                          className={`h-0.5 w-8 rounded transition-all duration-300 ${
-                            isActive ? "bg-white/60" : "bg-white/15"
-                          }`}
+                          className={`h-0.5 w-8 rounded transition-all duration-300 ${isActive ? "bg-white/60" : "bg-white/15"
+                            }`}
                         />
                       )}
                     </React.Fragment>
@@ -420,8 +422,17 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right Panel: Forms ── */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-background">
+      <div className="flex-1 flex items-center justify-center p-8 bg-background relative overflow-hidden">
+        {/* logo watermark */}
+        <Image
+          src="/BHUlogo.png"
+          alt=""
+          width={850}
+          height={800}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[750px] h-[850px] object-contain opacity-[0.4] pointer-events-none select-none"
+        />
         <div className="w-full max-w-md animate-fade-in">
+
           {/* Mobile branding */}
           <div className="lg:hidden flex items-center gap-3 mb-8">
             <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
@@ -442,12 +453,12 @@ export default function LoginPage() {
             <div className="animate-fade-in" key="login">
               <div className="mb-8">
                 <h2
-                  className="text-2xl font-bold text-foreground mb-2"
+                  className="text-2xl font-bold text-foreground mb-2 text-[46px]"
                   style={{ fontFamily: "var(--font-serif)" }}
                 >
                   Welcome back
                 </h2>
-                <p className="text-sm text-outline">
+                <p className="text-sm text-outline text-[18px]">
                   Sign in with your alternate email to access the portal
                 </p>
               </div>
@@ -474,7 +485,7 @@ export default function LoginPage() {
                 />
 
                 {/* Cloudflare Turnstile CAPTCHA */}
-                <div className="flex justify-center">
+                <div className="flex justify-center opacity-[0.6]">
                   <Turnstile
                     siteKey={TURNSTILE_SITE_KEY}
                     onSuccess={(token) => setCaptchaToken(token)}

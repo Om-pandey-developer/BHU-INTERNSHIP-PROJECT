@@ -6,23 +6,25 @@
    ═══════════════════════════════════════════════════════ */
 
 :root {
+
   /* ── Brand Colors ── */
-  --background: #FCF9F8;
-  --foreground: #1C1B1F;
-  --primary: #6750A4;
+  --background: #e04612;
+  --foreground: #111110;
+  --primary: #3224f2;
   --primary-light: #7F67BE;
-  --primary-dark: #4F378B;
+  --primary-dark: #488b37;
   --primary-container: #EADDFF;
   --on-primary: #FFFFFF;
   --on-primary-container: #21005D;
-  --secondary: #625B71;
+  --secondary: #66de26;
   --secondary-container: #E8DEF8;
-  --tertiary: #7D5260;
+  --tertiary: #e30851;
   --tertiary-container: #FFD8E4;
-  --surface: #FFFBFE;
-  --surface-variant: #E7E0EC;
-  --outline: #79747E;
-  --outline-variant: #CAC4D0;
+  --surface: #f8f8f5;
+  --surface-variant: #ffffff;
+  --outline: #adadad;
+  /*register page */
+  --outline-variant: #8842cf;
   --error: #B3261E;
   --error-container: #F9DEDC;
   --success: #1B873E;
@@ -31,9 +33,9 @@
   --warning-container: #FFF3D0;
 
   /* ── Elevation shadows ── */
-  --shadow-1: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
-  --shadow-2: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
-  --shadow-3: 0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05);
+  --shadow-1: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-2: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-3: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
 
   /* ── Spacing ── */
   --radius: 8px;
@@ -43,7 +45,7 @@
 }
 
 @theme inline {
-  --color-background: var(--background);
+  --video-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-light: var(--primary-light);
@@ -71,7 +73,11 @@
 
 /* ── Base Styles ── */
 body {
-  background: var(--background);
+
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   color: var(--foreground);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.6;
@@ -81,9 +87,11 @@ body {
 ::-webkit-scrollbar {
   width: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--surface-variant);
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--outline);
   border-radius: var(--radius-full);
@@ -91,23 +99,49 @@ body {
 
 /* ── Utility animations ── */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideInRight {
-  from { opacity: 0; transform: translateX(16px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .animate-fade-in {
@@ -127,4 +161,52 @@ body {
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius);
+}
+
+/* ═══════════════════════════════════════════════════════
+   PAGE-SPECIFIC STYLES
+   Use these classes on the main wrapper of each page to 
+   apply different backgrounds, colors, and layouts.
+   ═══════════════════════════════════════════════════════ */
+
+/* ── 1. Home Page Styles ── */
+/* Add className="page-home" to your Home page container */
+.page-home {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #172554 70%, #0c0a1d 100%);
+  color: #ffffff;
+}
+
+.page-home .video-bg {
+  /* Styling for video background specifically on Home page */
+  /* opacity: 0.8; */
+}
+
+/* ── 2. Login Page Styles ── */
+/* Add className="page-login" to your Login page container */
+.page-login {
+  /* Example: Change colors specifically for Login */
+  /* --background: #1e1e1e; */
+  /* --foreground: #ffffff; */
+  /* background-image: url('/LoginBG.jpg'); */
+}
+
+/* ── 3. Register Page Styles ── */
+/* Add className="page-register" to your Register page container */
+.page-register {
+  /* Example: Add a gradient background for Register */
+  /* background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%); */
+}
+
+/* ── 4. Dashboard Styles ── */
+/* Add className="page-dashboard" to your Dashboard container */
+.page-dashboard {
+  /* Example: Solid clean background for Dashboard */
+  /* background-color: #f3f4f6; */
+}
+
+/* ── Global Header & Footer Overrides ── */
+/* If you want different headers/footers on specific pages */
+.page-login .site-header,
+.page-register .site-header {
+  /* background-color: transparent; */
 }

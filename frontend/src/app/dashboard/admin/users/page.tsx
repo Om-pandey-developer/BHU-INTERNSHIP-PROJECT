@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import api from "@/lib/axios";
 import StatsCard from "@/components/StatsCard";
-import Button from "@/components/Button";
 import Modal from "@/components/Modal";
 
 interface User {

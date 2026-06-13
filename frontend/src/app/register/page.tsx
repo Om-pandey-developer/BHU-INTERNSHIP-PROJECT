@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Turnstile } from "@marsidev/react-turnstile";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/lib/store";
@@ -172,7 +173,7 @@ export default function RegisterPage() {
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          "Failed to send OTP. Please try again."
+        "Failed to send OTP. Please try again."
       );
     } finally {
       setOtpSending(false);
@@ -228,7 +229,7 @@ export default function RegisterPage() {
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          "Failed to resend OTP. Please try again."
+        "Failed to resend OTP. Please try again."
       );
     } finally {
       setOtpSending(false);
@@ -264,7 +265,7 @@ export default function RegisterPage() {
     } catch (err: any) {
       setError(
         err.response?.data?.message ||
-          "Registration failed. Please try again."
+        "Registration failed. Please try again."
       );
     } finally {
       setLoading(false);
@@ -300,100 +301,42 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    // ---PAGE CONTAINER---
+    <div className="page-register min-h-screen flex">
       {/* ── Left Panel: Branding ── */}
-      <div className="hidden lg:flex lg:w-5/12 bg-gradient-to-br from-primary via-primary-dark to-on-primary-container relative overflow-hidden">
-        {/* Decorative circles */}
-        <div className="absolute -top-20 -left-20 w-80 h-80 rounded-full bg-white/5" />
-        <div className="absolute bottom-10 right-10 w-64 h-64 rounded-full bg-white/5" />
-        <div className="absolute top-1/4 right-1/3 w-48 h-48 rounded-full bg-white/8" />
+      <div className="hidden lg:flex lg:w-5/11 relative overflow-hidden bg-black">
+        {/* Background image */}
+        <img
+          src="/buldings.jpg"
+          alt="BHU Campus Buildings"
+          className="absolute inset-0 w-full h-full object-cover "
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/5 to-transparent pointer-events-none" />
 
-        <div className="relative z-10 flex flex-col justify-center px-14 text-white">
-          <div className="w-20 h-20 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center mb-8 shadow-lg">
-            <span className="material-symbols-rounded text-[40px]">
-              school
-            </span>
-          </div>
-
-          <h1
-            className="text-4xl font-bold mb-3 leading-tight"
-            style={{ fontFamily: "var(--font-serif)" }}
-          >
-            Create Your
-            <br />
-            Account
-          </h1>
-          <p className="text-lg text-white/70 mb-8">
+        {/* Dark overlay for text readability */}
+        <div className="relative z-10 flex flex-col justify-end px-14 pb-14 text-black">
+          <p className="text-lg text- text-white/95 mb-8 text-[40px] ">
             Join the BHU Email Portal
           </p>
-
-          <div className="space-y-4 text-white/80">
-            <div className="flex items-center gap-3">
-              <span className="material-symbols-rounded text-[20px] text-white/50">
-                schedule
-              </span>
-              <span>Takes less than 2 minutes</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="material-symbols-rounded text-[20px] text-white/50">
-                lock
-              </span>
-              <span>Your data is secured with encryption</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="material-symbols-rounded text-[20px] text-white/50">
-                verified_user
-              </span>
-              <span>Email verified via one-time code</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="material-symbols-rounded text-[20px] text-white/50">
-                tracking_changes
-              </span>
-              <span>Track your application in real time</span>
-            </div>
-          </div>
-
-          {/* Step indicator */}
-          <div className="mt-10 flex items-center gap-3">
-            <div
-              className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold transition-all duration-300 ${
-                phase === "FORM"
-                  ? "bg-white text-primary"
-                  : "bg-white/30 text-white"
-              }`}
-            >
-              1
-            </div>
-            <div
-              className={`h-0.5 w-12 rounded transition-all duration-300 ${
-                phase === "OTP" ? "bg-white" : "bg-white/20"
-              }`}
-            />
-            <div
-              className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold transition-all duration-300 ${
-                phase === "OTP"
-                  ? "bg-white text-primary"
-                  : "bg-white/20 text-white/50"
-              }`}
-            >
-              2
-            </div>
-            <span className="text-sm text-white/60 ml-2">
-              {phase === "FORM" ? "Fill Details" : "Verify Email"}
-            </span>
-          </div>
         </div>
       </div>
 
-      {/* ── Right Panel ── */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-background">
-        <div className="w-full max-w-lg animate-fade-in">
+      {/* ── REGISTRATION FORM PANEL (Right side) ──*/}
+      <div className="flex-1 flex items-center justify-center p-8 bg-background relative overflow-hidden">
+        {/* BHU Logo Watermark */}
+        <Image
+          src="/BHUlogo.png"
+          alt=""
+          width={850}
+          height={800}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[800px] object-contain opacity-[0.4] pointer-events-none select-none"
+        />
+        <div className="w-full max-w-lg animate-fade-in relative z-10">
           {/* Mobile branding */}
           <div className="lg:hidden flex items-center gap-3 mb-8">
             <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
               <span className="material-symbols-rounded text-[24px] text-white">
-                school
+                <Image src="/favicon.ico" alt="BHU Logo" width={40} height={40} className="rounded-xl" />
               </span>
             </div>
             <div>
@@ -413,16 +356,17 @@ export default function RegisterPage() {
             <div className="animate-fade-in">
               <div className="mb-8">
                 <h2
-                  className="text-2xl font-bold text-foreground mb-2"
+                  className="text-2xl font-bold text-foreground mb-2 text-[40px]"
                   style={{ fontFamily: "var(--font-serif)" }}
                 >
                   Create an Account
                 </h2>
-                <p className="text-sm text-outline">
+                <p className="text-sm text-outline text black">
                   Fill in your details to register on the portal
                 </p>
               </div>
 
+              {/* ── 4. REGISTRATION FORM ── */}
               <form onSubmit={handleSendOtp} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
@@ -465,7 +409,7 @@ export default function RegisterPage() {
                     name="departmentId"
                     value={form.departmentId}
                     onChange={handleChange}
-                    className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-3 text-sm text-foreground pl-11 appearance-none hover:border-outline focus:border-primary focus:outline-none transition-colors cursor-pointer"
+                    className="w-full rounded-lg border-2 border-outline-variant bg-white/90 px-4 py-3 text-sm text-black/60 pl-11 appearance-none hover:border-outline focus:border-primary focus:outline-none transition-colors cursor-pointer"
                   >
                     <option value="">Select Department (Optional)</option>
                     {departments.map((dept) => (
@@ -532,7 +476,7 @@ export default function RegisterPage() {
                 </div>
 
                 {/* Cloudflare Turnstile CAPTCHA */}
-                <div className="flex justify-center">
+                <div className="flex justify-center opacity-[0.6]">
                   <Turnstile
                     siteKey={TURNSTILE_SITE_KEY}
                     onSuccess={(token) => setCaptchaToken(token)}
@@ -686,14 +630,14 @@ export default function RegisterPage() {
           )}
 
           {/* Footer */}
-          <div className="mt-10 pt-6 border-t border-outline-variant text-center">
-            <p className="text-xs text-outline">
+          <div className="mt-10 pt-6 border-t border-outline-variant text-center ">
+            <p className="text-xs text-black/50 text-[12px] ">
               © {new Date().getFullYear()} Banaras Hindu University — Computer
               Centre
             </p>
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }
