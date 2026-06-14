@@ -6,11 +6,14 @@ import {
   Body,
   Param,
   Req,
+  Res,
   UseGuards,
   UseInterceptors,
   UploadedFile,
   ParseFilePipe,
   MaxFileSizeValidator,
+  NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -21,7 +24,7 @@ import {
   ApiOperation,
   ApiConsumes,
 } from '@nestjs/swagger';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { ApplicationsService } from './applications.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
@@ -176,5 +179,35 @@ export class ApplicationsController {
   @ApiOperation({ summary: 'Get application details by ID' })
   async findOne(@Param('id') id: string) {
     return this.applicationsService.findById(id);
+  }
+
+  /**
+   * GET /api/v1/applications/:id/photo
+   * Download the uploaded photo for the application.
+   */
+  @Get(':id/photo')
+  @ApiOperation({ summary: 'Get the application photo' })
+  async getPhoto(@Param('id') id: string, @Req() req: Request & { user: { userId: string; role: string; departmentId?: string } }, @Res() res: Response) {
+    const app = await this.applicationsService.findById(id);
+    
+    // Check permissions
+    if (req.user.role === 'APPLICANT' && app.applicantId !== req.user.userId) {
+      throw new ForbiddenException('You can only view your own applications');
+    }
+    if (req.user.role === 'HOD' && app.departmentId !== req.user.departmentId) {
+      throw new ForbiddenException('You can only view applications from your department');
+    }
+
+    if (!app.photoStoragePath) {
+      throw new NotFoundException('Photo not found');
+    }
+
+    try {
+      const { createReadStream } = await import('fs');
+      const fileStream = createReadStream(app.photoStoragePath);
+      fileStream.pipe(res);
+    } catch (error) {
+      throw new NotFoundException('Photo file not found on disk');
+    }
   }
 }

@@ -1,0 +1,47 @@
+# Goal Description
+
+Build a single-page web application to generate the official "BHU Domain E-Mail ID Application Form" as a PDF. The application will use HTML, CSS (Vanilla), JavaScript, and the `html2pdf.js` library. It will include a modern UI for user input and a visually hidden template that exactly matches the official physical form layout for PDF generation.
+
+## User Review Required
+
+> [!IMPORTANT]
+> The current project is a Next.js/Nest.js monorepo. Since you requested a vanilla HTML/CSS/JS application, I propose creating a new standalone folder named `pdf-generator` in the root of your project (`c:\Users\Lenovo\OneDrive\Desktop\BHU INTERNSHIP PROJECT\pdf-generator`). Please let me know if you would prefer these files to be placed somewhere else, such as within the Next.js `public` directory.
+
+## Open Questions
+
+> [!WARNING]
+> 1. Do you have a specific URL or local path for the **BHU Logo** that should be used in the PDF header? If not, I can use a placeholder image for now.
+> 2. Are there any specific form validation requirements (e.g., specific format for Employee ID or Mobile Number)?
+
+## Proposed Changes
+
+### PDF Generator Application
+
+I will create a standalone directory named `pdf-generator` with the following files:
+
+#### [NEW] [index.html](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU INTERNSHIP PROJECT/pdf-generator/index.html)
+- Include the `html2pdf.js` library via CDN.
+- Create a modern, responsive user input form with fields for all required data (Name, Designation, Department, etc.).
+- Create a visually hidden `<div id="pdf-template">` configured with strict dimensions (`210mm` width for A4).
+- Structure the PDF template using a strict `<table>` for the 13 data points, placeholders for the logo and applicant photograph, and standard text for the 8-point undertaking.
+
+#### [NEW] [style.css](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU INTERNSHIP PROJECT/pdf-generator/style.css)
+- Styling for the modern input form (clean layout, padding, responsive design).
+- Strict CSS rules for the `#pdf-template` to ensure accurate printing:
+  - Fixed width `210mm`.
+  - `table` styling with `border-collapse: collapse` and strict borders.
+  - Print-specific media queries to handle page breaks if necessary.
+  - Position the Applicant Photograph box (35x45mm) on the top right.
+
+#### [NEW] [script.js](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU INTERNSHIP PROJECT/pdf-generator/script.js)
+- Logic to capture input data when the "Generate PDF" button is clicked.
+- Logic to bind the captured data into the `#pdf-template` spans/elements.
+- Call `html2pdf()` targeting the `#pdf-template` with high-quality settings (`margin: 10`, `scale: 3`, `a4` format).
+
+## Verification Plan
+
+### Manual Verification
+- Open `index.html` in the browser.
+- Fill out the form with dummy data.
+- Click "Generate PDF" and verify that a high-quality A4 PDF is downloaded.
+- Inspect the PDF to ensure the layout strictly matches the official document (tables, borders, undertaking text, and dynamic footer).

@@ -699,7 +699,8 @@ export default function NewApplicationPage() {
                   generateApplicationPdf(previewData, {
                     firstName: user?.firstName || "",
                     lastName: user?.lastName || "",
-                  });
+                    email: user?.email || "",
+                  }, photoPreview);
                 }}
               >
                 Download Preview
@@ -743,7 +744,8 @@ export default function NewApplicationPage() {
                 generateApplicationPdf(submittedApp, {
                   firstName: user?.firstName || "",
                   lastName: user?.lastName || "",
-                });
+                  email: user?.email || "",
+                }, photoPreview);
               }}
             >
               Download Form

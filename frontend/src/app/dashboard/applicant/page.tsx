@@ -7,6 +7,7 @@ import Button from "@/components/Button";
 import Modal from "@/components/Modal";
 import Timeline, { buildTimelineSteps } from "@/components/Timeline";
 import { generateApplicationPdf } from "@/lib/pdfGenerator";
+import { useAuthStore } from "@/lib/store";
 
 interface Application {
   id: string;
@@ -37,6 +38,7 @@ export default function ApplicantDashboard() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const { user } = useAuthStore();
 
   useEffect(() => {
     async function fetchApplications() {
@@ -277,7 +279,24 @@ export default function ApplicantDashboard() {
                 variant="outlined"
                 icon="download"
                 size="md"
-                onClick={() => generateApplicationPdf(selectedApp)}
+                onClick={async () => {
+                  let photoDataUrl = null;
+                  try {
+                    const res = await api.get(`/applications/${selectedApp.id}/photo`, { responseType: 'blob' });
+                    photoDataUrl = await new Promise<string>((resolve) => {
+                      const reader = new FileReader();
+                      reader.onloadend = () => resolve(reader.result as string);
+                      reader.readAsDataURL(res.data);
+                    });
+                  } catch (e) {
+                    console.error("Failed to load photo", e);
+                  }
+                  generateApplicationPdf(selectedApp, {
+                    firstName: user?.firstName || "",
+                    lastName: user?.lastName || "",
+                    email: user?.email || "",
+                  }, photoDataUrl);
+                }}
               >
                 Download PDF
               </Button>

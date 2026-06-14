@@ -1,0 +1,899 @@
+/* ============================================================
+   BHU Email PDF Generator — Style Sheet
+   ============================================================ */
+
+/* === CSS Custom Properties === */
+:root {
+    --primary: #6750A4;
+    --primary-light: #7F67BE;
+    --primary-dark: #4F378B;
+    --primary-container: #EADDFF;
+    --on-primary: #FFFFFF;
+    --on-primary-container: #21005D;
+
+    --secondary: #625B71;
+    --secondary-container: #E8DEF8;
+
+    --bg: #0F0D15;
+    --bg-card: rgba(30, 27, 40, 0.85);
+    --bg-card-solid: #1E1B28;
+    --surface: #1A1726;
+    --surface-variant: #2D2840;
+    --surface-hover: #363050;
+
+    --outline: #938F99;
+    --outline-variant: #49454F;
+
+    --text-primary: #E6E0E9;
+    --text-secondary: #CAC4D0;
+    --text-muted: #938F99;
+
+    --error: #F2B8B5;
+    --error-container: #8C1D18;
+    --success: #7DD99B;
+    --success-container: #1B5E35;
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3);
+    --shadow-lg: 0 10px 30px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.3);
+
+    --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* === Reset === */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* === App Container === */
+#app-container {
+    position: relative;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+}
+
+/* === Decorative Background Glows === */
+.bg-glow {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.5;
+}
+
+.bg-glow-1 {
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(103,80,164,0.35) 0%, transparent 70%);
+    top: -100px;
+    left: -150px;
+    animation: float1 12s ease-in-out infinite;
+}
+
+.bg-glow-2 {
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(125,82,96,0.25) 0%, transparent 70%);
+    top: 40%;
+    right: -120px;
+    animation: float2 15s ease-in-out infinite;
+}
+
+.bg-glow-3 {
+    width: 350px;
+    height: 350px;
+    background: radial-gradient(circle, rgba(79,55,139,0.3) 0%, transparent 70%);
+    bottom: -50px;
+    left: 30%;
+    animation: float3 18s ease-in-out infinite;
+}
+
+@keyframes float1 {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(40px, 30px); }
+}
+@keyframes float2 {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(-30px, -40px); }
+}
+@keyframes float3 {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(20px, -25px); }
+}
+
+/* === Header === */
+#app-header {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 36px;
+    animation: fadeInDown 0.6s ease-out;
+}
+
+.header-logo-img {
+    width: 80px;
+    height: auto;
+    border-radius: var(--radius-md);
+    background: rgba(255,255,255,0.1);
+    padding: 6px;
+    backdrop-filter: blur(8px);
+}
+
+.header-text h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary-container), var(--primary-light), #D0BCFF);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+}
+
+.header-text p {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-top: 4px;
+}
+
+/* === Form Card === */
+#form-card {
+    position: relative;
+    z-index: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--radius-xl);
+    padding: 36px 32px;
+    backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-lg);
+    animation: fadeInUp 0.7s ease-out;
+}
+
+/* === Form Sections === */
+.form-section {
+    margin-bottom: 32px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--outline-variant);
+}
+
+.form-section:last-of-type {
+    border-bottom: none;
+    margin-bottom: 16px;
+    padding-bottom: 0;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.section-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: var(--on-primary);
+    border-radius: var(--radius-sm);
+    font-size: 20px;
+}
+
+.section-header h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* === Form Rows & Groups === */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.form-row.three-col {
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+.form-row:last-child {
+    margin-bottom: 0;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: 0.01em;
+}
+
+.req {
+    color: var(--error);
+}
+
+/* === Input & Select Wrappers === */
+.input-wrapper,
+.select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon {
+    position: absolute;
+    left: 12px;
+    font-size: 20px;
+    color: var(--text-muted);
+    pointer-events: none;
+    transition: color var(--transition);
+}
+
+.input-wrapper input,
+.select-wrapper select {
+    width: 100%;
+    padding: 11px 14px 11px 42px;
+    background: var(--surface);
+    border: 2px solid var(--outline-variant);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.875rem;
+    transition: all var(--transition);
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.select-wrapper select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%23938F99' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+}
+
+.input-wrapper input:hover,
+.select-wrapper select:hover {
+    border-color: var(--outline);
+}
+
+.input-wrapper input:focus,
+.select-wrapper select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(103, 80, 164, 0.2);
+}
+
+.input-wrapper input:focus + .input-icon,
+.input-wrapper:focus-within .input-icon,
+.select-wrapper:focus-within .input-icon {
+    color: var(--primary-light);
+}
+
+.input-wrapper input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+/* === Photo Upload === */
+.photo-upload-area {
+    width: 180px;
+    height: 220px;
+    border: 2px dashed var(--outline-variant);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition);
+    overflow: hidden;
+    position: relative;
+}
+
+.photo-upload-area:hover {
+    border-color: var(--primary);
+    background: rgba(103, 80, 164, 0.08);
+}
+
+.photo-placeholder {
+    text-align: center;
+    padding: 16px;
+}
+
+.photo-icon {
+    font-size: 40px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.photo-placeholder p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.photo-hint {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.photo-preview {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.photo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+}
+
+.remove-photo-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.6);
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background var(--transition);
+}
+
+.remove-photo-btn:hover {
+    background: var(--error-container);
+}
+
+.remove-photo-btn .material-symbols-rounded {
+    font-size: 18px;
+}
+
+/* === Buttons === */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--outline-variant);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border-radius: var(--radius-sm);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all var(--transition);
+    letter-spacing: 0.02em;
+}
+
+.btn .material-symbols-rounded {
+    font-size: 20px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    color: var(--on-primary);
+    box-shadow: 0 4px 16px rgba(103, 80, 164, 0.35);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--primary-light), var(--primary));
+    box-shadow: 0 6px 24px rgba(103, 80, 164, 0.5);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-outline {
+    background: transparent;
+    color: var(--primary-light);
+    border: 2px solid var(--primary);
+}
+
+.btn-outline:hover {
+    background: rgba(103, 80, 164, 0.12);
+    border-color: var(--primary-light);
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* === Toast === */
+.toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--success-container);
+    color: var(--success);
+    padding: 14px 24px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    box-shadow: var(--shadow-lg);
+    z-index: 9999;
+    animation: toastIn 0.4s ease-out;
+}
+
+.toast-icon {
+    font-size: 22px;
+}
+
+/* === Preview Modal === */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(6px);
+    z-index: 5000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content {
+    background: var(--bg-card-solid);
+    border: 1px solid var(--outline-variant);
+    border-radius: var(--radius-xl);
+    width: 95%;
+    max-width: 860px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow-lg);
+    animation: scaleIn 0.3s ease-out;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--outline-variant);
+}
+
+.modal-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.modal-close-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--surface-variant);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition);
+}
+
+.modal-close-btn:hover {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+}
+
+.modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    justify-content: center;
+}
+
+.modal-body #pdf-template {
+    position: static !important;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid var(--outline-variant);
+}
+
+/* === Footer === */
+#app-footer {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    padding: 32px 0 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+
+/* ============================================================
+   PDF TEMPLATE STYLES — STRICT TABLE-BASED LAYOUT
+   ============================================================ */
+
+#pdf-template {
+    width: 210mm;
+    min-height: 297mm;
+    background: #FFFFFF;
+    color: #000000;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 12px;
+    line-height: 1.4;
+    padding: 10mm 12mm;
+    box-sizing: border-box;
+}
+
+/* --- Header --- */
+.pdf-header-table {
+    width: 100%;
+    border: none;
+    border-collapse: collapse;
+    margin-bottom: 6px;
+}
+
+.pdf-header-table td {
+    vertical-align: middle;
+    border: none;
+    padding: 0;
+}
+
+.pdf-logo-cell {
+    width: 260px;
+    padding-right: 0;
+}
+
+.pdf-logo-img {
+    width: 250px;
+    height: auto;
+}
+
+.pdf-title-cell {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.pdf-cc-title {
+    font-size: 22px;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+}
+
+.pdf-photo-cell {
+    width: 120px;
+    vertical-align: top;
+}
+
+.pdf-photo-box {
+    width: 105px;
+    height: 130px;
+    border: 1.5px solid #000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin-left: auto;
+    position: relative;
+    overflow: hidden;
+}
+
+.pdf-photo-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.pdf-photo-box img[src=""],
+.pdf-photo-box img:not([src]) {
+    display: none !important;
+}
+
+.pdf-photo-label {
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.pdf-photo-hint {
+    font-size: 8px;
+    font-style: italic;
+    color: #555;
+}
+
+.pdf-sub-header {
+    padding-top: 2px;
+}
+
+.pdf-institution-line {
+    font-size: 8px;
+    letter-spacing: 0.5px;
+    color: #333;
+    text-transform: uppercase;
+}
+
+/* --- Form Title --- */
+.pdf-form-title {
+    text-align: center;
+    font-size: 15px;
+    font-weight: bold;
+    margin: 12px 0 10px;
+    padding: 4px 0;
+}
+
+/* --- Data Table --- */
+.pdf-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 8px;
+}
+
+.pdf-data-table td {
+    border: 1px solid #000;
+    padding: 5px 8px;
+    vertical-align: top;
+    font-size: 11px;
+}
+
+.pdf-field-label {
+    width: 25%;
+    font-size: 11px;
+}
+
+.pdf-field-value {
+    width: 25%;
+    font-size: 11px;
+    min-height: 22px;
+}
+
+.pdf-email-choice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #000;
+    padding: 4px 8px;
+}
+
+.pdf-choice-num {
+    font-size: 11px;
+    font-weight: bold;
+    min-width: 24px;
+}
+
+.pdf-choice-val {
+    font-size: 11px;
+    flex: 1;
+}
+
+/* --- Undertaking --- */
+.pdf-undertaking {
+    margin: 8px 0;
+}
+
+.pdf-undertaking-title {
+    font-size: 12px;
+    margin-bottom: 3px;
+}
+
+.pdf-undertaking-table {
+    width: 100%;
+    border: none;
+    border-collapse: collapse;
+}
+
+.pdf-undertaking-table td {
+    border: none;
+    padding: 2px 4px;
+    font-size: 10px;
+    vertical-align: top;
+    line-height: 1.4;
+}
+
+.ut-num {
+    width: 30px;
+    font-weight: bold;
+    text-align: right;
+    padding-right: 8px !important;
+}
+
+.pdf-ut-list {
+    margin: 2px 0 2px 20px;
+    padding: 0;
+    list-style-type: square;
+}
+
+.pdf-ut-list li {
+    margin-bottom: 1px;
+}
+
+/* --- Signature Blocks --- */
+.pdf-signature-block {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 12px;
+    padding: 0 4px;
+}
+
+.pdf-sig-left p,
+.pdf-sig-right p {
+    font-size: 11px;
+    margin-bottom: 4px;
+}
+
+.pdf-sig-right {
+    text-align: right;
+}
+
+/* --- Declaration --- */
+.pdf-declaration {
+    margin-top: 16px;
+    padding: 0 4px;
+}
+
+.pdf-declaration-title {
+    text-align: center;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.pdf-declaration-text {
+    font-size: 11px;
+    line-height: 1.8;
+}
+
+.pdf-underline {
+    display: inline-block;
+    min-width: 180px;
+    border-bottom: 1px solid #000;
+    padding: 0 4px;
+    font-weight: normal;
+}
+
+/* --- Note --- */
+.pdf-note {
+    margin-top: 18px;
+    padding: 0 4px;
+}
+
+.pdf-note p {
+    font-size: 9.5px;
+    line-height: 1.5;
+}
+
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes toastIn {
+    from { opacity: 0; transform: translateY(20px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes toastOut {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(20px) scale(0.95); }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+    #app-container {
+        padding: 20px 16px 32px;
+    }
+
+    #form-card {
+        padding: 24px 18px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .form-row.three-col {
+        grid-template-columns: 1fr;
+    }
+
+    #app-header {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .header-text h1 {
+        font-size: 1.5rem;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .btn {
+        justify-content: center;
+    }
+
+    .modal-content {
+        width: 98%;
+        max-height: 95vh;
+    }
+}

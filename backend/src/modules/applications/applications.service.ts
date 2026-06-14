@@ -89,7 +89,17 @@ export class ApplicationsService {
   async findByApplicant(applicantId: string) {
     return this.prisma.application.findMany({
       where: { applicantId },
-      include: { department: true },
+      include: { 
+        department: true,
+        applicant: {
+          select: {
+            id: true,
+            alternateEmail: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Generate official BHU Domain E-Mail ID Application Form as a downloadable PDF.">
+    <title>BHU Email ID Application — PDF Generator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ===== MAIN UI: User Input Form ===== -->
+    <div id="app-container">
+        <!-- Decorative BG elements -->
+        <div class="bg-glow bg-glow-1"></div>
+        <div class="bg-glow bg-glow-2"></div>
+        <div class="bg-glow bg-glow-3"></div>
+
+        <!-- Header -->
+        <header id="app-header">
+            <div class="header-logo">
+                <img src="BHUlogo.png" alt="BHU Logo" class="header-logo-img">
+            </div>
+            <div class="header-text">
+                <h1>BHU Email ID Application</h1>
+                <p>Generate your official Domain E-Mail ID Application Form</p>
+            </div>
+        </header>
+
+        <!-- Form Card -->
+        <main id="form-card">
+            <form id="application-form" autocomplete="off">
+
+                <!-- Section: Category -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <span class="material-symbols-rounded section-icon">category</span>
+                        <h2>Application Category</h2>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="staffCategory">Staff Category <span class="req">*</span></label>
+                            <div class="select-wrapper">
+                                <span class="material-symbols-rounded input-icon">badge</span>
+                                <select id="staffCategory" required>
+                                    <option value="" disabled selected>Select category…</option>
+                                    <option value="Teaching Staff">Teaching Staff</option>
+                                    <option value="Group-A Officer">Group-A Officer</option>
+                                    <option value="Non-Teaching Staff">Non-Teaching Staff</option>
+                                    <option value="PhD/PG Student">PhD / PG Student</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Personal Details -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <span class="material-symbols-rounded section-icon">person</span>
+                        <h2>Personal Details</h2>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="applicantName">1. Name of the Applicant <span class="req">*</span></label>
+                            <div class="input-wrapper">
+                                <span class="material-symbols-rounded input-icon">person</span>
+                                <input type="text" id="applicantName" placeholder="Full Name" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="designation">2. Designation <span class="req">*</span></label>
+                            <div class="input-wrapper">
+                                <span class="material-symbols-rounded input-icon">work</span>
+                                <input type="text" id="designation" placeholder="e.g. Professor, Clerk" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="department">3. Department <span class="req">*</span></label>
+                            <div class="input-wrapper">
+                                <span class="material-symbols-rounded input-icon">apartment</span>
+                                <input type="text" id="department" placeholder="e.g. Computer Science" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="dateOfAppointment">4. Date of Appointment</label>
+                            <div class="input-wrapper">
+                                <span class="material-symbols-rounded input-icon">calendar_month</span>
+                                <input type="date" id="dateOfAppointment">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="faculty">5. Faculty/Institute/Centre</label>
+                            <div class="input-wrapper">
+                                <span class="material-symbols-rounded input-icon">school</span>
+                                <input type="text" id="faculty" placeholder="e.g. Faculty of Science">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="employeeId">6. Employee ID</label>
+                            <div class="input-wrapper">
+                                <span class="material-symbols-rounded input-icon">badge</span>
+                                <input type="text" id="employeeId" placeholder="Employee ID">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="dob">7. Date of Birth</label>
+                            <div class="input-wrapper">
+                                <span class="material-symbols-rounded input-icon">cake</span>
+                                <input type="date" id="dob">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="typeOfEmployment">8. Type of Employment</label>
+                            <div class="select-wrapper">
+                                <span class="material-symbols-rounded input-icon">contract</span>
+                                <select id="typeOfEmployment">
+                                    <option value="" disabled selected>Select…</option>
+                                    <option value="Permanent">Permanent</option>
+                                    <option value="Temporary">Temporary</option>
+                                    <option value="Contractual">Contractual</option>
+                                    <option value="Ad-hoc">Ad-hoc</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="nationality">9. Nationality</label>
+                            <div class="input-wrapper">
+                                <span class="material-symbols-rounded input-icon">flag</span>
+                                <input type="text" id="nationality" placeholder="e.g. Indian" value="Indian">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="dateOfRetirement">10. Date of Retirement</label>
+                            <div class="input-wrapper">
+                                <span class="material-symbols-rounded input-icon">event_busy</span>
+                                <input type="date" id="dateOfRetirement">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Email Choices -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <span class="material-symbols-rounded section-icon">mail</span>
+                        <h2>Email ID Choices & Contact</h2>
+                    </div>
+                    <div class="form-row three-col">
+                        <div class="form-group">
+                            <label for="emailChoice1">11. Email Choice — 1st <span class="req">*</span></label>
+                            <div class="input-wrapper">
+                                <span class="material-symbols-rounded input-icon">looks_one</span>
+                                <input type="text" id="emailChoice1" placeholder="firstname.lastname" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="emailChoice2">Email Choice — 2nd</label>
+                            <div class="input-wrapper">
+                                <span class="material-symbols-rounded input-icon">looks_two</span>
+                                <input type="text" id="emailChoice2" placeholder="f.lastname">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="emailChoice3">Email Choice — 3rd</label>
+                            <div class="input-wrapper">
+                                <span class="material-symbols-rounded input-icon">looks_3</span>
+                                <input type="text" id="emailChoice3" placeholder="lastname.f">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="mobileNo">12. Mobile No <span class="req">*</span></label>
+                            <div class="input-wrapper">
+                                <span class="material-symbols-rounded input-icon">phone</span>
+                                <input type="tel" id="mobileNo" placeholder="e.g. 9876543210" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="alternateEmail">13. Alternate Email Id</label>
+                            <div class="input-wrapper">
+                                <span class="material-symbols-rounded input-icon">alternate_email</span>
+                                <input type="email" id="alternateEmail" placeholder="your.email@gmail.com">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Applicant Photo -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <span class="material-symbols-rounded section-icon">photo_camera</span>
+                        <h2>Applicant Photograph</h2>
+                    </div>
+                    <div class="photo-upload-area" id="photoUploadArea">
+                        <input type="file" id="photoInput" accept="image/png, image/jpeg" hidden>
+                        <div id="photoPlaceholder" class="photo-placeholder">
+                            <span class="material-symbols-rounded photo-icon">add_photo_alternate</span>
+                            <p>Click to upload passport photo</p>
+                            <span class="photo-hint">JPEG or PNG, max 2MB</span>
+                        </div>
+                        <div id="photoPreview" class="photo-preview" style="display:none;">
+                            <img id="photoPreviewImg" alt="Preview">
+                            <button type="button" id="removePhotoBtn" class="remove-photo-btn" title="Remove photo">
+                                <span class="material-symbols-rounded">close</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Generate Button -->
+                <div class="form-actions">
+                    <button type="button" id="previewBtn" class="btn btn-outline">
+                        <span class="material-symbols-rounded">visibility</span>
+                        Preview Form
+                    </button>
+                    <button type="submit" id="generateBtn" class="btn btn-primary">
+                        <span class="material-symbols-rounded">picture_as_pdf</span>
+                        Generate PDF
+                    </button>
+                </div>
+
+            </form>
+        </main>
+
+        <!-- Footer -->
+        <footer id="app-footer">
+            <p>© 2026 Banaras Hindu University — Computer Centre</p>
+        </footer>
+    </div>
+
+    <!-- ===== PREVIEW MODAL ===== -->
+    <div id="previewModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Form Preview</h2>
+                <button type="button" id="closePreview" class="modal-close-btn">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div class="modal-body" id="previewModalBody">
+                <!-- Clone of pdf-template will be injected here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="closePreviewBtn" class="btn btn-outline">Close</button>
+                <button type="button" id="downloadFromPreview" class="btn btn-primary">
+                    <span class="material-symbols-rounded">download</span>
+                    Download PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ===== HIDDEN PDF TEMPLATE ===== -->
+    <div id="pdf-template-wrapper" style="position:absolute; left:-9999px; top:0;">
+        <div id="pdf-template">
+
+            <!-- HEADER -->
+            <table class="pdf-header-table">
+                <tr>
+                    <td class="pdf-logo-cell">
+                        <img src="BHUlogo.png" alt="BHU Logo" class="pdf-logo-img">
+                    </td>
+                    <td class="pdf-title-cell">
+                        <span class="pdf-cc-title">COMPUTER CENTRE</span>
+                    </td>
+                    <td class="pdf-photo-cell" rowspan="2">
+                        <div class="pdf-photo-box">
+                            <img id="pdfPhoto" src="" alt="" style="display:none;">
+                            <span class="pdf-photo-label">Applicant<br>Photograph</span>
+                            <span class="pdf-photo-hint">Photo must be<br>certified by Head<br>of Department</span>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" class="pdf-sub-header">
+                        <span class="pdf-institution-line">AN INSTITUTION OF NATIONAL IMPORTANCE ESTABLISHED BY AN ACT OF PARLIAMENT</span>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- FORM TITLE -->
+            <p class="pdf-form-title">Application Form of BHU Domain E-Mail ID: <span id="pdfCategory">Teaching Staff</span></p>
+
+            <!-- DATA TABLE -->
+            <table class="pdf-data-table">
+                <tr>
+                    <td class="pdf-field-label"><b>1. Name of the Applicant</b></td>
+                    <td class="pdf-field-value" id="pdfName"></td>
+                    <td class="pdf-field-label"><b>2. Designation</b></td>
+                    <td class="pdf-field-value" id="pdfDesignation"></td>
+                </tr>
+                <tr>
+                    <td class="pdf-field-label"><b>3. Department</b></td>
+                    <td class="pdf-field-value" id="pdfDepartment"></td>
+                    <td class="pdf-field-label"><b>4. Date of Appointment</b></td>
+                    <td class="pdf-field-value" id="pdfDateOfAppointment"></td>
+                </tr>
+                <tr>
+                    <td class="pdf-field-label"><b>5. Faculty/Institute/Centre</b></td>
+                    <td class="pdf-field-value" id="pdfFaculty"></td>
+                    <td class="pdf-field-label"><b>6. Employee ID</b></td>
+                    <td class="pdf-field-value" id="pdfEmployeeId"></td>
+                </tr>
+                <tr>
+                    <td class="pdf-field-label"><b>7. Date of Birth</b></td>
+                    <td class="pdf-field-value" id="pdfDob"></td>
+                    <td class="pdf-field-label"><b>8. Type of Employment</b></td>
+                    <td class="pdf-field-value" id="pdfEmploymentType"></td>
+                </tr>
+                <tr>
+                    <td class="pdf-field-label"><b>9. Nationality</b></td>
+                    <td class="pdf-field-value" id="pdfNationality"></td>
+                    <td class="pdf-field-label"><b>10. Date of Retirement</b></td>
+                    <td class="pdf-field-value" id="pdfRetirement"></td>
+                </tr>
+
+                <!-- Row for Email Choices + Mobile + Alternate Email -->
+                <tr>
+                    <td class="pdf-field-label" rowspan="4">
+                        <b>11. Choice of Email Id</b><br>
+                        <span style="font-size:9px;">[Default E-mail Id Name of the applicant (Full Name/Short form)]</span>
+                    </td>
+                    <td class="pdf-field-label" style="text-align:center;"><b>Choices</b></td>
+                    <td class="pdf-field-label"><b>12. Mobile No</b></td>
+                    <td class="pdf-field-value" id="pdfMobile" rowspan="2"></td>
+                </tr>
+                <tr>
+                    <td class="pdf-email-choice">
+                        <span class="pdf-choice-num">1<sup>st</sup></span>
+                        <span class="pdf-choice-val" id="pdfEmail1"></span>
+                    </td>
+                    <td class="pdf-field-label" rowspan="3"><b>13. Alternate E-mail Id :</b><br><span style="font-size:8px;font-style:italic;">(Write in Capital letters only)</span></td>
+                </tr>
+                <tr>
+                    <td class="pdf-email-choice">
+                        <span class="pdf-choice-num">2<sup>nd</sup></span>
+                        <span class="pdf-choice-val" id="pdfEmail2"></span>
+                    </td>
+                    <td class="pdf-field-value" id="pdfAlternateEmail" rowspan="2"></td>
+                </tr>
+                <tr>
+                    <td class="pdf-email-choice">
+                        <span class="pdf-choice-num">3<sup>rd</sup></span>
+                        <span class="pdf-choice-val" id="pdfEmail3"></span>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- UNDERTAKING -->
+            <div class="pdf-undertaking">
+                <p class="pdf-undertaking-title"><b>Undertaking:</b></p>
+                <table class="pdf-undertaking-table">
+                    <tr>
+                        <td class="ut-num">i)</td>
+                        <td>The university email account is intended for official use related to University work and it must be used for academic activities only.</td>
+                    </tr>
+                    <tr>
+                        <td class="ut-num">ii)</td>
+                        <td>All users must check their email accounts regularly for academic, administrative, and official communications. Failure to do so may result in missed important information. All official communication must be made using the( …@bhu.ac.in) E-mail id. Communications sent from any other E-mail ID may not be considered official or valid.</td>
+                    </tr>
+                    <tr>
+                        <td class="ut-num">iii)</td>
+                        <td>
+                            Users are prohibited from using their university email accounts to:
+                            <ul class="pdf-ut-list">
+                                <li>Send harmful software, malware, or viruses.</li>
+                                <li>Misrepresent the identity of the sender.</li>
+                                <li>Engage in the distribution of offensive, illegal, or inappropriate content.</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="ut-num">iv)</td>
+                        <td>Users must take all necessary steps to secure their email accounts, including maintaining password confidentiality and regularly backing up important data. The computer centre (CC) is not responsible for restoring lost data.</td>
+                    </tr>
+                    <tr>
+                        <td class="ut-num">v)</td>
+                        <td>Users should regularly delete unnecessary emails and large attachments to manage mailbox space effectively. Important emails should be archived, and users should take periodic backups.</td>
+                    </tr>
+                    <tr>
+                        <td class="ut-num">vi)</td>
+                        <td>The maximum E-mail size for <b><span id="pdfQuotaLabel">Faculty</span></b> will be <b><span id="pdfQuotaValue">20GB</span></b>.</td>
+                    </tr>
+                    <tr>
+                        <td class="ut-num">vii)</td>
+                        <td>User email accounts will remain active for one year after retirement, after that email account will be deactivated and it may be deleted.</td>
+                    </tr>
+                    <tr>
+                        <td class="ut-num">viii)</td>
+                        <td>University email Policy must be applicable to all E-mail users.</td>
+                    </tr>
+                </table>
+            </div>
+
+            <!-- DATE / PLACE / APPLICANT SIGNATURE -->
+            <div class="pdf-signature-block">
+                <div class="pdf-sig-left">
+                    <p><b>Date:</b>______________________</p>
+                    <p><b>Place:</b>______________________</p>
+                </div>
+                <div class="pdf-sig-right">
+                    <p><b>(Signature of the Applicant)</b></p>
+                </div>
+            </div>
+
+            <!-- DECLARATION BY HOD -->
+            <div class="pdf-declaration">
+                <p class="pdf-declaration-title"><b>Declaration by the Head of the Department</b></p>
+                <p class="pdf-declaration-text">
+                    This is to certify that Prof./Dr./Mr. <span class="pdf-underline" id="pdfDeclName"></span> is working in our Department/
+                    Faculty/Institute/ Centre/Section <span class="pdf-underline" id="pdfDeclDept"></span> as <span class="pdf-underline" id="pdfDeclDesignation"></span> Please issue him/her Email ID
+                    for his/her work.
+                </p>
+            </div>
+
+            <!-- HOD DATE / PLACE / SIGNATURE -->
+            <div class="pdf-signature-block" style="margin-top: 20px;">
+                <div class="pdf-sig-left">
+                    <p><b>Date:</b>______________________</p>
+                    <p><b>Place:</b>______________________</p>
+                </div>
+                <div class="pdf-sig-right">
+                    <p><b>(Signature of the Head of the Department with Seal)</b></p>
+                </div>
+            </div>
+
+            <!-- NOTE -->
+            <div class="pdf-note">
+                <p><b>NOTE:-</b> 1. Kindly submit this form to the Computer Centre duly signed by the appropriate authority and your E-mail ID will be instantly created and will be send to your alternate Email-ID from <b>"GOOGLE WORKSPACE"</b>.</p>
+                <p style="padding-left:38px;">2. After receiving your created Email ID of BHU Domain you have to create your own Password by clicking on <b>"Sign In"</b> Option.</p>
+            </div>
+
+        </div><!-- /#pdf-template -->
+    </div><!-- /#pdf-template-wrapper -->
+
+
+    <!-- ===== TOAST ===== -->
+    <div id="toast" class="toast" style="display:none;">
+        <span class="material-symbols-rounded toast-icon">check_circle</span>
+        <span id="toastMessage">PDF Generated Successfully!</span>
+    </div>
+
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

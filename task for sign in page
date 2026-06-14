@@ -1,0 +1,13 @@
+# Forgot Password + Login CAPTCHA Implementation
+
+## Backend
+- [x] `forgot-password.dto.ts` — Already exists ✓
+- [x] `reset-password.dto.ts` — Already exists ✓
+- [/] `login.dto.ts` — Fix missing imports (`@IsOptional`, `@ApiPropertyOptional`)
+- [/] `auth.service.ts` — Add `resetPassword()` method
+- [/] `auth.controller.ts` — Add `POST /auth/forgot-password` and `POST /auth/reset-password`, update login for CAPTCHA
+- [/] `mail.service.ts` — Add `sendPasswordResetOtp()` method
+- [ ] `otp.service.ts` — Add `generateAndSendPasswordReset()` method
+
+## Frontend
+- [ ] `login/page.tsx` — Full rewrite: 4-phase flow (LOGIN → FORGOT_EMAIL → FORGOT_OTP → RESET_PASSWORD)
