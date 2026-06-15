@@ -95,7 +95,8 @@ const templateCSS = `
 export async function generateApplicationPdf(
   app: ApplicationData,
   userName?: { firstName: string; lastName: string; email?: string },
-  photoDataUrl?: string | null
+  photoDataUrl?: string | null,
+  signatureDataUrl?: string | null
 ) {
   // Dynamically import html2pdf to prevent SSR issues
   const html2pdf = (await import('html2pdf.js')).default;
@@ -143,6 +144,9 @@ export async function generateApplicationPdf(
 
   const label10 = isStudent ? "10. " : "10. Date of Retirement";
   const value10 = isStudent ? "" : retirement;
+
+  const applicantPlace = details.applicantPlace || "______________________";
+  const applicantDate = details.applicantDate ? formatDate(details.applicantDate) : (app.createdAt ? new Date(app.createdAt).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN'));
 
   // Container
   const container = document.createElement('div');
@@ -292,10 +296,13 @@ export async function generateApplicationPdf(
         <!-- DATE / PLACE / APPLICANT SIGNATURE -->
         <div class="pdf-signature-block">
             <div class="pdf-sig-left">
-                <p><b>Date:</b>______________________</p>
-                <p><b>Place:</b>______________________</p>
+                <p><b>Date:</b> ${applicantDate}</p>
+                <p><b>Place:</b> ${applicantPlace}</p>
             </div>
-            <div class="pdf-sig-right">
+            <div class="pdf-sig-right" style="position: relative;">
+                <div style="height: 40px; margin-bottom: 5px; display: flex; justify-content: flex-end;">
+                    ${signatureDataUrl ? `<img src="${signatureDataUrl}" style="max-height: 40px; max-width: 150px; object-fit: contain;">` : ''}
+                </div>
                 <p><b>(Signature of the Applicant)</b></p>
             </div>
         </div>

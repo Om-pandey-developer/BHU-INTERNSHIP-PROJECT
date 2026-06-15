@@ -273,14 +273,20 @@ export default function ApplicantDashboard() {
               </div>
             )}
 
-            {/* Download PDF */}
-            <div className="pt-2 border-t border-outline-variant">
+            {/* Actions */}
+            <div className="pt-4 border-t border-outline-variant flex items-center justify-end gap-3">
               <Button
                 variant="outlined"
+                onClick={() => setSelectedApp(null)}
+              >
+                Close
+              </Button>
+              <Button
                 icon="download"
                 size="md"
                 onClick={async () => {
                   let photoDataUrl = null;
+                  let signatureDataUrl = null;
                   try {
                     const res = await api.get(`/applications/${selectedApp.id}/photo`, { responseType: 'blob' });
                     photoDataUrl = await new Promise<string>((resolve) => {
@@ -291,11 +297,23 @@ export default function ApplicantDashboard() {
                   } catch (e) {
                     console.error("Failed to load photo", e);
                   }
+
+                  try {
+                    const resSig = await api.get(`/applications/${selectedApp.id}/signature`, { responseType: 'blob' });
+                    signatureDataUrl = await new Promise<string>((resolve) => {
+                      const reader = new FileReader();
+                      reader.onloadend = () => resolve(reader.result as string);
+                      reader.readAsDataURL(resSig.data);
+                    });
+                  } catch (e) {
+                    console.error("Failed to load signature", e);
+                  }
+
                   generateApplicationPdf(selectedApp, {
                     firstName: user?.firstName || "",
                     lastName: user?.lastName || "",
                     email: user?.email || "",
-                  }, photoDataUrl);
+                  }, photoDataUrl, signatureDataUrl);
                 }}
               >
                 Download PDF

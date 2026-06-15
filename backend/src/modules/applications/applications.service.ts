@@ -33,6 +33,7 @@ export class ApplicationsService {
     applicantId: string,
     dto: CreateApplicationDto,
     photoPath: string,
+    signaturePath: string,
     ipAddress: string,
   ) {
     // Parse and validate the details JSON
@@ -52,6 +53,7 @@ export class ApplicationsService {
         departmentId: dto.departmentId,
         applicantDetails: parsedDetails as any,
         photoStoragePath: photoPath,
+        signatureStoragePath: signaturePath,
         status: ApplicationStatus.PENDING_HOD,
       },
       include: {

@@ -9,13 +9,13 @@ import {
   Res,
   UseGuards,
   UseInterceptors,
-  UploadedFile,
+  UploadedFiles,
   ParseFilePipe,
   MaxFileSizeValidator,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import {
@@ -49,47 +49,55 @@ export class ApplicationsController {
   @Roles(Role.APPLICANT)
   @UseGuards(RolesGuard)
   @UseInterceptors(
-    FileInterceptor('photo', {
-      storage: diskStorage({
-        destination: process.env.UPLOAD_DIR || './uploads',
-        filename: (req, file, cb) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `photo-${uniqueSuffix}${extname(file.originalname)}`);
+    FileFieldsInterceptor(
+      [
+        { name: 'photo', maxCount: 1 },
+        { name: 'signature', maxCount: 1 },
+      ],
+      {
+        limits: { fileSize: 2 * 1024 * 1024 }, // 2MB limit
+        storage: diskStorage({
+          destination: process.env.UPLOAD_DIR || './uploads',
+          filename: (req, file, cb) => {
+            const uniqueSuffix =
+              Date.now() + '-' + Math.round(Math.random() * 1e9);
+            const prefix = file.fieldname === 'signature' ? 'sig' : 'photo';
+            cb(null, `${prefix}-${uniqueSuffix}${extname(file.originalname)}`);
+          },
+        }),
+        fileFilter: (req, file, cb) => {
+          if (!file.mimetype.match(/\/(jpeg|jpg|png)$/i)) {
+            return cb(
+              new Error('Only JPEG and PNG image files are allowed'),
+              false,
+            );
+          }
+          cb(null, true);
         },
-      }),
-      fileFilter: (req, file, cb) => {
-        if (!file.mimetype.match(/\/(jpeg|jpg|png)$/i)) {
-          return cb(
-            new Error('Only JPEG and PNG image files are allowed'),
-            false,
-          );
-        }
-        cb(null, true);
       },
-    }),
+    ),
   )
   @ApiOperation({ summary: 'Submit a new email account application' })
   @ApiConsumes('multipart/form-data')
   async create(
     @Req() req: Request & { user: { userId: string } },
     @Body() dto: CreateApplicationDto,
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 2 * 1024 * 1024 }), // 2MB
-        ],
-      }),
-    )
-    photo: Express.Multer.File,
+    @UploadedFiles() files: { photo?: Express.Multer.File[], signature?: Express.Multer.File[] },
   ) {
+    const photoFile = files.photo?.[0];
+    const signatureFile = files.signature?.[0];
+    
+    if (!photoFile) throw new NotFoundException('Photo is required');
+    if (!signatureFile) throw new NotFoundException('Signature is required');
+
     const ipAddress =
       (req.headers['x-forwarded-for'] as string) || req.ip || 'unknown';
 
     return this.applicationsService.create(
       req.user.userId,
       dto,
-      photo.path,
+      photoFile.path,
+      signatureFile.path,
       ipAddress,
     );
   }
@@ -208,6 +216,36 @@ export class ApplicationsController {
       fileStream.pipe(res);
     } catch (error) {
       throw new NotFoundException('Photo file not found on disk');
+    }
+  }
+
+  /**
+   * GET /api/v1/applications/:id/signature
+   * Download the uploaded signature for the application.
+   */
+  @Get(':id/signature')
+  @ApiOperation({ summary: 'Get the application signature' })
+  async getSignature(@Param('id') id: string, @Req() req: Request & { user: { userId: string; role: string; departmentId?: string } }, @Res() res: Response) {
+    const app = await this.applicationsService.findById(id);
+    
+    // Check permissions
+    if (req.user.role === 'APPLICANT' && app.applicantId !== req.user.userId) {
+      throw new ForbiddenException('You can only view your own applications');
+    }
+    if (req.user.role === 'HOD' && app.departmentId !== req.user.departmentId) {
+      throw new ForbiddenException('You can only view applications from your department');
+    }
+
+    if (!app.signatureStoragePath) {
+      throw new NotFoundException('Signature not found');
+    }
+
+    try {
+      const { createReadStream } = await import('fs');
+      const fileStream = createReadStream(app.signatureStoragePath);
+      fileStream.pipe(res);
+    } catch (error) {
+      throw new NotFoundException('Signature file not found on disk');
     }
   }
 }

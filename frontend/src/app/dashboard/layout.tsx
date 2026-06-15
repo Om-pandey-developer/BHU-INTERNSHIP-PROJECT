@@ -103,7 +103,7 @@ export default function DashboardLayout({
           Darkens the background when the sidebar is open on mobile devices. */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/30"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -113,9 +113,9 @@ export default function DashboardLayout({
           'w-72 bg-surface' sets the width and distinct surface color. */}
       <aside
         className={`
-          fixed lg:sticky top-0 left-0 z-50 h-screen w-72 bg-surface border-r border-outline-variant
+          fixed top-0 left-0 z-50 h-screen w-72 bg-surface border-r border-outline-variant
           flex flex-col transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
         {/* Sidebar header */}
@@ -205,7 +205,7 @@ export default function DashboardLayout({
         <header className="site-header sticky top-0 z-30 bg-surface/80 backdrop-blur-md border-b border-outline-variant px-6 py-3 flex items-center gap-4">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-1.5 rounded-lg hover:bg-surface-variant transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg hover:bg-surface-variant transition-colors cursor-pointer"
           >
             <span className="material-symbols-rounded text-[24px]">menu</span>
           </button>
