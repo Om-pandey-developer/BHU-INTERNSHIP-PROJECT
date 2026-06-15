@@ -9,7 +9,7 @@ import * as argon2 from 'argon2';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { OtpService } from '../auth/otp.service';
-
+import { Role } from '@prisma/client';
 /**
  * UsersService manages user CRUD operations.
  * Passwords are hashed with Argon2 before storage.
@@ -106,11 +106,12 @@ export class UsersService {
     return safeUser;
   }
 
+
   /**
    * List all users with optional role filtering.
    */
   async findAll(role?: string) {
-    const where = role ? { role: role as any } : {};
+    const where = role ? { role: role as Role } : {};
 
     return this.prisma.user.findMany({
       where,
@@ -127,4 +128,60 @@ export class UsersService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  /**
+   * Upload/update the HOD's signature image path.
+   * Deletes the old file if one existed.
+   */
+  async uploadSignature(userId: string, filePath: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { signatureStoragePath: true },
+    });
+
+    // Delete old signature file if it exists
+    if (user?.signatureStoragePath) {
+      try {
+        const fs = await import('fs');
+        if (fs.existsSync(user.signatureStoragePath)) {
+          fs.unlinkSync(user.signatureStoragePath);
+        }
+      } catch {
+        this.logger.warn(`Failed to delete old signature: ${user.signatureStoragePath}`);
+      }
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { signatureStoragePath: filePath },
+    });
+
+    this.logger.log(`HOD ${userId} uploaded signature: ${filePath}`);
+    return { message: 'Signature uploaded successfully', hasSignature: true };
+  }
+
+  /**
+   * Check whether the HOD has uploaded a signature.
+   */
+  async getSignatureStatus(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { signatureStoragePath: true },
+    });
+
+    return { hasSignature: !!user?.signatureStoragePath };
+  }
+
+  /**
+   * Get the actual file path of the HOD's signature (internal use).
+   */
+  async getSignaturePath(userId: string): Promise<string | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { signatureStoragePath: true },
+    });
+
+    return user?.signatureStoragePath || null;
+  }
 }
+

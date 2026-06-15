@@ -32,6 +32,7 @@ interface Application {
  *
  * Shows all applications pending HOD review for the HOD's department.
  * Supports single approve/reject with remarks, and bulk approve.
+ * Gates approval behind signature upload requirement.
  */
 export default function HodDashboard() {
   const { addToast } = useToastStore();
@@ -43,9 +44,23 @@ export default function HodDashboard() {
   const [actionLoading, setActionLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  // ── Signature status ──
+  const [hasSignature, setHasSignature] = useState<boolean | null>(null);
+
   useEffect(() => {
     fetchQueue();
+    checkSignatureStatus();
   }, []);
+
+  async function checkSignatureStatus() {
+    try {
+      const { data } = await api.get("/users/me/signature");
+      const result = data.success ? data.data : data;
+      setHasSignature(result.hasSignature);
+    } catch {
+      setHasSignature(false);
+    }
+  }
 
   async function fetchQueue() {
     setLoading(true);
@@ -92,7 +107,10 @@ export default function HodDashboard() {
       });
 
       addToast({
-        message: `Application ${selectedApp.trackingId} ${actionType === "approve" ? "approved" : "rejected"}.`,
+        message:
+          actionType === "approve"
+            ? `Application ${selectedApp.trackingId} approved & digitally signed.`
+            : `Application ${selectedApp.trackingId} rejected.`,
         variant: actionType === "approve" ? "success" : "info",
       });
 
@@ -113,6 +131,14 @@ export default function HodDashboard() {
 
   async function handleBulkApprove() {
     if (selectedIds.size === 0) return;
+    if (!hasSignature) {
+      addToast({
+        message: "Please upload your signature in Settings before approving applications.",
+        variant: "warning",
+      });
+      return;
+    }
+
     setActionLoading(true);
 
     let successCount = 0;
@@ -131,7 +157,7 @@ export default function HodDashboard() {
     }
 
     addToast({
-      message: `Bulk action: ${successCount} approved${failCount > 0 ? `, ${failCount} failed` : ""}.`,
+      message: `Bulk action: ${successCount} approved & signed${failCount > 0 ? `, ${failCount} failed` : ""}.`,
       variant: failCount > 0 ? "warning" : "success",
     });
 
@@ -156,6 +182,31 @@ export default function HodDashboard() {
 
   return (
     <div className="animate-fade-in">
+      {/* ── Signature warning banner ── */}
+      {hasSignature === false && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-error/30 bg-error-container/30 px-5 py-4 animate-fade-in">
+          <span className="material-symbols-rounded text-[22px] text-error mt-0.5">
+            warning
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-error">
+              Signature Required
+            </p>
+            <p className="text-xs text-error/80 mt-1">
+              You must upload your digital signature before approving
+              applications. Please visit{" "}
+              <a
+                href="/dashboard/settings"
+                className="underline font-semibold hover:text-error transition-colors"
+              >
+                Settings → Digital Signature
+              </a>{" "}
+              to upload it.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
@@ -181,6 +232,7 @@ export default function HodDashboard() {
               size="sm"
               loading={actionLoading}
               onClick={handleBulkApprove}
+              disabled={!hasSignature}
             >
               Bulk Approve
             </Button>
@@ -269,11 +321,28 @@ export default function HodDashboard() {
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     onClick={() => {
+                      if (!hasSignature) {
+                        addToast({
+                          message:
+                            "Upload your signature in Settings before approving.",
+                          variant: "warning",
+                        });
+                        return;
+                      }
                       setSelectedApp(app);
                       setActionType("approve");
                     }}
-                    className="p-2 rounded-lg bg-success-container hover:bg-success/20 text-success transition-colors cursor-pointer"
-                    title="Approve"
+                    className={`p-2 rounded-lg transition-colors cursor-pointer ${
+                      hasSignature
+                        ? "bg-success-container hover:bg-success/20 text-success"
+                        : "bg-surface-variant text-outline/40 cursor-not-allowed"
+                    }`}
+                    title={
+                      hasSignature
+                        ? "Approve"
+                        : "Upload your signature first"
+                    }
+                    disabled={!hasSignature}
                   >
                     <span className="material-symbols-rounded text-[20px]">
                       check_circle
@@ -334,7 +403,7 @@ export default function HodDashboard() {
                     : "!bg-success hover:!bg-success/90"
                 }
               >
-                {actionType === "approve" ? "Approve" : "Reject"}
+                {actionType === "approve" ? "Approve & Sign" : "Reject"}
               </Button>
             </>
           ) : (
@@ -359,8 +428,19 @@ export default function HodDashboard() {
                 </Button>
                 <Button
                   icon="check_circle"
-                  onClick={() => setActionType("approve")}
+                  onClick={() => {
+                    if (!hasSignature) {
+                      addToast({
+                        message:
+                          "Upload your signature in Settings before approving.",
+                        variant: "warning",
+                      });
+                      return;
+                    }
+                    setActionType("approve");
+                  }}
                   className="!bg-success"
+                  disabled={!hasSignature}
                 >
                   Approve
                 </Button>
@@ -424,6 +504,14 @@ export default function HodDashboard() {
                     : "bg-error-container/20 border-error/20"
                 }`}
               >
+                {actionType === "approve" && (
+                  <div className="flex items-center gap-2 mb-3 text-xs text-success font-medium">
+                    <span className="material-symbols-rounded text-[16px]">
+                      verified
+                    </span>
+                    Your digital signature will be automatically applied
+                  </div>
+                )}
                 <label className="block text-sm font-semibold text-foreground mb-2">
                   Remarks{" "}
                   {actionType === "reject" && (

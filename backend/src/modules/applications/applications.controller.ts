@@ -130,7 +130,7 @@ export class ApplicationsController {
     req: Request & { user: { userId: string; departmentId?: string } },
   ) {
     // departmentId should be resolved from user profile
-    const user = req.user as any;
+    const user = req.user as { userId: string; departmentId: string };
     return this.applicationsService.findForHod(user.departmentId);
   }
 
@@ -151,7 +151,7 @@ export class ApplicationsController {
     },
     @Body() dto: UpdateStatusDto,
   ) {
-    const user = req.user as any;
+    const user = req.user as { userId: string; departmentId: string };
     const ipAddress =
       (req.headers['x-forwarded-for'] as string) || req.ip || 'unknown';
 
@@ -248,4 +248,54 @@ export class ApplicationsController {
       throw new NotFoundException('Signature file not found on disk');
     }
   }
+
+  /**
+   * GET /api/v1/applications/:id/approved-pdf
+   * Download the finalized, digitally signed PDF.
+   * Available to: the applicant (own app), HOD (own department), CC_ADMIN (any).
+   */
+  @Get(':id/approved-pdf')
+  @ApiOperation({ summary: 'Download the approved, digitally signed PDF' })
+  async getApprovedPdf(
+    @Param('id') id: string,
+    @Req() req: Request & { user: { userId: string; role: string; departmentId?: string } },
+    @Res() res: Response,
+  ) {
+    const app = await this.applicationsService.findById(id);
+
+    // Permission checks
+    if (req.user.role === 'APPLICANT' && app.applicantId !== req.user.userId) {
+      throw new ForbiddenException('You can only download your own application PDFs');
+    }
+    if (req.user.role === 'HOD' && app.departmentId !== req.user.departmentId) {
+      throw new ForbiddenException('You can only download PDFs from your department');
+    }
+
+    const pdfPath = (app as unknown as { approvedPdfPath: string | null }).approvedPdfPath;
+
+    if (!pdfPath) {
+      throw new NotFoundException('Approved PDF not yet generated. Application may not be approved yet.');
+    }
+
+    try {
+      const { createReadStream, existsSync } = await import('fs');
+      if (!existsSync(pdfPath)) {
+        throw new NotFoundException('Approved PDF file not found on disk');
+      }
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="${app.trackingId}_Approved.pdf"`,
+      );
+
+      const fileStream = createReadStream(pdfPath);
+      fileStream.pipe(res);
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
+      throw new NotFoundException('Failed to stream PDF file');
+    }
+  }
 }
+
+

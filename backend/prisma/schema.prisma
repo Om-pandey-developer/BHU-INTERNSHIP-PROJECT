@@ -46,6 +46,7 @@ model User {
   firstName      String
   lastName       String
   role           Role          @default(APPLICANT)
+  signatureStoragePath String?   /// Disk path to HOD's uploaded signature image
 
   // Relations
   departmentId   String?
@@ -106,6 +107,8 @@ model Application {
   hod              User?             @relation("HODApprovals", fields: [hodId], references: [id])
   hodRemarks       String?
   hodApprovedAt    DateTime?
+  digitalSignatureHash String?   /// SHA-256 hash for document integrity verification
+  approvedPdfPath      String?   /// Server path to the finalized, signed PDF
 
   /// CC Admin processing
   ccAdminRemarks   String?

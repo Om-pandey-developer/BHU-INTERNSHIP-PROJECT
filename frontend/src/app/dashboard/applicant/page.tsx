@@ -21,6 +21,8 @@ interface Application {
   createdAt: string;
   hodApprovedAt?: string;
   provisionedAt?: string;
+  digitalSignatureHash?: string;
+  approvedPdfPath?: string;
   department?: {
     id: string;
     name: string;
@@ -33,11 +35,13 @@ interface Application {
  *
  * Displays the list of email account applications submitted by the logged-in user.
  * Each row can be expanded to see full details and status timeline.
+ * When HOD-approved, shows digital signature info and server-generated PDF download.
  */
 export default function ApplicantDashboard() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const { user } = useAuthStore();
 
   useEffect(() => {
@@ -53,6 +57,85 @@ export default function ApplicantDashboard() {
     }
     fetchApplications();
   }, []);
+
+  /**
+   * Download the approved PDF from the server (for APPROVED_HOD+ statuses)
+   * or generate a client-side draft PDF (for PENDING_HOD).
+   */
+  async function handleDownloadPdf(app: Application) {
+    setPdfLoading(true);
+
+    try {
+      // If approved → download server-generated PDF with both signatures
+      if (
+        app.approvedPdfPath &&
+        (app.status === "APPROVED_HOD" ||
+          app.status === "PENDING_CC" ||
+          app.status === "PROVISIONED")
+      ) {
+        const response = await api.get(
+          `/applications/${app.id}/approved-pdf`,
+          { responseType: "blob" }
+        );
+
+        const blob = new Blob([response.data], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${app.trackingId}_Approved.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        // Draft PDF — generate client-side (no HOD signature)
+        let photoDataUrl = null;
+        let signatureDataUrl = null;
+
+        try {
+          const res = await api.get(`/applications/${app.id}/photo`, {
+            responseType: "blob",
+          });
+          photoDataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(res.data);
+          });
+        } catch (e) {
+          console.error("Failed to load photo", e);
+        }
+
+        try {
+          const resSig = await api.get(`/applications/${app.id}/signature`, {
+            responseType: "blob",
+          });
+          signatureDataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(resSig.data);
+          });
+        } catch (e) {
+          console.error("Failed to load signature", e);
+        }
+
+        generateApplicationPdf(
+          app,
+          {
+            firstName: user?.firstName || "",
+            lastName: user?.lastName || "",
+            email: user?.email || "",
+          },
+          photoDataUrl,
+          signatureDataUrl
+        );
+      }
+    } catch (e) {
+      console.error("PDF download failed", e);
+      alert("Failed to download PDF. Please try again.");
+    } finally {
+      setPdfLoading(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -186,6 +269,50 @@ export default function ApplicantDashboard() {
               </span>
             </div>
 
+            {/* ── Digitally Signed & Approved Card ── */}
+            {(selectedApp.status === "APPROVED_HOD" ||
+              selectedApp.status === "PENDING_CC" ||
+              selectedApp.status === "PROVISIONED") &&
+              selectedApp.digitalSignatureHash && (
+                <div className="bg-gradient-to-r from-success-container/40 to-primary-container/30 rounded-xl px-5 py-4 border border-success/25 animate-fade-in">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="material-symbols-rounded text-[22px] text-success">
+                      verified
+                    </span>
+                    <p className="text-sm font-bold text-success">
+                      Digitally Signed & Approved by HOD
+                    </p>
+                  </div>
+                  {selectedApp.hodApprovedAt && (
+                    <p className="text-xs text-foreground/70 mb-1">
+                      <span className="font-medium">Approved on:</span>{" "}
+                      {new Date(selectedApp.hodApprovedAt).toLocaleDateString(
+                        "en-IN",
+                        {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        }
+                      )}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 mt-2 bg-surface/60 rounded-lg px-3 py-2">
+                    <span className="material-symbols-rounded text-[14px] text-outline">
+                      fingerprint
+                    </span>
+                    <p className="text-[11px] font-mono text-outline tracking-wider">
+                      Hash:{" "}
+                      {selectedApp.digitalSignatureHash
+                        .substring(0, 24)
+                        .toUpperCase()}
+                      …
+                    </p>
+                  </div>
+                </div>
+              )}
+
             {/* Timeline */}
             <div className="bg-surface-variant/30 rounded-xl p-5">
               <h4 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -282,41 +409,14 @@ export default function ApplicantDashboard() {
                 Close
               </Button>
               <Button
-                icon="download"
+                icon={selectedApp.approvedPdfPath ? "verified" : "download"}
                 size="md"
-                onClick={async () => {
-                  let photoDataUrl = null;
-                  let signatureDataUrl = null;
-                  try {
-                    const res = await api.get(`/applications/${selectedApp.id}/photo`, { responseType: 'blob' });
-                    photoDataUrl = await new Promise<string>((resolve) => {
-                      const reader = new FileReader();
-                      reader.onloadend = () => resolve(reader.result as string);
-                      reader.readAsDataURL(res.data);
-                    });
-                  } catch (e) {
-                    console.error("Failed to load photo", e);
-                  }
-
-                  try {
-                    const resSig = await api.get(`/applications/${selectedApp.id}/signature`, { responseType: 'blob' });
-                    signatureDataUrl = await new Promise<string>((resolve) => {
-                      const reader = new FileReader();
-                      reader.onloadend = () => resolve(reader.result as string);
-                      reader.readAsDataURL(resSig.data);
-                    });
-                  } catch (e) {
-                    console.error("Failed to load signature", e);
-                  }
-
-                  generateApplicationPdf(selectedApp, {
-                    firstName: user?.firstName || "",
-                    lastName: user?.lastName || "",
-                    email: user?.email || "",
-                  }, photoDataUrl, signatureDataUrl);
-                }}
+                loading={pdfLoading}
+                onClick={() => handleDownloadPdf(selectedApp)}
               >
-                Download PDF
+                {selectedApp.approvedPdfPath
+                  ? "Download Signed PDF"
+                  : "Download Draft PDF"}
               </Button>
             </div>
           </div>

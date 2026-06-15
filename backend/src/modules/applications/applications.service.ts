@@ -5,10 +5,12 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
+import { createHash } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { PdfService } from '../pdf/pdf.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
-import { ApplicationStatus } from '@prisma/client';
+import { ApplicationStatus, Prisma } from '@prisma/client';
 
 /**
  * ApplicationsService handles the full lifecycle of email account applications:
@@ -23,7 +25,10 @@ import { ApplicationStatus } from '@prisma/client';
 export class ApplicationsService {
   private readonly logger = new Logger(ApplicationsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pdfService: PdfService,
+  ) {}
 
   /**
    * Submit a new email account application.
@@ -51,7 +56,7 @@ export class ApplicationsService {
       data: {
         applicantId,
         departmentId: dto.departmentId,
-        applicantDetails: parsedDetails as any,
+        applicantDetails: parsedDetails as Prisma.InputJsonValue,
         photoStoragePath: photoPath,
         signatureStoragePath: signaturePath,
         status: ApplicationStatus.PENDING_HOD,
@@ -170,6 +175,53 @@ export class ApplicationsService {
       throw new BadRequestException('Remarks are mandatory for rejection');
     }
 
+    // ── If approving, verify HOD has uploaded a signature ──
+    let digitalSignatureHash: string | null = null;
+    let approvedPdfPath: string | null = null;
+    const approvalTimestamp = new Date();
+
+    if (dto.status === ApplicationStatus.APPROVED_HOD) {
+      const hod = (await this.prisma.user.findUnique({
+        where: { id: hodId },
+        select: {
+          signatureStoragePath: true,
+          firstName: true,
+          lastName: true,
+        } as unknown as Prisma.UserSelect,
+      })) as unknown as {
+        signatureStoragePath: string | null;
+        firstName: string;
+        lastName: string;
+      } | null;
+
+      if (!hod?.signatureStoragePath) {
+        throw new BadRequestException(
+          'Please upload your signature in Settings before approving applications.',
+        );
+      }
+
+      // Generate SHA-256 cryptographic hash
+      const hashInput = `${applicationId}|${hodId}|${application.applicantId}|${approvalTimestamp.toISOString()}`;
+      digitalSignatureHash = createHash('sha256').update(hashInput).digest('hex');
+
+      // Generate the approved PDF with both signatures and hologram
+      const hodName = `${hod.firstName} ${hod.lastName}`.trim();
+      try {
+        approvedPdfPath = await this.pdfService.generateApprovedPdf(
+          applicationId,
+          hod.signatureStoragePath,
+          hodName,
+          digitalSignatureHash,
+          approvalTimestamp,
+        );
+      } catch (err) {
+        this.logger.error(`PDF generation failed for ${applicationId}`, err);
+        throw new BadRequestException(
+          'Approval succeeded but PDF generation failed. Please try again.',
+        );
+      }
+    }
+
     const updated = await this.prisma.application.update({
       where: { id: applicationId },
       data: {
@@ -177,8 +229,10 @@ export class ApplicationsService {
         hodId,
         hodRemarks: dto.remarks || null,
         hodApprovedAt:
-          dto.status === ApplicationStatus.APPROVED_HOD ? new Date() : null,
-      },
+          dto.status === ApplicationStatus.APPROVED_HOD ? approvalTimestamp : null,
+        digitalSignatureHash,
+        approvedPdfPath,
+      } as unknown as Prisma.ApplicationUpdateInput,
     });
 
     // Create audit log entry
@@ -193,6 +247,7 @@ export class ApplicationsService {
           previousStatus: application.status,
           newStatus: dto.status,
           remarks: dto.remarks,
+          digitalSignatureHash,
         },
       },
     });
