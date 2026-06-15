@@ -96,6 +96,9 @@ model Application {
   /// Disk path or cloud URL to the uploaded certified photograph
   photoStoragePath String
 
+  /// Disk path or cloud URL to the uploaded signature
+  signatureStoragePath String?
+
   // ── Workflow tracking ──
 
   /// HOD who reviewed this application

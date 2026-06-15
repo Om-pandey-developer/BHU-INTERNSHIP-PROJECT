@@ -108,6 +108,11 @@ const departments = [
   { id: "dept-mech", name: "Mechanical Engineering" },
   { id: "dept-civil", name: "Civil Engineering" },
   { id: "dept-elec", name: "Electrical Engineering" },
+  { id: "dept-arts", name: "Faculty of Arts" },
+  { id: "dept-soc", name: "Faculty of Social Sciences" },
+  { id: "dept-com", name: "Faculty of Commerce" },
+  { id: "dept-agri", name: "Institute of Agricultural Sciences" },
+  { id: "dept-env", name: "Institute of Environment & Sustainable Development" },
 ];
 
 /**
@@ -123,6 +128,7 @@ export default function NewApplicationPage() {
   const { user } = useAuthStore();
   const { addToast } = useToastStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const signatureInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -130,10 +136,14 @@ export default function NewApplicationPage() {
   const [details, setDetails] = useState<Record<string, string>>({});
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [signature, setSignature] = useState<File | null>(null);
+  const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
   const [policyAccepted, setPolicyAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
+  const [signatureModalOpen, setSignatureModalOpen] = useState(false);
+  const [isOtherEmployment, setIsOtherEmployment] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [submittedApp, setSubmittedApp] = useState<any>(null);
 
@@ -161,7 +171,30 @@ export default function NewApplicationPage() {
 
     setError("");
     setPhoto(file);
-    setPhotoPreview(URL.createObjectURL(file));
+    const reader = new FileReader();
+    reader.onloadend = () => setPhotoPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  }
+
+  function handleSignatureChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.match(/(jpeg|jpg|png)$/i)) {
+      setError("Signature must be a JPEG or PNG image.");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Signature size must be less than 2MB.");
+      return;
+    }
+
+    setError("");
+    setSignature(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setSignaturePreview(reader.result as string);
+    reader.readAsDataURL(file);
   }
 
   function canProceedStep2(): boolean {
@@ -176,20 +209,29 @@ export default function NewApplicationPage() {
       }
     }
     if (!photo) return false;
+    if (!signature) return false;
     return true;
   }
 
   async function handleSubmit() {
-    if (!categoryConfig || !photo) return;
+    if (!categoryConfig || !photo || !signature) return;
     setSubmitting(true);
     setError("");
 
     try {
+      const payloadDetails = { ...details };
+      if (payloadDetails.mobileNo) {
+        const code = payloadDetails.countryCode || "+91";
+        payloadDetails.mobileNo = `${code}-${payloadDetails.mobileNo}`;
+        delete payloadDetails.countryCode;
+      }
+
       const formData = new FormData();
       formData.append("departmentId", departmentId);
       formData.append("category", selectedCategory);
-      formData.append("details", JSON.stringify(details));
+      formData.append("details", JSON.stringify(payloadDetails));
       formData.append("photo", photo);
+      formData.append("signature", signature);
 
       const { data } = await api.post("/applications", formData);
 
@@ -428,6 +470,110 @@ export default function NewApplicationPage() {
                 );
               }
 
+              if (field === "typeOfEmployment") {
+                const standardOptions = ["Permanent", "Contractual", "Guest Faculty"];
+                return (
+                  <div key={field} className="space-y-3">
+                    <div className="relative">
+                      <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-outline z-10">
+                        {config.icon}
+                      </span>
+                      <select
+                        value={isOtherEmployment ? "Other" : (details[field] || "")}
+                        onChange={(e) => {
+                          if (e.target.value === "Other") {
+                            setIsOtherEmployment(true);
+                            handleDetailChange(field, "");
+                          } else {
+                            setIsOtherEmployment(false);
+                            handleDetailChange(field, e.target.value);
+                          }
+                        }}
+                        className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-3 text-sm text-foreground pl-11 appearance-none hover:border-outline focus:border-primary focus:outline-none transition-colors cursor-pointer"
+                        required
+                      >
+                        <option value="">Select Employment Type *</option>
+                        {standardOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                        <option value="Other">Other</option>
+                      </select>
+                      <span className="material-symbols-rounded absolute right-3 top-1/2 -translate-y-1/2 text-[20px] text-outline pointer-events-none">
+                        expand_more
+                      </span>
+                    </div>
+                    {isOtherEmployment && (
+                      <Input
+                        label="Specify Employment Type *"
+                        icon="edit"
+                        value={details[field] || ""}
+                        onChange={(e) => handleDetailChange(field, e.target.value)}
+                        required
+                      />
+                    )}
+                  </div>
+                );
+              }
+
+              if (field === "admissionAcademicYear" || field === "courseCompletionYear") {
+                const currentYear = new Date().getFullYear();
+                const years = Array.from({ length: 50 }, (_, i) => currentYear - 30 + i);
+                return (
+                  <div key={field} className="relative">
+                    <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-outline z-10">
+                      {config.icon}
+                    </span>
+                    <select
+                      value={details[field] || ""}
+                      onChange={(e) => handleDetailChange(field, e.target.value)}
+                      className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-3 text-sm text-foreground pl-11 appearance-none hover:border-outline focus:border-primary focus:outline-none transition-colors cursor-pointer"
+                      required
+                    >
+                      <option value="">{config.label} *</option>
+                      {years.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                    <span className="material-symbols-rounded absolute right-3 top-1/2 -translate-y-1/2 text-[20px] text-outline pointer-events-none">
+                      expand_more
+                    </span>
+                  </div>
+                );
+              }
+
+              if (field === "mobileNo") {
+                return (
+                  <div key={field} className="flex gap-2">
+                    <div className="relative w-32 shrink-0">
+                      <select 
+                        className="w-full rounded-lg border-2 border-outline-variant bg-surface px-3 py-3 text-sm text-foreground appearance-none hover:border-outline focus:border-primary focus:outline-none transition-colors cursor-pointer"
+                        value={details['countryCode'] || "+91"}
+                        onChange={(e) => handleDetailChange('countryCode', e.target.value)}
+                      >
+                        <option value="+91">+91 (IN)</option>
+                        <option value="+1">+1 (US/CA)</option>
+                        <option value="+44">+44 (UK)</option>
+                        <option value="+61">+61 (AU)</option>
+                      </select>
+                      <span className="material-symbols-rounded absolute right-2 top-1/2 -translate-y-1/2 text-[18px] text-outline pointer-events-none">
+                        expand_more
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <Input
+                        label={config.label + " *"}
+                        icon={config.icon}
+                        type="tel"
+                        value={details[field] || ""}
+                        onChange={(e) => handleDetailChange(field, e.target.value.replace(/\D/g, ""))}
+                        required
+                      />
+                    </div>
+                  </div>
+                );
+              }
+
+              let onChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => handleDetailChange(field, e.target.value);
+              if (field === "nationality") {
+                onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[^a-zA-Z\s]/g, ""));
+              }
+
               return (
                 <Input
                   key={field}
@@ -435,7 +581,7 @@ export default function NewApplicationPage() {
                   icon={config.icon}
                   type={config.type || "text"}
                   value={details[field] || ""}
-                  onChange={(e) => handleDetailChange(field, e.target.value)}
+                  onChange={onChangeHandler}
                   required
                 />
               );
@@ -518,6 +664,103 @@ export default function NewApplicationPage() {
                 </>
               )}
             </div>
+          </div>
+
+          {/* Signature Upload */}
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-2">
+              Certified Signature *
+            </p>
+            <div
+              onClick={() => signatureInputRef.current?.click()}
+              className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${
+                signature
+                  ? "border-success bg-success-container/10"
+                  : "border-outline-variant hover:border-primary hover:bg-primary/3"
+              }`}
+            >
+              <input
+                ref={signatureInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png"
+                className="hidden"
+                onChange={handleSignatureChange}
+              />
+
+              {signaturePreview ? (
+                <div className="flex items-center gap-4">
+                  <img
+                    src={signaturePreview}
+                    alt="Signature Preview"
+                    className="w-20 h-20 rounded-xl object-contain border border-outline-variant bg-white"
+                  />
+                  <div className="text-left flex-1">
+                    <p className="text-sm font-medium text-foreground">
+                      {signature?.name}
+                    </p>
+                    <p className="text-xs text-outline mt-0.5">
+                      {((signature?.size || 0) / 1024).toFixed(0)} KB •{" "}
+                      {signature?.type}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSignature(null);
+                        setSignaturePreview(null);
+                      }}
+                      className="text-xs text-error font-medium mt-1 hover:underline cursor-pointer"
+                    >
+                      Remove
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSignatureModalOpen(true);
+                      }}
+                      className="text-xs text-primary font-medium mt-1 hover:underline cursor-pointer ml-3"
+                    >
+                      View Full Size
+                    </button>
+                  </div>
+                  <span className="material-symbols-rounded text-[24px] text-success">
+                    check_circle
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <span className="material-symbols-rounded text-[40px] text-outline/50 mb-2">
+                    draw
+                  </span>
+                  <p className="text-sm text-outline">
+                    Click to upload your signature
+                  </p>
+                  <p className="text-xs text-outline/60 mt-1">
+                    JPEG or PNG, max 2MB
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+            <Input
+              label="Place *"
+              icon="location_on"
+              value={details.applicantPlace || ""}
+              onChange={(e) => handleDetailChange("applicantPlace", e.target.value)}
+              required
+              placeholder="e.g. Varanasi"
+            />
+            <Input
+              label="Date *"
+              icon="calendar_today"
+              type="date"
+              value={details.applicantDate || new Date().toISOString().split("T")[0]}
+              onChange={(e) => handleDetailChange("applicantDate", e.target.value)}
+              required
+            />
           </div>
 
           {error && (
@@ -741,11 +984,17 @@ export default function NewApplicationPage() {
               icon="download"
               size="lg"
               onClick={() => {
-                generateApplicationPdf(submittedApp, {
+                const fullAppForPdf = {
+                  ...submittedApp,
+                  department: departments.find((d) => d.id === departmentId),
+                  applicantDetails: { ...details, category: selectedCategory },
+                  createdAt: new Date().toISOString(),
+                };
+                generateApplicationPdf(fullAppForPdf, {
                   firstName: user?.firstName || "",
                   lastName: user?.lastName || "",
                   email: user?.email || "",
-                }, photoPreview);
+                }, photoPreview, signaturePreview);
               }}
             >
               Download Form
@@ -775,6 +1024,24 @@ export default function NewApplicationPage() {
             src={photoPreview}
             alt="Full Size Preview"
             className="max-w-full max-h-[60vh] rounded-xl object-contain border border-outline-variant"
+          />
+        </div>
+      )}
+    </Modal>
+
+    {/* Signature Preview Modal */}
+    <Modal
+      isOpen={signatureModalOpen}
+      onClose={() => setSignatureModalOpen(false)}
+      title="Signature Preview"
+      size="md"
+    >
+      {signaturePreview && (
+        <div className="flex justify-center p-4">
+          <img
+            src={signaturePreview}
+            alt="Full Size Signature"
+            className="max-w-full max-h-[60vh] rounded-xl object-contain border border-outline-variant bg-white"
           />
         </div>
       )}

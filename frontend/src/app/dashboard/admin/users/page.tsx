@@ -301,6 +301,13 @@ export default function AdminUsersPage() {
         onClose={() => setSelectedUser(null)}
         title="User Details"
         size="md"
+        footer={
+          <div className="w-full flex justify-end">
+            <Button variant="outlined" onClick={() => setSelectedUser(null)}>
+              Close
+            </Button>
+          </div>
+        }
       >
         {selectedUser && (
           <div className="space-y-5">

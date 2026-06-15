@@ -92,6 +92,11 @@ export default function RegisterPage() {
           { id: "dept-mech", name: "Mechanical Engineering", code: "MECH_ENG" },
           { id: "dept-civil", name: "Civil Engineering", code: "CIVIL_ENG" },
           { id: "dept-elec", name: "Electrical Engineering", code: "ELEC_ENG" },
+          { id: "dept-arts", name: "Faculty of Arts", code: "ARTS" },
+          { id: "dept-soc", name: "Faculty of Social Sciences", code: "SOCIAL_SCIENCES" },
+          { id: "dept-com", name: "Faculty of Commerce", code: "COMMERCE" },
+          { id: "dept-agri", name: "Institute of Agricultural Sciences", code: "AGRI_SCI" },
+          { id: "dept-env", name: "Institute of Environment & Sustainable Development", code: "IESD" },
         ]);
       }
     }
@@ -111,7 +116,11 @@ export default function RegisterPage() {
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    let value = e.target.value;
+    if (e.target.name === "firstName" || e.target.name === "lastName") {
+      value = value.replace(/[^a-zA-Z\s]/g, "");
+    }
+    setForm((prev) => ({ ...prev, [e.target.name]: value }));
     setError("");
   }
 
@@ -370,7 +379,7 @@ export default function RegisterPage() {
               <form onSubmit={handleSendOtp} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
-                    label="First Name"
+                    label="First Name *"
                     icon="person"
                     name="firstName"
                     value={form.firstName}
@@ -379,7 +388,7 @@ export default function RegisterPage() {
                     autoComplete="given-name"
                   />
                   <Input
-                    label="Last Name"
+                    label="Last Name *"
                     icon="person"
                     name="lastName"
                     value={form.lastName}
@@ -390,7 +399,7 @@ export default function RegisterPage() {
                 </div>
 
                 <Input
-                  label="Alternate Email"
+                  label="Alternate Email *"
                   icon="mail"
                   type="email"
                   name="alternateEmail"
@@ -425,7 +434,7 @@ export default function RegisterPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
-                    label="Password"
+                    label="Password *"
                     icon="lock"
                     type="password"
                     name="password"
@@ -435,7 +444,7 @@ export default function RegisterPage() {
                     autoComplete="new-password"
                   />
                   <Input
-                    label="Confirm Password"
+                    label="Confirm Password *"
                     icon="lock"
                     type="password"
                     name="confirmPassword"

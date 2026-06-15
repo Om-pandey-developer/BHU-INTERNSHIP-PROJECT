@@ -338,22 +338,34 @@ export default function HodDashboard() {
               </Button>
             </>
           ) : (
-            <>
+            <div className="flex items-center justify-between w-full">
               <Button
-                variant="outlined"
-                onClick={() => setActionType("reject")}
-                className="!border-error !text-error"
+                variant="text"
+                onClick={() => {
+                  setSelectedApp(null);
+                  setActionType(null);
+                  setRemarks("");
+                }}
               >
-                Reject
+                Close
               </Button>
-              <Button
-                icon="check_circle"
-                onClick={() => setActionType("approve")}
-                className="!bg-success"
-              >
-                Approve
-              </Button>
-            </>
+              <div className="flex gap-2">
+                <Button
+                  variant="outlined"
+                  onClick={() => setActionType("reject")}
+                  className="!border-error !text-error"
+                >
+                  Reject
+                </Button>
+                <Button
+                  icon="check_circle"
+                  onClick={() => setActionType("approve")}
+                  className="!bg-success"
+                >
+                  Approve
+                </Button>
+              </div>
+            </div>
           )
         }
       >
