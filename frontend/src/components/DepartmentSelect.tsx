@@ -12,9 +12,10 @@ interface DepartmentSelectProps {
   departments: Department[];
   value: string;
   onChange: (value: string) => void;
+  placeholder?: string;
 }
 
-export default function DepartmentSelect({ departments, value, onChange }: DepartmentSelectProps) {
+export default function DepartmentSelect({ departments, value, onChange, placeholder = "Select Department *" }: DepartmentSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,7 +47,7 @@ export default function DepartmentSelect({ departments, value, onChange }: Depar
           apartment
         </span>
         <span className={selectedDept ? "text-foreground" : "text-outline"}>
-          {selectedDept ? selectedDept.name : "Select Department *"}
+          {selectedDept ? selectedDept.name : placeholder}
         </span>
         <span className="material-symbols-rounded text-[20px] text-outline pointer-events-none">
           expand_more

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Turnstile } from "@marsidev/react-turnstile";
+import { Turnstile, TurnstileInstance } from "@marsidev/react-turnstile";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/lib/store";
 import Button from "@/components/Button";
@@ -43,6 +43,8 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance | null>(null);
+  const errorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // ── Forgot password state ──
   const [resetEmail, setResetEmail] = useState("");
@@ -118,6 +120,10 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
+    if (errorTimeoutRef.current) {
+      clearTimeout(errorTimeoutRef.current);
+    }
+
     try {
       const { data } = await api.post("/auth/login", {
         email,
@@ -133,6 +139,15 @@ export default function LoginPage() {
       setError(
         error.response?.data?.message || "Login failed. Please check your credentials."
       );
+      
+      // Auto-reset form after 5 seconds to improve UX
+      errorTimeoutRef.current = setTimeout(() => {
+        setError("");
+        setEmail("");
+        setPassword("");
+        setCaptchaToken(null);
+        turnstileRef.current?.reset();
+      }, 5000);
     } finally {
       setLoading(false);
     }
@@ -487,6 +502,7 @@ export default function LoginPage() {
                 {/* Cloudflare Turnstile CAPTCHA */}
                 <div className="flex justify-center opacity-[0.6]">
                   <Turnstile
+                    ref={turnstileRef}
                     siteKey={TURNSTILE_SITE_KEY}
                     onSuccess={(token) => setCaptchaToken(token)}
                     onError={() => setCaptchaToken(null)}

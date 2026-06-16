@@ -45,7 +45,10 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // If 401 and not already retried, attempt token refresh
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Do NOT intercept 401s on the login or refresh endpoints
+    const isAuthEndpoint = originalRequest.url?.includes("/auth/login") || originalRequest.url?.includes("/auth/refresh");
+    
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
       originalRequest._retry = true;
 
       try {
