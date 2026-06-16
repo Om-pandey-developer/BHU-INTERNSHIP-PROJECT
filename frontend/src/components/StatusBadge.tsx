@@ -15,6 +15,8 @@ const statusConfig: Record<string, { color: string; bg: string; icon: string }> 
   PENDING_CC: { color: "text-secondary", bg: "bg-secondary-container", icon: "pending" },
   PROVISIONED: { color: "text-success", bg: "bg-success-container", icon: "verified" },
   FAILED_PROVISIONING: { color: "text-error", bg: "bg-error-container", icon: "error" },
+  SUSPENDED: { color: "text-warning", bg: "bg-warning-container", icon: "pause_circle" },
+  ARCHIVED: { color: "text-outline", bg: "bg-surface-variant", icon: "inventory_2" },
 };
 
 /**

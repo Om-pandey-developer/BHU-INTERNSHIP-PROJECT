@@ -35,6 +35,20 @@ async function main() {
     },
   });
   console.log(`✅ Created Test Applicant: ${applicant.alternateEmail} / password123`);
+
+  // Create a test CC Admin
+  const admin = await prisma.user.upsert({
+    where: { alternateEmail: 'admin@bhu.ac.in' },
+    update: {},
+    create: {
+      alternateEmail: 'admin@bhu.ac.in',
+      passwordHash,
+      firstName: 'CC',
+      lastName: 'Admin',
+      role: 'CC_ADMIN',
+    },
+  });
+  console.log(`✅ Created Test CC Admin: ${admin.alternateEmail} / password123`);
 }
 
 main()

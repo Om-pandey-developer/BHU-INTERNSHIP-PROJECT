@@ -30,6 +30,8 @@ enum ApplicationStatus {
   PENDING_CC
   PROVISIONED
   FAILED_PROVISIONING
+  SUSPENDED           /// Account temporarily blocked by CC Admin
+  ARCHIVED            /// Account archived (retired/left) — data retained per IT policy
 }
 
 // ─────────────────────────────────────────────

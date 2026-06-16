@@ -198,6 +198,120 @@ export class ApplicationsController {
     return this.applicationsService.findForCcAdmin();
   }
 
+  // ═══════════════════════════════════════════════════════
+  // CC Admin — User Lifecycle Management Endpoints
+  // (MUST be above :id route to avoid NestJS treating 'admin' as :id)
+  // ═══════════════════════════════════════════════════════
+
+  /**
+   * GET /api/v1/applications/admin/active
+   * Get all PROVISIONED (Flag 1) users.
+   */
+  @Get('admin/active')
+  @Roles(Role.CC_ADMIN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Get all active/provisioned users' })
+  async findActiveUsers() {
+    return this.applicationsService.findActiveUsers();
+  }
+
+  /**
+   * GET /api/v1/applications/admin/suspended
+   * Get all SUSPENDED users.
+   */
+  @Get('admin/suspended')
+  @Roles(Role.CC_ADMIN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Get all suspended users' })
+  async findSuspendedUsers() {
+    return this.applicationsService.findSuspendedUsers();
+  }
+
+  /**
+   * GET /api/v1/applications/admin/archived
+   * Get all ARCHIVED users.
+   */
+  @Get('admin/archived')
+  @Roles(Role.CC_ADMIN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Get all archived users' })
+  async findArchivedUsers() {
+    return this.applicationsService.findArchivedUsers();
+  }
+
+  /**
+   * GET /api/v1/applications/admin/quota-stats
+   * Get storage quota statistics.
+   */
+  @Get('admin/quota-stats')
+  @Roles(Role.CC_ADMIN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Get quota allocation statistics' })
+  async getQuotaStats() {
+    return this.applicationsService.getQuotaStats();
+  }
+
+  /**
+   * GET /api/v1/applications/admin/audit-logs
+   * Get audit logs (paginated).
+   */
+  @Get('admin/audit-logs')
+  @Roles(Role.CC_ADMIN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Get audit logs' })
+  async getAuditLogs(
+    @Req() req: Request & { query: { page?: string; limit?: string } },
+  ) {
+    const page = parseInt(req.query.page || '1', 10);
+    const limit = parseInt(req.query.limit || '50', 10);
+    return this.applicationsService.getAuditLogs(page, limit);
+  }
+
+  /**
+   * POST /api/v1/applications/admin/bulk-suspend
+   * Bulk suspend multiple accounts.
+   */
+  @Post('admin/bulk-suspend')
+  @Roles(Role.CC_ADMIN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Bulk suspend multiple accounts' })
+  async bulkSuspend(
+    @Req() req: Request & { user: { userId: string } },
+    @Body() body: { applicationIds: string[]; remarks?: string },
+  ) {
+    const ipAddress = (req.headers['x-forwarded-for'] as string) || req.ip || 'unknown';
+    return this.applicationsService.bulkSuspend(body.applicationIds, req.user.userId, body.remarks || '', ipAddress);
+  }
+
+  /**
+   * POST /api/v1/applications/admin/bulk-archive
+   * Bulk archive multiple accounts.
+   */
+  @Post('admin/bulk-archive')
+  @Roles(Role.CC_ADMIN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Bulk archive multiple accounts' })
+  async bulkArchive(
+    @Req() req: Request & { user: { userId: string } },
+    @Body() body: { applicationIds: string[]; remarks?: string },
+  ) {
+    const ipAddress = (req.headers['x-forwarded-for'] as string) || req.ip || 'unknown';
+    return this.applicationsService.bulkArchive(body.applicationIds, req.user.userId, body.remarks || '', ipAddress);
+  }
+
+  /**
+   * POST /api/v1/applications/lookup-email
+   * Secure email domain lookup — user finds their @bhu.ac.in email.
+   * Requires alternate email + name verification.
+   */
+  @Post('lookup-email')
+  @ApiOperation({ summary: 'Lookup BHU email by alternate email (secure)' })
+  async lookupBhuEmail(
+    @Body() body: { alternateEmail: string; firstName: string; lastName: string },
+  ) {
+    return this.applicationsService.lookupBhuEmail(body.alternateEmail, body.firstName, body.lastName);
+  }
+
   /**
    * GET /api/v1/applications/:id
    * Get a single application by ID.
@@ -314,6 +428,73 @@ export class ApplicationsController {
       if (error instanceof NotFoundException) throw error;
       throw new NotFoundException('Failed to stream PDF file');
     }
+  }
+
+  /**
+   * PATCH /api/v1/applications/:id/suspend
+   * Suspend a provisioned account.
+   */
+  @Patch(':id/suspend')
+  @Roles(Role.CC_ADMIN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Suspend a provisioned account' })
+  async suspendApplication(
+    @Param('id') id: string,
+    @Req() req: Request & { user: { userId: string } },
+    @Body() body: { remarks?: string },
+  ) {
+    const ipAddress = (req.headers['x-forwarded-for'] as string) || req.ip || 'unknown';
+    return this.applicationsService.suspendApplication(id, req.user.userId, body.remarks || '', ipAddress);
+  }
+
+  /**
+   * PATCH /api/v1/applications/:id/archive
+   * Archive a suspended or provisioned account.
+   */
+  @Patch(':id/archive')
+  @Roles(Role.CC_ADMIN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Archive an account (data retained per IT policy)' })
+  async archiveApplication(
+    @Param('id') id: string,
+    @Req() req: Request & { user: { userId: string } },
+    @Body() body: { remarks?: string },
+  ) {
+    const ipAddress = (req.headers['x-forwarded-for'] as string) || req.ip || 'unknown';
+    return this.applicationsService.archiveApplication(id, req.user.userId, body.remarks || '', ipAddress);
+  }
+
+  /**
+   * PATCH /api/v1/applications/:id/reactivate
+   * Reactivate a suspended account.
+   */
+  @Patch(':id/reactivate')
+  @Roles(Role.CC_ADMIN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Reactivate a suspended account' })
+  async reactivateApplication(
+    @Param('id') id: string,
+    @Req() req: Request & { user: { userId: string } },
+    @Body() body: { remarks?: string },
+  ) {
+    const ipAddress = (req.headers['x-forwarded-for'] as string) || req.ip || 'unknown';
+    return this.applicationsService.reactivateApplication(id, req.user.userId, body.remarks || '', ipAddress);
+  }
+
+  /**
+   * POST /api/v1/applications/:id/reset-password
+   * Reset password for a provisioned account (secure, admin only).
+   */
+  @Post(':id/reset-password')
+  @Roles(Role.CC_ADMIN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Reset password for a provisioned account' })
+  async resetPassword(
+    @Param('id') id: string,
+    @Req() req: Request & { user: { userId: string } },
+  ) {
+    const ipAddress = (req.headers['x-forwarded-for'] as string) || req.ip || 'unknown';
+    return this.applicationsService.resetPassword(id, req.user.userId, ipAddress);
   }
 }
 

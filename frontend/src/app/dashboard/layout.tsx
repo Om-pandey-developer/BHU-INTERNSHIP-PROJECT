@@ -22,9 +22,7 @@ const hodNav: NavItem[] = [
 ];
 
 const adminNav: NavItem[] = [
-  { label: "Provisioning Queue", icon: "queue", href: "/dashboard/admin" },
-  { label: "Analytics", icon: "analytics", href: "/dashboard/admin/analytics" },
-  { label: "Users", icon: "group", href: "/dashboard/admin/users" },
+  { label: "Dashboard", icon: "dashboard", href: "/dashboard/admin" },
   { label: "Settings", icon: "settings", href: "/dashboard/settings" },
 ];
 
