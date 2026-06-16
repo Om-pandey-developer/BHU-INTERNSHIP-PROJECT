@@ -120,9 +120,9 @@ export async function generateApplicationPdf(
   const nationality = details.nationality || "Indian";
   const retirement = formatDate(details.dateOfRetirement);
   
-  const email1 = details.emailChoice1 || "";
-  const email2 = details.emailChoice2 || "";
-  const email3 = details.emailChoice3 || "";
+  const email1 = details.emailChoice1 ? `${details.emailChoice1}@bhu.ac.in` : "";
+  const email2 = details.emailChoice2 ? `${details.emailChoice2}@bhu.ac.in` : "";
+  const email3 = details.emailChoice3 ? `${details.emailChoice3}@bhu.ac.in` : "";
   
   const mobile = details.mobileNo || "";
   const alternateEmail = details.alternateEmail || app.applicant?.alternateEmail || app.applicant?.email || userName?.email || "";

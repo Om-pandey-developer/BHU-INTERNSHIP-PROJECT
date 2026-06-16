@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/lib/store";
@@ -9,6 +9,9 @@ import Input from "@/components/Input";
 import Modal from "@/components/Modal";
 import { useToastStore } from "@/components/Toast";
 import { generateApplicationPdf } from "@/lib/pdfGenerator";
+import CountryCodeSelect from "@/components/CountryCodeSelect";
+import DepartmentSelect from "@/components/DepartmentSelect";
+import NationalitySelect from "@/components/NationalitySelect";
 
 const categories = [
   {
@@ -93,27 +96,7 @@ const fieldLabels: Record<string, { label: string; icon: string; type?: string }
   emailChoice:            { label: "Choice of Email Id", icon: "alternate_email", type: "custom" },
 };
 
-const departments = [
-  { id: "dept-cs", name: "Computer Science" },
-  { id: "dept-phy", name: "Physics" },
-  { id: "dept-chem", name: "Chemistry" },
-  { id: "dept-math", name: "Mathematics" },
-  { id: "dept-bio", name: "Biological Sciences" },
-  { id: "dept-eng", name: "English" },
-  { id: "dept-hist", name: "History" },
-  { id: "dept-eco", name: "Economics" },
-  { id: "dept-law", name: "Law" },
-  { id: "dept-med", name: "Medical Sciences" },
-  { id: "dept-edu", name: "Education" },
-  { id: "dept-mech", name: "Mechanical Engineering" },
-  { id: "dept-civil", name: "Civil Engineering" },
-  { id: "dept-elec", name: "Electrical Engineering" },
-  { id: "dept-arts", name: "Faculty of Arts" },
-  { id: "dept-soc", name: "Faculty of Social Sciences" },
-  { id: "dept-com", name: "Faculty of Commerce" },
-  { id: "dept-agri", name: "Institute of Agricultural Sciences" },
-  { id: "dept-env", name: "Institute of Environment & Sustainable Development" },
-];
+
 
 /**
  * New Application Form — multi-step form for submitting a BHU email account application.
@@ -146,6 +129,22 @@ export default function NewApplicationPage() {
   const [isOtherEmployment, setIsOtherEmployment] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [submittedApp, setSubmittedApp] = useState<any>(null);
+  const [dbDepartments, setDbDepartments] = useState<{id: string, name: string, code: string}[]>([]);
+
+  useEffect(() => {
+    api.get("/departments")
+      .then(res => {
+        const payload = res.data;
+        if (Array.isArray(payload)) {
+          setDbDepartments(payload);
+        } else if (payload && payload.data && Array.isArray(payload.data)) {
+          setDbDepartments(payload.data);
+        } else {
+          setDbDepartments([]);
+        }
+      })
+      .catch(err => console.error("Failed to fetch departments", err));
+  }, []);
 
   const categoryConfig = categories.find((c) => c.value === selectedCategory);
 
@@ -251,6 +250,8 @@ export default function NewApplicationPage() {
       setSubmitting(false);
     }
   }
+
+  const maxDOB = new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0];
 
   return (
     <>
@@ -406,27 +407,11 @@ export default function NewApplicationPage() {
           </div>
 
           {/* Department */}
-          <div className="relative">
-            <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-outline z-10">
-              apartment
-            </span>
-            <select
-              value={departmentId}
-              onChange={(e) => setDepartmentId(e.target.value)}
-              className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-3 text-sm text-foreground pl-11 appearance-none hover:border-outline focus:border-primary focus:outline-none transition-colors cursor-pointer"
-              required
-            >
-              <option value="">Select Department *</option>
-              {departments.map((dept) => (
-                <option key={dept.id} value={dept.id}>
-                  {dept.name}
-                </option>
-              ))}
-            </select>
-            <span className="material-symbols-rounded absolute right-3 top-1/2 -translate-y-1/2 text-[20px] text-outline pointer-events-none">
-              expand_more
-            </span>
-          </div>
+          <DepartmentSelect
+            departments={dbDepartments}
+            value={departmentId}
+            onChange={(val) => setDepartmentId(val)}
+          />
 
           {/* Dynamic Fields */}
           <div className="space-y-4">
@@ -454,15 +439,16 @@ export default function NewApplicationPage() {
                           <span className="text-xs font-semibold text-outline w-8 shrink-0">
                             {label}
                           </span>
-                          <Input
-                            label={`${label} Choice`}
-                            icon="mail"
-                            value={details[`emailChoice${idx + 1}`] || ""}
-                            onChange={(e) =>
-                              handleDetailChange(`emailChoice${idx + 1}`, e.target.value)
-                            }
-                            required={idx === 0}
-                          />
+                            <Input
+                              label={`${label} Choice`}
+                              icon="mail"
+                              value={details[`emailChoice${idx + 1}`] || ""}
+                              onChange={(e) =>
+                                handleDetailChange(`emailChoice${idx + 1}`, e.target.value.replace(/@.*/, ""))
+                              }
+                              suffix="@bhu.ac.in"
+                              required={idx === 0}
+                            />
                         </div>
                       ))}
                     </div>
@@ -540,21 +526,10 @@ export default function NewApplicationPage() {
               if (field === "mobileNo") {
                 return (
                   <div key={field} className="flex gap-2">
-                    <div className="relative w-32 shrink-0">
-                      <select 
-                        className="w-full rounded-lg border-2 border-outline-variant bg-surface px-3 py-3 text-sm text-foreground appearance-none hover:border-outline focus:border-primary focus:outline-none transition-colors cursor-pointer"
-                        value={details['countryCode'] || "+91"}
-                        onChange={(e) => handleDetailChange('countryCode', e.target.value)}
-                      >
-                        <option value="+91">+91 (IN)</option>
-                        <option value="+1">+1 (US/CA)</option>
-                        <option value="+44">+44 (UK)</option>
-                        <option value="+61">+61 (AU)</option>
-                      </select>
-                      <span className="material-symbols-rounded absolute right-2 top-1/2 -translate-y-1/2 text-[18px] text-outline pointer-events-none">
-                        expand_more
-                      </span>
-                    </div>
+                    <CountryCodeSelect
+                      value={details['countryCode'] || "+91"}
+                      onChange={(val) => handleDetailChange('countryCode', val)}
+                    />
                     <div className="flex-1">
                       <Input
                         label={config.label + " *"}
@@ -562,6 +537,7 @@ export default function NewApplicationPage() {
                         type="tel"
                         value={details[field] || ""}
                         onChange={(e) => handleDetailChange(field, e.target.value.replace(/\D/g, ""))}
+                        maxLength={10}
                         required
                       />
                     </div>
@@ -569,9 +545,37 @@ export default function NewApplicationPage() {
                 );
               }
 
-              let onChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => handleDetailChange(field, e.target.value);
               if (field === "nationality") {
-                onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[^a-zA-Z\s]/g, ""));
+                return (
+                  <NationalitySelect
+                    key={field}
+                    value={details[field] || ""}
+                    onChange={(val) => handleDetailChange(field, val)}
+                  />
+                );
+              }
+
+              let onChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => handleDetailChange(field, e.target.value);
+              if (field === "facultyInstituteCentre") {
+                onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[0-9]/g, ""));
+              } else if (field === "employeeId") {
+                onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase());
+              } else if (field === "enrollmentNo") {
+                onChangeHandler = (e) => handleDetailChange(field, e.target.value.toUpperCase());
+              } else if (field === "designation") {
+                onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[0-9]/g, ""));
+              } else if (field === "programEnrolled") {
+                onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[^a-zA-Z\s.]/g, ""));
+              } else if (field === "dateOfBirth") {
+                onChangeHandler = (e) => {
+                  const val = e.target.value;
+                  if (val && val > maxDOB) {
+                    addToast({ message: "Age must be older than 18 years", variant: "warning" });
+                    handleDetailChange(field, "");
+                  } else {
+                    handleDetailChange(field, val);
+                  }
+                };
               }
 
               return (
@@ -582,6 +586,7 @@ export default function NewApplicationPage() {
                   type={config.type || "text"}
                   value={details[field] || ""}
                   onChange={onChangeHandler}
+                  max={field === "dateOfBirth" ? maxDOB : undefined}
                   required
                 />
               );
@@ -749,7 +754,7 @@ export default function NewApplicationPage() {
               label="Place *"
               icon="location_on"
               value={details.applicantPlace || ""}
-              onChange={(e) => handleDetailChange("applicantPlace", e.target.value)}
+              onChange={(e) => handleDetailChange("applicantPlace", e.target.value.replace(/[^a-zA-Z\s]/g, "").toUpperCase())}
               required
               placeholder="e.g. Varanasi"
             />
@@ -813,7 +818,7 @@ export default function NewApplicationPage() {
                     {categoryConfig.label}
                   </p>
                   <p className="text-xs text-outline">
-                    {departments.find((d) => d.id === departmentId)?.name}
+                    {dbDepartments.find((d) => d.id === departmentId)?.name}
                   </p>
                 </div>
               </div>
@@ -986,7 +991,7 @@ export default function NewApplicationPage() {
               onClick={() => {
                 const fullAppForPdf = {
                   ...submittedApp,
-                  department: departments.find((d) => d.id === departmentId),
+                  department: dbDepartments.find((d) => d.id === departmentId),
                   applicantDetails: { ...details, category: selectedCategory },
                   createdAt: new Date().toISOString(),
                 };
