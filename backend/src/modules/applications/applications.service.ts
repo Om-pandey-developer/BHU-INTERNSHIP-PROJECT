@@ -137,6 +137,33 @@ export class ApplicationsService {
   }
 
   /**
+   * Get applications reviewed by HOD (approved or rejected) for a specific department.
+   * Used by HOD Reviewed dashboard.
+   */
+  async findReviewedForHod(departmentId: string) {
+    return this.prisma.application.findMany({
+      where: {
+        departmentId,
+        status: {
+          in: [ApplicationStatus.APPROVED_HOD, ApplicationStatus.REJECTED_HOD],
+        },
+      },
+      include: {
+        applicant: {
+          select: {
+            id: true,
+            alternateEmail: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        department: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
+
+  /**
    * HOD approves or rejects an application.
    * Validates that the HOD belongs to the same department.
    */

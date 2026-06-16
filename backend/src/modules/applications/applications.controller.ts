@@ -135,6 +135,25 @@ export class ApplicationsController {
   }
 
   /**
+   * GET /api/v1/applications/hod-reviewed
+   * Get applications reviewed by the HOD for their department.
+   * Accessible by: HOD
+   */
+  @Get('hod-reviewed')
+  @Roles(Role.HOD)
+  @UseGuards(RolesGuard)
+  @ApiOperation({
+    summary: "Get reviewed applications for HOD's department",
+  })
+  async findHodReviewed(
+    @Req()
+    req: Request & { user: { userId: string; departmentId?: string } },
+  ) {
+    const user = req.user as { userId: string; departmentId: string };
+    return this.applicationsService.findReviewedForHod(user.departmentId);
+  }
+
+  /**
    * PATCH /api/v1/applications/:id/hod-status
    * HOD approves or rejects an application.
    * Accessible by: HOD

@@ -57,6 +57,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [provisioning, setProvisioning] = useState<string | null>(null);
+  const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
 
   useEffect(() => {
     fetchQueue();
@@ -97,6 +98,34 @@ export default function AdminDashboard() {
       });
     } finally {
       setProvisioning(null);
+    }
+  }
+
+  async function handleDownloadSignedPdf(app: Application) {
+    setDownloadingPdf(app.id);
+    try {
+      const response = await api.get(`/applications/${app.id}/approved-pdf`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `${app.trackingId}_Approved.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      
+      addToast({
+        message: "Signed PDF downloaded successfully.",
+        variant: "success",
+      });
+    } catch (err) {
+      addToast({
+        message: "Failed to download signed PDF. It may not be generated yet.",
+        variant: "error",
+      });
+    } finally {
+      setDownloadingPdf(null);
     }
   }
 
@@ -271,6 +300,14 @@ export default function AdminDashboard() {
             <>
               <Button variant="outlined" onClick={() => setSelectedApp(null)}>
                 Close
+              </Button>
+              <Button
+                icon="download"
+                variant="outlined"
+                loading={downloadingPdf === selectedApp.id}
+                onClick={() => handleDownloadSignedPdf(selectedApp)}
+              >
+                Signed Document
               </Button>
               <Button
                 icon="rocket_launch"
