@@ -318,7 +318,7 @@ export default function RegisterPage() {
         <img
           src="/buldings.jpg"
           alt="BHU Campus Buildings"
-          className="absolute inset-0 w-full h-full object-cover "
+          className="absolute inset-0 w-100% h-full object-cover "
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/5 to-transparent pointer-events-none" />
 
@@ -338,7 +338,7 @@ export default function RegisterPage() {
           alt=""
           width={850}
           height={800}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[800px] object-contain opacity-[0.4] pointer-events-none select-none"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[auto] h-[auto] object-contain opacity-[0.4] pointer-events-none select-none"
         />
         <div className="w-full max-w-lg animate-fade-in relative z-10">
           {/* Mobile branding */}
@@ -511,7 +511,7 @@ export default function RegisterPage() {
                   type="submit"
                   loading={otpSending}
                   icon="send"
-                  className="w-full"
+                  className="w-full "
                   size="lg"
                   disabled={!canSendOtp}
                 >

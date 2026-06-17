@@ -341,7 +341,7 @@ export default function LoginPage() {
           src="/BHU PTMADAN.jpg"
           alt="BHU Campus Buildings"
           fill
-          className="object-cover"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/5 to-transparent pointer-events-none" />
@@ -429,7 +429,7 @@ export default function LoginPage() {
           alt=""
           width={850}
           height={800}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[750px] h-[850px] object-contain opacity-[0.4] pointer-events-none select-none"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[auto] h-[auto] object-contain opacity-[0.4] pointer-events-none select-none"
         />
         <div className="w-full max-w-md animate-fade-in">
 

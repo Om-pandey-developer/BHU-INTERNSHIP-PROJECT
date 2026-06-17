@@ -193,11 +193,10 @@ export default function AdminUsersPage() {
             <button
               key={tab.key}
               onClick={() => setRoleFilter(tab.key)}
-              className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                roleFilter === tab.key
-                  ? "bg-surface text-foreground shadow-sm"
-                  : "text-outline hover:text-foreground"
-              }`}
+              className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${roleFilter === tab.key
+                ? "bg-surface text-foreground shadow-sm"
+                : "text-outline hover:text-foreground"
+                }`}
             >
               {tab.label}
               <span className="ml-1 text-outline/60">
@@ -326,9 +325,8 @@ export default function AdminUsersPage() {
                   {selectedUser.alternateEmail}
                 </p>
                 <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold mt-1 ${
-                    roleLabels[selectedUser.role].bg
-                  } ${roleLabels[selectedUser.role].text}`}
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold mt-1 ${roleLabels[selectedUser.role].bg
+                    } ${roleLabels[selectedUser.role].text}`}
                 >
                   {roleLabels[selectedUser.role].label}
                 </span>
