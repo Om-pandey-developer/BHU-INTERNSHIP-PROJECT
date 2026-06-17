@@ -218,7 +218,6 @@ export default function ApplicantDashboard() {
               key={app.id}
               onClick={() => setSelectedApp(app)}
               className="bg-white rounded-xl border border-black/25 p-5 shadowp-5 mb-8 shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer group">
-              {/* bg-surface rounded-xl border border-black/10 shadowp-5 mb-8 shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer group */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-11 h-11 rounded-xl bg-primary-container flex items-center justify-center shrink-0">

@@ -139,7 +139,7 @@ export default function LoginPage() {
       setError(
         error.response?.data?.message || "Login failed. Please check your credentials."
       );
-      
+
       // Auto-reset form after 5 seconds to improve UX
       errorTimeoutRef.current = setTimeout(() => {
         setError("");
@@ -444,7 +444,7 @@ export default function LoginPage() {
           alt=""
           width={850}
           height={800}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[auto] h-[auto] object-contain opacity-[0.4] pointer-events-none select-none"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[full] h-[full] object-contain opacity-[0.4] pointer-events-none select-none"
         />
         <div className="w-full max-w-md animate-fade-in">
 

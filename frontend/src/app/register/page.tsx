@@ -339,7 +339,7 @@ export default function RegisterPage() {
           alt=""
           width={850}
           height={800}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[auto] h-[auto] object-contain opacity-[0.4] pointer-events-none select-none"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[full] h-[full] object-contain opacity-[0.4] pointer-events-none select-none"
         />
         <div className="w-full max-w-lg animate-fade-in relative z-10">
           {/* Mobile branding */}
