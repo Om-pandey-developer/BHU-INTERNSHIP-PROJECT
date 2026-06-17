@@ -6,6 +6,9 @@ import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
 import { useToastStore } from "@/components/Toast";
+import { useAuthStore } from "@/lib/store";
+import { useRouter } from "next/navigation";
+import { generateApplicationPdf } from "@/lib/pdfGenerator";
 
 interface Application {
   id: string;
@@ -13,6 +16,7 @@ interface Application {
   status: string;
   applicantDetails: Record<string, unknown>;
   photoStoragePath: string;
+  signatureStoragePath?: string;
   createdAt: string;
   applicant?: {
     id: string;
@@ -43,6 +47,16 @@ export default function HodDashboard() {
   const [remarks, setRemarks] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuthStore();
+
+  // Role guard
+  useEffect(() => {
+    if (!authLoading && user && user.role !== "HOD") {
+      router.replace("/dashboard");
+    }
+  }, [user, authLoading, router]);
 
   // ── Signature status ──
   const [hasSignature, setHasSignature] = useState<boolean | null>(null);
@@ -126,6 +140,42 @@ export default function HodDashboard() {
       });
     } finally {
       setActionLoading(false);
+    }
+  }
+
+  async function fetchImageAsBase64(url: string | null): Promise<string | null> {
+    if (!url) return null;
+    try {
+      const response = await api.get(url, { responseType: 'blob' });
+      const blob = response.data;
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (err) {
+      console.error("Failed to fetch image", err);
+      return null; // Don't return the URL, it won't work in the PDF without auth
+    }
+  }
+
+  async function handleDownloadPdf(app: Application) {
+    try {
+      const photoUrl = `/applications/${app.id}/photo`;
+      const signatureUrl = `/applications/${app.id}/signature`;
+        
+      addToast({ message: "Preparing PDF documents...", variant: "info" });
+      
+      const photoDataUrl = await fetchImageAsBase64(photoUrl);
+      const signatureDataUrl = await fetchImageAsBase64(signatureUrl);
+
+      addToast({ message: "Generating PDF...", variant: "info" });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await generateApplicationPdf(app as any, undefined, photoDataUrl, signatureDataUrl);
+      addToast({ message: "PDF downloaded successfully", variant: "success" });
+    } catch (error) {
+      addToast({ message: "Failed to generate PDF", variant: "error" });
     }
   }
 
@@ -425,6 +475,14 @@ export default function HodDashboard() {
                   className="!border-error !text-error"
                 >
                   Reject
+                </Button>
+                <Button
+                  variant="outlined"
+                  icon="download"
+                  onClick={() => handleDownloadPdf(selectedApp!)}
+                  className="!border-primary !text-primary hover:!bg-primary/10"
+                >
+                  Download PDF
                 </Button>
                 <Button
                   icon="check_circle"

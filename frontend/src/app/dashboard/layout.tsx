@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/lib/store";
+import Image from "next/image";
 
 interface NavItem {
   label: string;
@@ -22,9 +23,7 @@ const hodNav: NavItem[] = [
 ];
 
 const adminNav: NavItem[] = [
-  { label: "Provisioning Queue", icon: "queue", href: "/dashboard/admin" },
-  { label: "Analytics", icon: "analytics", href: "/dashboard/admin/analytics" },
-  { label: "Users", icon: "group", href: "/dashboard/admin/users" },
+  { label: "Dashboard", icon: "dashboard", href: "/dashboard/admin" },
   { label: "Settings", icon: "settings", href: "/dashboard/settings" },
 ];
 
@@ -97,9 +96,9 @@ export default function DashboardLayout({
     // ── 1. PAGE CONTAINER ──
     // The 'page-dashboard' class links to globals.css for specific backgrounds/colors.
     // 'min-h-screen flex' provides the layout foundation for Sidebar + Main Content.
-    <div className="page-dashboard min-h-screen flex bg-background">
+    <div className="page-dashboard min-h-screen flex bg-rose-200/20">
 
-      {/* ── 2. MOBILE SIDEBAR OVERLAY ──
+      {/* ── 2. MOBILE SIDEBAR OVERLAY ──   
           Darkens the background when the sidebar is open on mobile devices. */}
       {sidebarOpen && (
         <div
@@ -118,21 +117,23 @@ export default function DashboardLayout({
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >
+
         {/* Sidebar header */}
         <div className="p-5 border-b border-outline-variant">
           <div className="flex items-center gap-3">
+
             <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0">
               <img
-                src="/bhu-logo.png"
+                src="/favicon.ico"
                 alt="BHU Logo"
                 className="w-full h-full object-cover"
               />
             </div>
             <div className="min-w-0">
-              <h2 className="font-bold text-sm text-foreground truncate">
+              <h2 className="font-bold text-sm text-foreground truncate text-[15.5px]">
                 Banaras Hindu University
               </h2>
-              <p className="text-xs text-outline">Email Portal</p>
+              <p className="text-xs text-outline text-[13px]">Email Ragistration Portal</p>
             </div>
           </div>
         </div>
@@ -173,7 +174,7 @@ export default function DashboardLayout({
         {/* User card */}
         <div className="p-4 border-t border-outline-variant">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-sm font-bold text-on-primary-container shrink-0">
+            <div className="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-lg font-bold text-on-primary-container shrink-0">
               {user.firstName[0]}
               {user.lastName[0]}
             </div>
@@ -187,7 +188,7 @@ export default function DashboardLayout({
             </div>
             <button
               onClick={handleLogout}
-              className="p-1.5 rounded-lg hover:bg-error-container text-outline hover:text-error transition-colors cursor-pointer"
+              className="p-3 rounded-lg hover:bg-error-container text-outline hover:text-error transition-colors cursor-pointer"
               title="Logout"
             >
               <span className="material-symbols-rounded text-[20px]">logout</span>
@@ -202,7 +203,8 @@ export default function DashboardLayout({
 
         {/* ── 5. TOP NAVIGATION BAR ── 
             'sticky top-0 z-30 bg-surface/80 backdrop-blur-md' creates a glass header. */}
-        <header className="site-header sticky top-0 z-30 bg-surface/80 backdrop-blur-md border-b border-outline-variant px-6 py-3 flex items-center gap-4">
+        <header className="site-header sticky top-0 z-30 bg-white backdrop-blur-md border-b border-black/30 px-6 py-3 flex items-center gap-4 shadow-[0_0_9px_rgba(0,0,0,0.3)]">
+
           <button
             onClick={() => setSidebarOpen(true)}
             className="p-1.5 rounded-lg hover:bg-surface-variant transition-colors cursor-pointer"
@@ -210,8 +212,17 @@ export default function DashboardLayout({
             <span className="material-symbols-rounded text-[24px]">menu</span>
           </button>
 
-          <div className="flex-1" />
+          <div className="flex items-center ml-2">
+            <Image
+              src="/BHUlogo.png"
+              alt="BHU Logo"
+              width={200}
+              height={200}
+              className="object-contain w-full h-full"
+            />
+          </div>
 
+          <div className="flex-1" />
           {user.role === "APPLICANT" && (
             <a
               href="/dashboard/applicant/new"
@@ -222,8 +233,9 @@ export default function DashboardLayout({
             </a>
           )}
 
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${roleBg}`}>
-            {roleLabel}
+          <span className={`w-10 h-10 flex items-center justify-center text-[20px] px-3 py-1 rounded-full text-xs font-semibold ${roleBg}`}>
+            {user.firstName[0]}
+            {user.lastName[0]}
           </span>
         </header>
 

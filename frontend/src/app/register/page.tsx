@@ -9,6 +9,7 @@ import { useAuthStore } from "@/lib/store";
 import Button from "@/components/Button";
 import Input from "@/components/Input";
 import PasswordStrength from "@/components/PasswordStrength";
+import DepartmentSelect from "@/components/DepartmentSelect";
 
 const TURNSTILE_SITE_KEY =
   process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
@@ -318,7 +319,7 @@ export default function RegisterPage() {
         <img
           src="/buldings.jpg"
           alt="BHU Campus Buildings"
-          className="absolute inset-0 w-full h-full object-cover "
+          className="absolute inset-0 w-100% h-full object-cover "
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/5 to-transparent pointer-events-none" />
 
@@ -338,7 +339,7 @@ export default function RegisterPage() {
           alt=""
           width={850}
           height={800}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[800px] object-contain opacity-[0.4] pointer-events-none select-none"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[auto] h-[auto] object-contain opacity-[0.4] pointer-events-none select-none"
         />
         <div className="w-full max-w-lg animate-fade-in relative z-10">
           {/* Mobile branding */}
@@ -410,27 +411,15 @@ export default function RegisterPage() {
                 />
 
                 {/* Department selector */}
-                <div className="relative">
-                  <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-outline z-10">
-                    apartment
-                  </span>
-                  <select
-                    name="departmentId"
-                    value={form.departmentId}
-                    onChange={handleChange}
-                    className="w-full rounded-lg border-2 border-outline-variant bg-white/90 px-4 py-3 text-sm text-black/60 pl-11 appearance-none hover:border-outline focus:border-primary focus:outline-none transition-colors cursor-pointer"
-                  >
-                    <option value="">Select Department (Optional)</option>
-                    {departments.map((dept) => (
-                      <option key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="material-symbols-rounded absolute right-3 top-1/2 -translate-y-1/2 text-[20px] text-outline pointer-events-none">
-                    expand_more
-                  </span>
-                </div>
+                <DepartmentSelect
+                  departments={departments}
+                  value={form.departmentId}
+                  onChange={(val) => {
+                    setForm((prev) => ({ ...prev, departmentId: val }));
+                    setError("");
+                  }}
+                  placeholder="Select Department (Optional)"
+                />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
@@ -511,7 +500,7 @@ export default function RegisterPage() {
                   type="submit"
                   loading={otpSending}
                   icon="send"
-                  className="w-full"
+                  className="w-full "
                   size="lg"
                   disabled={!canSendOtp}
                 >

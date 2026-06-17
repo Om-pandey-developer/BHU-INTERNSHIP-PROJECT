@@ -4,12 +4,19 @@ import React, { useState, useEffect } from "react";
 import api from "@/lib/axios";
 import StatusBadge from "@/components/StatusBadge";
 import Modal from "@/components/Modal";
+import Button from "@/components/Button";
+import { useToastStore } from "@/components/Toast";
+import { useAuthStore } from "@/lib/store";
+import { useRouter } from "next/navigation";
+import { generateApplicationPdf } from "@/lib/pdfGenerator";
 
 interface Application {
   id: string;
   trackingId: string;
   status: string;
   applicantDetails: Record<string, unknown>;
+  photoStoragePath?: string;
+  signatureStoragePath?: string;
   hodRemarks?: string;
   createdAt: string;
   hodApprovedAt?: string;
@@ -35,19 +42,26 @@ export default function HodReviewedPage() {
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [filter, setFilter] = useState<"all" | "approved" | "rejected">("all");
+  const { addToast } = useToastStore();
+  const router = useRouter();
+  const { user, isLoading: authLoading } = useAuthStore();
+
+  // Role guard
+  useEffect(() => {
+    if (!authLoading && user && user.role !== "HOD") {
+      router.replace("/dashboard");
+    }
+  }, [user, authLoading, router]);
 
   useEffect(() => {
     async function fetchReviewed() {
       try {
-        // Fetch all applications and filter client-side for reviewed ones
-        const { data } = await api.get("/applications/hod-queue");
-        void (data.success ? data.data : data);
-        // For reviewed, we'd typically have a separate endpoint.
-        // For now we'll also try to get admin-queue to show approved ones.
-        // This is a simplified version — in production, add a backend endpoint.
+        const { data } = await api.get("/applications/hod-reviewed");
+        const apps = data.success ? data.data : data;
+        setApplications(Array.isArray(apps) ? apps : []);
+      } catch (err) {
+        console.error("Failed to fetch reviewed applications", err);
         setApplications([]);
-      } catch {
-        // empty
       } finally {
         setLoading(false);
       }
@@ -63,6 +77,64 @@ export default function HodReviewedPage() {
             ? app.status === "APPROVED_HOD"
             : app.status === "REJECTED_HOD"
         );
+
+  async function fetchImageAsBase64(url: string | null): Promise<string | null> {
+    if (!url) return null;
+    try {
+      const response = await api.get(url, { responseType: 'blob' });
+      const blob = response.data;
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (err) {
+      console.error("Failed to fetch image", err);
+      return null;
+    }
+  }
+
+  async function handleDownloadPdf(app: Application) {
+    if (app.status === "APPROVED_HOD") {
+      try {
+        addToast({ message: "Downloading signed PDF...", variant: "info" });
+        const response = await api.get(`/applications/${app.id}/approved-pdf`, {
+          responseType: "blob",
+        });
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `${app.trackingId}_Approved.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode?.removeChild(link);
+        addToast({ message: "Signed PDF downloaded successfully", variant: "success" });
+        return;
+      } catch (error) {
+        addToast({ message: "Failed to download signed PDF", variant: "error" });
+        return;
+      }
+    }
+
+    // Fallback for rejected applications
+    try {
+      const photoUrl = `/applications/${app.id}/photo`;
+      const signatureUrl = `/applications/${app.id}/signature`;
+        
+      addToast({ message: "Preparing PDF documents...", variant: "info" });
+      
+      const photoDataUrl = await fetchImageAsBase64(photoUrl);
+      const signatureDataUrl = await fetchImageAsBase64(signatureUrl);
+
+      addToast({ message: "Generating PDF...", variant: "info" });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await generateApplicationPdf(app as any, undefined, photoDataUrl, signatureDataUrl);
+      addToast({ message: "PDF downloaded successfully", variant: "success" });
+    } catch (error) {
+      addToast({ message: "Failed to generate PDF", variant: "error" });
+    }
+  }
 
   if (loading) {
     return (
@@ -217,6 +289,16 @@ export default function HodReviewedPage() {
                 </p>
               </div>
             )}
+            <div className="flex items-center justify-end w-full pt-4 border-t border-outline-variant mt-4">
+              <Button
+                variant="outlined"
+                icon="download"
+                onClick={() => handleDownloadPdf(selectedApp!)}
+                className="!border-primary !text-primary hover:!bg-primary/10"
+              >
+                Download PDF
+              </Button>
+            </div>
           </div>
         )}
       </Modal>

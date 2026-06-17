@@ -45,7 +45,7 @@
 }
 
 @theme inline {
-  --video-background: var(--background);
+  /* --video-background: var(--background); */
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-light: var(--primary-light);
@@ -79,7 +79,7 @@ body {
   background-repeat: no-repeat;
   background-attachment: fixed;
   color: var(--foreground);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', swap, system-ui, -apple-system, sans-serif;
   line-height: 1.6;
 }
 

@@ -41,11 +41,11 @@ export default function HodLogin() {
       const error = err as { response?: { data?: { message?: string } } };
       setError(
         error.response?.data?.message ||
-          "Invalid credentials. Please try again."
+        "Invalid credentials. Please try again."
       );
     } finally {
       if (error) { // only set to false if we're not redirecting
-         setLoading(false);
+        setLoading(false);
       }
     }
   };
@@ -58,42 +58,42 @@ export default function HodLogin() {
       <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-tertiary/10 rounded-full blur-[80px] -z-10" />
 
       <div className="w-full max-w-[1000px] flex rounded-3xl overflow-hidden shadow-xl bg-surface border border-outline-variant m-4 animate-fade-in">
-        
+
         {/* Left Side: Branding / Info */}
         <div className="hidden md:flex flex-col justify-between w-[45%] bg-secondary text-on-secondary p-12 relative overflow-hidden">
-           <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent z-0" />
-           <div className="relative z-10 space-y-6">
-              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-md mb-8">
-                <Image
-                  src="/bhu-logo.png"
-                  alt="BHU Logo"
-                  width={45}
-                  height={45}
-                  className="object-contain"
-                />
-              </div>
-              <h1 className="text-3xl font-bold font-serif leading-tight">
-                Department Head Portal
-              </h1>
-              <p className="text-on-secondary/80 text-sm leading-relaxed">
-                Securely review, digitally sign, and approve email account 
-                applications for your department members.
-              </p>
-           </div>
+          <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-br from-white/10 to-transparent z-0" />
+          <div className="relative z-10 space-y-6">
+            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-md mb-8">
+              <Image
+                src="/bhu-logo.png"
+                alt="BHU Logo"
+                width={45}
+                height={45}
+                className="object-contain"
+              />
+            </div>
+            <h1 className="text-3xl font-bold font-serif leading-tight">
+              Department Head Portal
+            </h1>
+            <p className="text-on-secondary/80 text-sm leading-relaxed">
+              Securely review, digitally sign, and approve email account
+              applications for your department members.
+            </p>
+          </div>
 
-           <div className="relative z-10 mt-auto pt-12">
-             <div className="flex items-center gap-3 text-sm text-on-secondary/70">
-                <span className="material-symbols-rounded text-lg">verified_user</span>
-                Requires CC Admin provisioning
-             </div>
-           </div>
+          <div className="relative z-10 mt-auto pt-12">
+            <div className="flex items-center gap-3 text-sm text-on-secondary/70">
+              <span className="material-symbols-rounded text-lg">verified_user</span>
+              Requires CC Admin provisioning
+            </div>
+          </div>
         </div>
 
         {/* Right Side: Login Form */}
         <div className="w-full md:w-[55%] p-8 md:p-12 lg:p-16 flex flex-col justify-center">
           <div className="md:hidden flex items-center gap-3 mb-8">
             <Image
-              src="/bhu-logo.png"
+              src="/BHUlogo.png"
               alt="BHU Logo"
               width={40}
               height={40}
@@ -150,11 +150,11 @@ export default function HodLogin() {
             >
               Sign In to HOD Dashboard
             </Button>
-            
+
             <div className="pt-6 text-center text-sm text-outline">
-               <Link href="/login" className="hover:text-primary transition-colors font-medium">
-                  ← Back to Standard Applicant Login
-               </Link>
+              <Link href="/login" className="hover:text-primary transition-colors font-medium">
+                ← Back to Standard Applicant Login
+              </Link>
             </div>
           </form>
         </div>
