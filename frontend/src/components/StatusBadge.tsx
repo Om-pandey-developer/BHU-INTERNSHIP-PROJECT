@@ -33,11 +33,20 @@ export default function StatusBadge({ status, size = "md" }: StatusBadgeProps) {
   const label = status.replace(/_/g, " ");
   const sizeClasses = size === "sm" ? "px-2 py-0.5 text-xs" : "px-3 py-1 text-xs";
 
+  // Check if the status implies pending, waiting, or in progress
+  const isPending =
+    status.includes("PENDING") ||
+    status.includes("WAITING") ||
+    status.includes("PROGRESS");
+
+  // Apply a spin animation to the icon if it's a pending status
+  const iconSpinClass = isPending ? "hover:animate-spin" : "";
+
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full font-medium ${config.bg} ${config.color} ${sizeClasses}`}
     >
-      <span className="material-symbols-rounded text-[14px]">{config.icon}</span>
+      <span className={`material-symbols-rounded text-[14px] ${iconSpinClass}`}>{config.icon}</span>
       {label}
     </span>
   );

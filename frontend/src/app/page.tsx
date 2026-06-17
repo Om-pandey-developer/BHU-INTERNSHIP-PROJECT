@@ -45,8 +45,14 @@ export default function Home() {
       <nav className="site-header fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-amber-500/30">
         <div className="max-w-6xl mx-auto px-0 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <Image src="/favicon.ico" alt="BHU Logo" width={40} height={40} className="rounded-xl" />
-
+            <Image
+              src="/favicon.ico"
+              alt="BHU Logo"
+              width={40}
+              height={40}
+              className="rounded-xl w-auto h-auto"
+              priority
+            />
             {/* <div className="w-10\ h-10 rounded-xl bg-amber-500 flex items-center justify-center">
               <span className="material-symbols-rounded text-[204px] text-blue">
                 school
@@ -91,14 +97,14 @@ export default function Home() {
             loop
             muted
             playsInline
-            className="absolute top-0 left-0 w-full h-full object-cover opacity-90"
+            className="absolute top-0 left-0 w-full h-full object-cover"
           >
             <source src="/BHUTour.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 bg-black/50" />
+          {/* <div className="absolute inset-0 bg-black/32" />
           <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-primary/8 to-tertiary/5 mix-blend-overlay" />
           <div className="absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-secondary/8 to-primary/3 mix-blend-overlay" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-gradient-radial from-primary/3 to-transparent mix-blend-overlay" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-gradient-radial from-primary/3 to-transparent mix-blend-overlay" /> */}
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto px-6 py-20 text-center">

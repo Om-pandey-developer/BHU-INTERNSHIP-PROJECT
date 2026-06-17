@@ -157,7 +157,7 @@ export default function ApplicantDashboard() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1
-            className="text-2xl font-bold text-foreground"
+            className="text-2xl font-bold text-foreground text-[32px]"
             style={{ fontFamily: "var(--font-serif)" }}
           >
             My Applications
@@ -169,7 +169,7 @@ export default function ApplicantDashboard() {
       </div>
 
       {/* Steps to Follow */}
-      <div className="bg-primary-container/20 rounded-2xl border border-primary/15 p-5 mb-8">
+      <div className="bg-white rounded-xl border border-black/25 p-3 shadowp-5 mb-8 shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer group">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center shrink-0">
             <span className="material-symbols-rounded text-[22px] text-primary">
@@ -177,8 +177,8 @@ export default function ApplicantDashboard() {
             </span>
           </div>
           <div>
-            <h3 className="text-sm font-bold text-foreground mb-2">Steps to Follow</h3>
-            <ol className="text-xs text-outline space-y-1.5 list-decimal list-inside">
+            <h3 className="text-sm font-bold text-orange-700 mb-2 text-[20px]">Steps to Follow</h3>
+            <ol className="text-xs space-y-1.5 list-decimal list-inside text-orange-500">
               <li>Fill and submit the application form with required documents.</li>
               <li>Your application will be forwarded to the Head of Department (HOD) for approval.</li>
               <li>After HOD approval, CC Admin will provision your email account.</li>
@@ -217,8 +217,8 @@ export default function ApplicantDashboard() {
             <div
               key={app.id}
               onClick={() => setSelectedApp(app)}
-              className="bg-surface rounded-xl border border-outline-variant p-5 hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer group"
-            >
+              className="bg-white rounded-xl border border-black/25 p-5 shadowp-5 mb-8 shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer group">
+              {/* bg-surface rounded-xl border border-black/10 shadowp-5 mb-8 shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer group */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-11 h-11 rounded-xl bg-primary-container flex items-center justify-center shrink-0">
@@ -228,7 +228,7 @@ export default function ApplicantDashboard() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2.5 mb-1">
-                      <p className="font-semibold text-foreground text-sm">
+                      <p className="font-semibold text-foreground text-md">
                         Ref. No: {app.trackingId}
                       </p>
                       <StatusBadge status={app.status} size="sm" />
@@ -314,7 +314,7 @@ export default function ApplicantDashboard() {
               )}
 
             {/* Timeline */}
-            <div className="bg-surface-variant/30 rounded-xl p-5">
+            <div className="bg-blackrounded-xl p-5">
               <h4 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
                 <span className="material-symbols-rounded text-[18px] text-primary">
                   timeline
