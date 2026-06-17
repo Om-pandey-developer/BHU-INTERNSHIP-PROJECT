@@ -45,7 +45,7 @@
 }
 
 @theme inline {
-  /* --video-background: var(--background); */
+  --video-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-light: var(--primary-light);
@@ -79,7 +79,7 @@ body {
   background-repeat: no-repeat;
   background-attachment: fixed;
   color: var(--foreground);
-  font-family: 'Inter', swap, system-ui, -apple-system, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.6;
 }
 
@@ -176,37 +176,58 @@ body {
   color: #ffffff;
 }
 
-.page-home .video-bg {
-  /* Styling for video background specifically on Home page */
-  /* opacity: 0.8; */
+/* ═══════════════════════════════════════════════════════
+   MOBILE RESPONSIVENESS UTILITIES
+   Touch-friendly targets and responsive spacing
+   ═══════════════════════════════════════════════════════ */
+
+/* Touch-friendly interactive elements */
+@media (max-width: 640px) {
+  /* Ensure minimum touch targets */
+  button, a, input[type="checkbox"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Stack horizontally-aligned elements on mobile */
+  .mobile-stack {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  /* Responsive padding */
+  .flex-1.p-6 {
+    padding: var(--padding-mobile);
+  }
+
+  /* Full-width buttons on mobile */
+  .mobile-full-width {
+    width: 100% !important;
+  }
+
+  /* Better grid layout on mobile */
+  .grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
 }
 
-/* ── 2. Login Page Styles ── */
-/* Add className="page-login" to your Login page container */
-.page-login {
-  /* Example: Change colors specifically for Login */
-  /* --background: #1e1e1e; */
-  /* --foreground: #ffffff; */
-  /* background-image: url('/LoginBG.jpg'); */
+/* Responsive text sizes */
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.375rem !important;
+  }
 }
 
-/* ── 3. Register Page Styles ── */
-/* Add className="page-register" to your Register page container */
-.page-register {
-  /* Example: Add a gradient background for Register */
-  /* background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%); */
+/* Drawer animation for Modal */
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
-/* ── 4. Dashboard Styles ── */
-/* Add className="page-dashboard" to your Dashboard container */
-.page-dashboard {
-  /* Example: Solid clean background for Dashboard */
-  /* background-color: #f3f4f6; */
-}
-
-/* ── Global Header & Footer Overrides ── */
-/* If you want different headers/footers on specific pages */
-.page-login .site-header,
-.page-register .site-header {
-  /* background-color: transparent; */
-}
+.animate-slide-from-right {
+  animation: slideInFromRight 0.3s ease-out forwards;
+}

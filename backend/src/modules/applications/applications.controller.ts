@@ -313,6 +313,17 @@ export class ApplicationsController {
   }
 
   /**
+   * GET /api/v1/applications/:id/history
+   * Get the audit log timeline for a specific application.
+   * Accessible by: any authenticated user (permission checked in service).
+   */
+  @Get(':id/history')
+  @ApiOperation({ summary: 'Get application audit history timeline' })
+  async getApplicationHistory(@Param('id') id: string) {
+    return this.applicationsService.getApplicationHistory(id);
+  }
+
+  /**
    * GET /api/v1/applications/:id
    * Get a single application by ID.
    */

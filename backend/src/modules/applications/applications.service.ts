@@ -8,6 +8,7 @@ import {
 import { createHash } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PdfService } from '../pdf/pdf.service';
+import { MailService } from '../mail/mail.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
 import { ApplicationStatus, Prisma } from '@prisma/client';
@@ -28,6 +29,7 @@ export class ApplicationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pdfService: PdfService,
+    private readonly mailService: MailService,
   ) {}
 
   /**
@@ -81,6 +83,10 @@ export class ApplicationsService {
     this.logger.log(
       `Application ${application.trackingId} submitted by ${applicantId}`,
     );
+
+    // ── Send email notification to HOD (non-blocking) ──
+    this.notifyHodOfNewApplication(application.departmentId, applicantId, application.trackingId, application.department?.name || 'Unknown')
+      .catch(err => this.logger.error('HOD notification failed', err));
 
     return {
       id: application.id,
@@ -282,6 +288,10 @@ export class ApplicationsService {
     this.logger.log(
       `Application ${application.trackingId} ${dto.status} by HOD ${hodId}`,
     );
+
+    // ── Send email notification to applicant (non-blocking) ──
+    this.notifyApplicantOfStatusChange(application.applicantId, application.trackingId, dto.status, dto.remarks)
+      .catch(err => this.logger.error('Applicant notification failed', err));
 
     return updated;
   }
@@ -701,5 +711,123 @@ export class ApplicationsService {
       page,
       totalPages: Math.ceil(total / limit),
     };
+  }
+
+  /**
+   * Get audit history for a specific application (timeline view).
+   */
+  async getApplicationHistory(applicationId: string) {
+    const application = await this.prisma.application.findUnique({
+      where: { id: applicationId },
+      select: { id: true, trackingId: true },
+    });
+
+    if (!application) {
+      throw new NotFoundException('Application not found');
+    }
+
+    const logs = await this.prisma.auditLog.findMany({
+      where: { entityId: applicationId },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    // Enrich logs with user names
+    const userIds = [...new Set(logs.map(l => l.performedBy))];
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, firstName: true, lastName: true, role: true },
+    });
+    const userMap = new Map(users.map(u => [u.id, u]));
+
+    return {
+      applicationId,
+      trackingId: application.trackingId,
+      timeline: logs.map(log => {
+        const user = userMap.get(log.performedBy);
+        return {
+          id: log.id,
+          action: log.action,
+          performedBy: user
+            ? `${user.firstName} ${user.lastName}`
+            : log.performedBy,
+          performedByRole: user?.role || 'UNKNOWN',
+          timestamp: log.createdAt,
+          payload: log.payload,
+          ipAddress: log.ipAddress,
+        };
+      }),
+    };
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // Private helpers for email notifications
+  // ═══════════════════════════════════════════════════════
+
+  /**
+   * Notify the HOD of the applicant's department about a new submission.
+   */
+  private async notifyHodOfNewApplication(
+    departmentId: string,
+    applicantId: string,
+    trackingId: string,
+    departmentName: string,
+  ): Promise<void> {
+    // Find the HOD for this department
+    const department = await this.prisma.department.findUnique({
+      where: { id: departmentId },
+      select: { hodId: true },
+    });
+
+    if (!department?.hodId) {
+      this.logger.warn(`No HOD assigned for department ${departmentId} — skipping notification`);
+      return;
+    }
+
+    const [hod, applicant] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: department.hodId },
+        select: { alternateEmail: true },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: applicantId },
+        select: { firstName: true, lastName: true },
+      }),
+    ]);
+
+    if (!hod?.alternateEmail || !applicant) return;
+
+    const applicantName = `${applicant.firstName} ${applicant.lastName}`;
+    await this.mailService.sendNewApplicationNotificationToHod(
+      hod.alternateEmail,
+      applicantName,
+      trackingId,
+      departmentName,
+    );
+  }
+
+  /**
+   * Notify the applicant about their application status change.
+   */
+  private async notifyApplicantOfStatusChange(
+    applicantId: string,
+    trackingId: string,
+    status: string,
+    remarks?: string,
+  ): Promise<void> {
+    const applicant = await this.prisma.user.findUnique({
+      where: { id: applicantId },
+      select: { alternateEmail: true, firstName: true, lastName: true },
+    });
+
+    if (!applicant?.alternateEmail) return;
+
+    const applicantName = `${applicant.firstName} ${applicant.lastName}`;
+    await this.mailService.sendApplicationStatusNotification(
+      applicant.alternateEmail,
+      applicantName,
+      trackingId,
+      status,
+      remarks,
+    );
   }
 }
