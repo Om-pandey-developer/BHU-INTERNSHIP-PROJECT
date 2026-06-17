@@ -6,6 +6,7 @@ import StatusBadge from "@/components/StatusBadge";
 import StatsCard from "@/components/StatsCard";
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
+import SkeletonLoader from "@/components/SkeletonLoader";
 import { useToastStore } from "@/components/Toast";
 
 interface Application {
@@ -364,14 +365,13 @@ export default function AdminDashboard() {
   // ── Render ──
   if (loading && pendingApps.length === 0 && activeApps.length === 0) {
     return (
-      <div className="space-y-4 animate-fade-in">
-        <div className="h-8 w-48 skeleton" />
-        <div className="h-4 w-72 skeleton" />
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-8">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 skeleton rounded-2xl" />
-          ))}
+      <div className="space-y-6 animate-fade-in">
+        <div className="space-y-2">
+          <div className="h-8 w-48 skeleton rounded-lg" />
+          <div className="h-4 w-72 skeleton rounded" />
         </div>
+        <SkeletonLoader variant="stats-card" count={3} />
+        <SkeletonLoader variant="table-row" count={4} />
       </div>
     );
   }
@@ -703,6 +703,7 @@ export default function AdminDashboard() {
         onClose={() => setSelectedApp(null)}
         title={`Application ${selectedApp?.trackingId || ""}`}
         size="lg"
+        mode="drawer"
         footer={
           selectedApp && (
             <>

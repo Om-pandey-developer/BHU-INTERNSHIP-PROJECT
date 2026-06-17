@@ -3,6 +3,7 @@ import { MulterModule } from '@nestjs/platform-express';
 import { ApplicationsService } from './applications.service';
 import { ApplicationsController } from './applications.controller';
 import { PdfModule } from '../pdf/pdf.module';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -10,10 +11,12 @@ import { PdfModule } from '../pdf/pdf.module';
       dest: process.env.UPLOAD_DIR || './uploads',
     }),
     PdfModule,
+    MailModule,
   ],
   controllers: [ApplicationsController],
   providers: [ApplicationsService],
   exports: [ApplicationsService],
 })
 export class ApplicationsModule {}
+
 

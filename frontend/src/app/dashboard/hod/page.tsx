@@ -5,6 +5,7 @@ import api from "@/lib/axios";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
+import SkeletonLoader from "@/components/SkeletonLoader";
 import { useToastStore } from "@/components/Toast";
 import { useAuthStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
@@ -218,14 +219,12 @@ export default function HodDashboard() {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="h-8 w-48 skeleton" />
-        <div className="h-4 w-72 skeleton" />
-        <div className="mt-8 space-y-3">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 skeleton rounded-xl" />
-          ))}
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <div className="h-8 w-48 skeleton rounded-lg" />
+          <div className="h-4 w-72 skeleton rounded" />
         </div>
+        <SkeletonLoader variant="table-row" count={5} />
       </div>
     );
   }
@@ -368,7 +367,7 @@ export default function HodDashboard() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 max-sm:flex-col max-sm:gap-1">
                   <button
                     onClick={() => {
                       if (!hasSignature) {
@@ -431,6 +430,7 @@ export default function HodDashboard() {
             : `Application ${selectedApp?.trackingId || ""}`
         }
         size="lg"
+        mode="drawer"
         footer={
           actionType ? (
             <>

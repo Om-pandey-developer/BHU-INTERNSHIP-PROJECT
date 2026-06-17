@@ -12,6 +12,7 @@ import { generateApplicationPdf } from "@/lib/pdfGenerator";
 import CountryCodeSelect from "@/components/CountryCodeSelect";
 import DepartmentSelect from "@/components/DepartmentSelect";
 import NationalitySelect from "@/components/NationalitySelect";
+import SignaturePad from "@/components/SignaturePad";
 
 const categories = [
   {
@@ -126,6 +127,7 @@ export default function NewApplicationPage() {
   const [error, setError] = useState("");
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [signatureModalOpen, setSignatureModalOpen] = useState(false);
+  const [signatureMode, setSignatureMode] = useState<"upload" | "draw">("upload");
   const [isOtherEmployment, setIsOtherEmployment] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [submittedApp, setSubmittedApp] = useState<any>(null);
@@ -671,82 +673,160 @@ export default function NewApplicationPage() {
             </div>
           </div>
 
-          {/* Signature Upload */}
+          {/* Signature Upload / Draw */}
           <div>
-            <p className="text-sm font-semibold text-foreground mb-2">
-              Certified Signature *
-            </p>
-            <div
-              onClick={() => signatureInputRef.current?.click()}
-              className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${
-                signature
-                  ? "border-success bg-success-container/10"
-                  : "border-outline-variant hover:border-primary hover:bg-primary/3"
-              }`}
-            >
-              <input
-                ref={signatureInputRef}
-                type="file"
-                accept="image/jpeg,image/jpg,image/png"
-                className="hidden"
-                onChange={handleSignatureChange}
-              />
-
-              {signaturePreview ? (
-                <div className="flex items-center gap-4">
-                  <img
-                    src={signaturePreview}
-                    alt="Signature Preview"
-                    className="w-20 h-20 rounded-xl object-contain border border-outline-variant bg-white"
-                  />
-                  <div className="text-left flex-1">
-                    <p className="text-sm font-medium text-foreground">
-                      {signature?.name}
-                    </p>
-                    <p className="text-xs text-outline mt-0.5">
-                      {((signature?.size || 0) / 1024).toFixed(0)} KB •{" "}
-                      {signature?.type}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSignature(null);
-                        setSignaturePreview(null);
-                      }}
-                      className="text-xs text-error font-medium mt-1 hover:underline cursor-pointer"
-                    >
-                      Remove
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSignatureModalOpen(true);
-                      }}
-                      className="text-xs text-primary font-medium mt-1 hover:underline cursor-pointer ml-3"
-                    >
-                      View Full Size
-                    </button>
-                  </div>
-                  <span className="material-symbols-rounded text-[24px] text-success">
-                    check_circle
-                  </span>
-                </div>
-              ) : (
-                <>
-                  <span className="material-symbols-rounded text-[40px] text-outline/50 mb-2">
-                    draw
-                  </span>
-                  <p className="text-sm text-outline">
-                    Click to upload your signature
-                  </p>
-                  <p className="text-xs text-outline/60 mt-1">
-                    JPEG or PNG, max 2MB
-                  </p>
-                </>
-              )}
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-semibold text-foreground">
+                Certified Signature *
+              </p>
+              {/* Toggle: Upload vs Draw */}
+              <div className="flex items-center bg-surface-variant rounded-lg p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setSignatureMode("upload")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
+                    signatureMode === "upload"
+                      ? "bg-primary text-white shadow-sm"
+                      : "text-outline hover:text-foreground"
+                  }`}
+                >
+                  <span className="material-symbols-rounded text-[14px]">upload_file</span>
+                  Upload
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSignatureMode("draw")}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${
+                    signatureMode === "draw"
+                      ? "bg-primary text-white shadow-sm"
+                      : "text-outline hover:text-foreground"
+                  }`}
+                >
+                  <span className="material-symbols-rounded text-[14px]">draw</span>
+                  Draw
+                </button>
+              </div>
             </div>
+
+            {signatureMode === "upload" ? (
+              /* File Upload Mode */
+              <div
+                onClick={() => signatureInputRef.current?.click()}
+                className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${
+                  signature
+                    ? "border-success bg-success-container/10"
+                    : "border-outline-variant hover:border-primary hover:bg-primary/3"
+                }`}
+              >
+                <input
+                  ref={signatureInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png"
+                  className="hidden"
+                  onChange={handleSignatureChange}
+                />
+
+                {signaturePreview ? (
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={signaturePreview}
+                      alt="Signature Preview"
+                      className="w-20 h-20 rounded-xl object-contain border border-outline-variant bg-white"
+                    />
+                    <div className="text-left flex-1">
+                      <p className="text-sm font-medium text-foreground">
+                        {signature?.name}
+                      </p>
+                      <p className="text-xs text-outline mt-0.5">
+                        {((signature?.size || 0) / 1024).toFixed(0)} KB •{" "}
+                        {signature?.type}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSignature(null);
+                          setSignaturePreview(null);
+                        }}
+                        className="text-xs text-error font-medium mt-1 hover:underline cursor-pointer"
+                      >
+                        Remove
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSignatureModalOpen(true);
+                        }}
+                        className="text-xs text-primary font-medium mt-1 hover:underline cursor-pointer ml-3"
+                      >
+                        View Full Size
+                      </button>
+                    </div>
+                    <span className="material-symbols-rounded text-[24px] text-success">
+                      check_circle
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <span className="material-symbols-rounded text-[40px] text-outline/50 mb-2">
+                      upload_file
+                    </span>
+                    <p className="text-sm text-outline">
+                      Click to upload your signature
+                    </p>
+                    <p className="text-xs text-outline/60 mt-1">
+                      JPEG or PNG, max 2MB
+                    </p>
+                  </>
+                )}
+              </div>
+            ) : (
+              /* Digital Drawing Mode */
+              <div>
+                {signaturePreview ? (
+                  <div className="border-2 border-success rounded-xl p-4 bg-success-container/10">
+                    <div className="flex items-center gap-4">
+                      <img
+                        src={signaturePreview}
+                        alt="Drawn Signature"
+                        className="w-24 h-16 rounded-lg object-contain border border-outline-variant bg-white"
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                          <span className="material-symbols-rounded text-[16px] text-success">check_circle</span>
+                          Signature captured
+                        </p>
+                        <p className="text-xs text-outline mt-0.5">
+                          {signature ? `${((signature.size || 0) / 1024).toFixed(0)} KB` : ""}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSignature(null);
+                          setSignaturePreview(null);
+                        }}
+                        className="text-xs text-error font-medium hover:underline cursor-pointer"
+                      >
+                        Re-draw
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <SignaturePad
+                    onSignatureCapture={(file, previewUrl) => {
+                      setSignature(file);
+                      setSignaturePreview(previewUrl);
+                    }}
+                    onClear={() => {
+                      setSignature(null);
+                      setSignaturePreview(null);
+                    }}
+                  />
+                )}
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
