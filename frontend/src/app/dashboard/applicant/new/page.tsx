@@ -941,7 +941,7 @@ export default function NewApplicationPage() {
                     trackingId: "PREVIEW",
                     status: "DRAFT",
                     createdAt: new Date().toISOString(),
-                    department: departments.find((d) => d.id === departmentId),
+                    department: dbDepartments.find((d) => d.id === departmentId),
                     applicantDetails: { ...details, category: selectedCategory },
                   };
                   generateApplicationPdf(previewData, {
