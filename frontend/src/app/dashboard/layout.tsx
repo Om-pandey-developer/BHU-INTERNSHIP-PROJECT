@@ -97,7 +97,7 @@ export default function DashboardLayout({
     // ── 1. PAGE CONTAINER ──
     // The 'page-dashboard' class links to globals.css for specific backgrounds/colors.
     // 'min-h-screen flex' provides the layout foundation for Sidebar + Main Content.
-    <div className="page-dashboard min-h-screen flex bg-rose-200/20">
+    <div className="page-dashboard min-h-screen flex bg-olive-200">
 
       {/* ── 2. MOBILE SIDEBAR OVERLAY ──   
           Darkens the background when the sidebar is open on mobile devices. */}
@@ -234,7 +234,7 @@ export default function DashboardLayout({
             </a>
           )}
 
-          <span className={`w-10 h-10 flex items-center justify-center text-[20px] px-3 py-1 rounded-full text-xs font-semibold ${roleBg}`}>
+          <span className={`w-10 h-10 flex items-center justify-center text-[20px] px-3 py-1 rounded-full text-xs shadow-[0_0_9px_rgba(0,0,0,0.3)] font-semibold ${roleBg}`}>
             {user.firstName[0]}
             {user.lastName[0]}
           </span>
