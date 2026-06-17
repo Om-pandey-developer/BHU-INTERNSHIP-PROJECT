@@ -30,6 +30,8 @@ enum ApplicationStatus {
   PENDING_CC
   PROVISIONED
   FAILED_PROVISIONING
+  SUSPENDED
+  ARCHIVED
 }
 
 // ─────────────────────────────────────────────
