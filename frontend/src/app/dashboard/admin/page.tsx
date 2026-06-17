@@ -48,6 +48,9 @@ interface AuditLog {
   ipAddress: string;
   payload?: Record<string, unknown>;
   createdAt: string;
+  performerName?: string;
+  performerDepartment?: string;
+  entityTrackingId?: string;
 }
 
 interface QuotaStats {
@@ -661,7 +664,7 @@ export default function AdminDashboard() {
                   <th className="px-4 py-3 font-medium">Time</th>
                   <th className="px-4 py-3 font-medium">Action</th>
                   <th className="px-4 py-3 font-medium">Entity</th>
-                  <th className="px-4 py-3 font-medium">IP Address</th>
+                  <th className="px-4 py-3 font-medium">Performed By</th>
                 </tr>
               </thead>
               <tbody>
@@ -673,8 +676,15 @@ export default function AdminDashboard() {
                         {log.action.replace(/_/g, " ")}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-foreground">{log.entityType}: {log.entityId.slice(0, 8)}…</td>
-                    <td className="px-4 py-3 text-xs text-outline font-mono">{log.ipAddress}</td>
+                    <td className="px-4 py-3 text-xs text-foreground font-mono">
+                      {log.entityType === "APPLICATION" && log.entityTrackingId 
+                        ? log.entityTrackingId 
+                        : `${log.entityType}: ${log.entityId.slice(0, 8)}…`}
+                    </td>
+                    <td className="px-4 py-3">
+                      <p className="text-xs text-foreground font-semibold">{log.performerName || log.performedBy.slice(0, 8)}</p>
+                      <p className="text-[10px] text-outline truncate max-w-[150px]">{log.performerDepartment}</p>
+                    </td>
                   </tr>
                 ))}
               </tbody>

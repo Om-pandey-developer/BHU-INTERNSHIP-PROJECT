@@ -662,7 +662,7 @@ export class ApplicationsService {
    */
   async getAuditLogs(page = 1, limit = 50) {
     const skip = (page - 1) * limit;
-    const [logs, total] = await Promise.all([
+    const [rawLogs, total] = await Promise.all([
       this.prisma.auditLog.findMany({
         orderBy: { createdAt: 'desc' },
         skip,
@@ -670,6 +670,30 @@ export class ApplicationsService {
       }),
       this.prisma.auditLog.count(),
     ]);
+
+    const performerIds = [...new Set(rawLogs.map(l => l.performedBy))];
+    const performers = await this.prisma.user.findMany({
+      where: { id: { in: performerIds } },
+      include: { department: true }
+    });
+    const performerMap = new Map(performers.map(p => [p.id, p]));
+
+    const appIds = [...new Set(rawLogs.filter(l => l.entityType === 'APPLICATION').map(l => l.entityId))];
+    const apps = await this.prisma.application.findMany({
+      where: { id: { in: appIds } },
+      select: { id: true, trackingId: true }
+    });
+    const appMap = new Map(apps.map(a => [a.id, a.trackingId]));
+
+    const logs = rawLogs.map(log => {
+      const performer = performerMap.get(log.performedBy);
+      return {
+        ...log,
+        performerName: performer ? `${performer.firstName} ${performer.lastName}` : 'System / Unknown',
+        performerDepartment: performer?.department?.name || 'N/A',
+        entityTrackingId: log.entityType === 'APPLICATION' ? (appMap.get(log.entityId) || log.entityId) : log.entityId,
+      };
+    });
 
     return {
       logs,
