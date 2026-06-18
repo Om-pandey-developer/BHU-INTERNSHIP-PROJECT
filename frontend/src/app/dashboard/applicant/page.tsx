@@ -154,7 +154,7 @@ export default function ApplicantDashboard() {
   return (
     <div className="animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
         <div>
           <h1
             className="text-2xl font-bold text-foreground text-[32px]"
@@ -162,7 +162,7 @@ export default function ApplicantDashboard() {
           >
             My Applications
           </h1>
-          <p className="text-sm text-outline mt-1">
+          <p className="text-sm-bold text-orange-900 mt-1">
             Track the status of your email account applications
           </p>
         </div>
@@ -218,7 +218,6 @@ export default function ApplicantDashboard() {
               key={app.id}
               onClick={() => setSelectedApp(app)}
               className="bg-white rounded-xl border border-black/25 p-5 shadowp-5 mb-8 shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer group">
-              {/* bg-surface rounded-xl border border-black/10 shadowp-5 mb-8 shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer group */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-11 h-11 rounded-xl bg-primary-container flex items-center justify-center shrink-0">
@@ -227,13 +226,13 @@ export default function ApplicantDashboard() {
                     </span>
                   </div>
                   <div>
-                    <div className="flex items-center gap-2.5 mb-1">
-                      <p className="font-semibold text-foreground text-md">
+                    <div className="flex items-center gap-2.5 mb-.5">
+                      <p className="font-semibold text-foreground text-md ">
                         Ref. No: {app.trackingId}
                       </p>
                       <StatusBadge status={app.status} size="sm" />
                     </div>
-                    <p className="text-xs text-outline">
+                    <p className="text-xs text-orange-800 ">
                       {app.department?.name || "—"} • Submitted{" "}
                       {new Date(app.createdAt).toLocaleDateString("en-IN", {
                         day: "numeric",
@@ -335,7 +334,7 @@ export default function ApplicantDashboard() {
               <h4 className="text-sm font-semibold text-foreground mb-3">
                 Application Details
               </h4>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {Object.entries(
                   selectedApp.applicantDetails || {}
                 ).map(([key, val]) => (
@@ -401,7 +400,7 @@ export default function ApplicantDashboard() {
             )}
 
             {/* Actions */}
-            <div className="pt-4 border-t border-outline-variant flex items-center justify-end gap-3">
+            <div className="pt-4 border-t border-outline-variant flex flex-col sm:flex-row items-center justify-end gap-3">
               <Button
                 variant="outlined"
                 onClick={() => setSelectedApp(null)}

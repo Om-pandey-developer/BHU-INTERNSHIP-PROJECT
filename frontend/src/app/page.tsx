@@ -37,7 +37,7 @@ export default function Home() {
     // The 'page-home' class ties to globals.css for specific backgrounds/colors.
     // 'min-h-screen flex flex-col' makes it a full-height flex column.
     // 'bg-background' applies the CSS variable for the base color.
-    <div className="home-page bg-black/70 min-h-screen flex flex-col bg-background">
+    <div className="home-page min-h-screen flex flex-col ">
 
       {/* ── 2. NAVIGATION BAR ── 
           'fixed z-50' keeps it on top. 'backdrop-blur-md' gives a glass effect. */}
@@ -61,14 +61,14 @@ export default function Home() {
 
             <div>
               <h1 className="font-bold text-[15px] text-amber-900">
-                BHU Email Portal
+                BHU Email Registration Portal
               </h1>
               <p className="text-[10px] text-amber-600">
                 Banaras Hindu University
               </p>
             </div>
           </div>
-          <div className="flex items-right gap-2.5">
+          <div className="hidden sm:flex items-center gap-2.5">
             <a
               href="/login"
               className="px-5 py-2 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition-colors border border-amber-500/40"
@@ -88,7 +88,7 @@ export default function Home() {
       {/* ── 3. HERO SECTION ──
           'flex-1' makes it take the remaining height. 
           'relative overflow-hidden' contains the decorative background gradients. */}
-      <section className="flex-1 flex items-center justify-center relative overflow-hidden pt-16">
+      <section className="flex-1 flex items-center justify-center relative overflow-hidden pt-32 sm:pt-24 md:pt-20">
 
         {/* Background Video and decorative overlay */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -97,17 +97,17 @@ export default function Home() {
             loop
             muted
             playsInline
-            className="absolute top-0 left-0 w-full h-full object-cover"
+            className="absolute top-0 left-0 w-full h-full object-cover "
           >
             <source src="/BHUTour.mp4" type="video/mp4" />
           </video>
-          {/* <div className="absolute inset-0 bg-black/32" />
-          <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-primary/8 to-tertiary/5 mix-blend-overlay" />
+          <div className="absolute inset-0 bg-black/40" />
+          {/* <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-primary/8 to-tertiary/5 mix-blend-overlay" />
           <div className="absolute -bottom-32 -left-32 w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-secondary/8 to-primary/3 mix-blend-overlay" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-gradient-radial from-primary/3 to-transparent mix-blend-overlay" /> */}
         </div>
 
-        <div className="relative z-10 max-w-4xl mx-auto px-6 py-20 text-center">
+        <div className="relative z-10 max-w-4xl mx-auto px-6 pt-6 pb-16 sm:py-20 text-center">
           {/* Badge */}
           {/* <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary-container text-on-primary-container text-xs font-semibold mb-8 animate-fade-in">
             <span className="material-symbols-rounded text-[16px]">
@@ -195,7 +195,7 @@ export default function Home() {
             ].map((feature) => (
               <div
                 key={feature.title}
-                className="bg-black/8 backdrop-blur-sm rounded-2xl border border-white/10 p-6 text-left hover:shadow-lg hover:-translate-y-1 transition-all duration-300 hover:border-amber-500/30"
+                className="bg-black/12 backdrop-blur-sm rounded-2xl border border-white/10 p-6 text-left hover:shadow-lg hover:-translate-y-1 transition-all duration-300 hover:border-amber-500/30"
               >
                 <div
                   className={`w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center mb-4`}

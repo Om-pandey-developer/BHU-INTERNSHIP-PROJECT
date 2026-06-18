@@ -73,10 +73,10 @@ export default function HodReviewedPage() {
     filter === "all"
       ? applications
       : applications.filter((app) =>
-          filter === "approved"
-            ? app.status === "APPROVED_HOD"
-            : app.status === "REJECTED_HOD"
-        );
+        filter === "approved"
+          ? app.status === "APPROVED_HOD"
+          : app.status === "REJECTED_HOD"
+      );
 
   async function fetchImageAsBase64(url: string | null): Promise<string | null> {
     if (!url) return null;
@@ -121,9 +121,9 @@ export default function HodReviewedPage() {
     try {
       const photoUrl = `/applications/${app.id}/photo`;
       const signatureUrl = `/applications/${app.id}/signature`;
-        
+
       addToast({ message: "Preparing PDF documents...", variant: "info" });
-      
+
       const photoDataUrl = await fetchImageAsBase64(photoUrl);
       const signatureDataUrl = await fetchImageAsBase64(signatureUrl);
 
@@ -156,27 +156,36 @@ export default function HodReviewedPage() {
       <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
           <h1
-            className="text-2xl font-bold text-foreground"
+            className="text-4xl font-bold text-foreground"
             style={{ fontFamily: "var(--font-serif)" }}
           >
             Reviewed Applications
           </h1>
-          <p className="text-sm text-outline mt-1">
+          <p className="text-sm text-gray-400  mt-1.5">
             History of applications you have reviewed
           </p>
         </div>
 
         {/* Filter tabs */}
-        <div className="flex items-center gap-1 bg-surface-variant/50 rounded-xl p-1">
+        <div className="relative flex bg-gray-100 rounded-xl p-1 shadow-[0_0_9px_rgba(0,0,0,0.3)] w-[320px]">
+          {/* Sliding Pill */}
+          <div
+            className="absolute top-1 bottom-1 bg-surface shadow-md rounded-lg transition-transform duration-100 ease-[cubic-bezier(0.4,0,0.2,1)]"
+            style={{
+              width: "calc((100% - 8px) / 3)",
+              left: "4px",
+              transform: `translateX(${filter === "all" ? "0%" : filter === "approved" ? "100%" : "200%"
+                })`,
+            }}
+          />
           {(["all", "approved", "rejected"] as const).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                filter === f
-                  ? "bg-surface text-foreground shadow-sm"
-                  : "text-outline hover:text-foreground"
-              }`}
+              className={`relative z-10 flex-1 py-1.5 text-center text-sm font-medium transition-colors duration-100 cursor-pointer ${filter === f
+                ? "text-foreground"
+                : "text-outline hover:text-foreground"
+                }`}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
             </button>
@@ -186,16 +195,17 @@ export default function HodReviewedPage() {
 
       {/* List */}
       {filtered.length === 0 ? (
-        <div className="bg-surface rounded-2xl border border-outline-variant p-12 text-center">
-          <div className="w-20 h-20 rounded-full bg-surface-variant flex items-center justify-center mx-auto mb-5">
-            <span className="material-symbols-rounded text-[36px] text-outline">
+
+        <div className="bg-white rounded-2xl border border-black/25 p-12 text-center shadowp-5 mb-8 shadow-[0_0_9px_rgba(0,0,0,0.3)]">
+          <div className="w-20 h-20 rounded-full bg-orange-100 flex items-center justify-center mx-auto mb-5 shadowp-5 mb-8 shadow-[0_0_9px_rgba(0,0,0,0.3)]">
+            <span className="material-symbols-rounded text-black hover:animate-spin hover:[animation-direction:reverse]">
               history
             </span>
           </div>
-          <h3 className="text-lg font-bold text-foreground mb-2">
+          <h3 className="text-xl font-bold text-foreground mb-2">
             No reviewed applications
           </h3>
-          <p className="text-sm text-outline max-w-md mx-auto">
+          <p className="text-sm text-gray-400  max-w-md mx-auto">
             Applications you approve or reject will appear here for your
             records. Head to{" "}
             <a

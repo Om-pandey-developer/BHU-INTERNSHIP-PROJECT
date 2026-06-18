@@ -97,7 +97,7 @@ export default function DashboardLayout({
     // ── 1. PAGE CONTAINER ──
     // The 'page-dashboard' class links to globals.css for specific backgrounds/colors.
     // 'min-h-screen flex' provides the layout foundation for Sidebar + Main Content.
-    <div className="page-dashboard min-h-screen flex bg-rose-200/20">
+    <div className="page-dashboard min-h-screen flex bg-olive-200">
 
       {/* ── 2. MOBILE SIDEBAR OVERLAY ──   
           Darkens the background when the sidebar is open on mobile devices. */}
@@ -217,9 +217,9 @@ export default function DashboardLayout({
             <Image
               src="/BHUlogo.png"
               alt="BHU Logo"
-              width={200}
-              height={200}
-              className="object-contain w-full h-full"
+              width={160}
+              height={50}
+              className="object-contain h-11 w-auto"
             />
           </div>
 
@@ -227,14 +227,15 @@ export default function DashboardLayout({
           {user.role === "APPLICANT" && (
             <a
               href="/dashboard/applicant/new"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary-dark transition-colors"
             >
-              <span className="material-symbols-rounded text-[18px]">add_circle</span>
-              New Application
+              <span className="material-symbols-rounded text-[15px]">add_circle</span>
+              <span className="hidden sm:inline">New Application</span>
+              <span className="sm:hidden">New</span>
             </a>
           )}
 
-          <span className={`w-10 h-10 flex items-center justify-center text-[20px] px-3 py-1 rounded-full text-xs font-semibold ${roleBg}`}>
+          <span className={`w-10 h-10 flex items-center justify-center text-[20px] px-3 py-1 rounded-full text-xs shadow-[0_0_9px_rgba(0,0,0,0.3)] font-semibold ${roleBg}`}>
             {user.firstName[0]}
             {user.lastName[0]}
           </span>
@@ -242,7 +243,7 @@ export default function DashboardLayout({
 
         {/* ── 6. PAGE INJECTION POINT ── 
             This is where specific dashboard pages (Admin, HOD, Applicant) are rendered. */}
-        <div className="flex-1 p-6 lg:p-8">{children}</div>
+        <div className="flex-1 p-4 sm:p-6 lg:p-8">{children}</div>
       </main>
     </div>
   );
