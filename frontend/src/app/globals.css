@@ -22,7 +22,7 @@
   --tertiary-container: #FFD8E4;
   --surface: #f8f8f5;
   --surface-variant: #ffffff;
-  --outline: #adadad;
+  --outline: #5a4004;
   /*register page */
   --outline-variant: #8842cf;
   --error: #B3261E;
@@ -183,8 +183,11 @@ body {
 
 /* Touch-friendly interactive elements */
 @media (max-width: 640px) {
+
   /* Ensure minimum touch targets */
-  button, a, input[type="checkbox"] {
+  button,
+  a,
+  input[type="checkbox"] {
     min-height: 44px;
     min-width: 44px;
   }
@@ -213,12 +216,15 @@ body {
 
 /* Responsive text sizes - only for pages that don't set their own sizes */
 @media (max-width: 480px) {
-  .prose h1, .content-h1 {
+
+  .prose h1,
+  .content-h1 {
     font-size: 1.375rem !important;
   }
 
   /* Prevent Turnstile CAPTCHA overflow on very small screens */
-  .cf-turnstile, iframe[src*="challenges.cloudflare.com"] {
+  .cf-turnstile,
+  iframe[src*="challenges.cloudflare.com"] {
     max-width: 100%;
     transform-origin: left center;
   }
@@ -229,6 +235,7 @@ body {
   from {
     transform: translateX(100%);
   }
+
   to {
     transform: translateX(0);
   }
@@ -236,4 +243,4 @@ body {
 
 .animate-slide-from-right {
   animation: slideInFromRight 0.3s ease-out forwards;
-}
+}

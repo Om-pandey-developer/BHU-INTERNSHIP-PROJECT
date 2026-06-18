@@ -323,38 +323,41 @@ export default function AdminDashboard() {
 
     return (
       <div className="bg-surface rounded-xl border border-outline-variant hover:shadow-md hover:border-primary/20 transition-all duration-200">
-        <div className="flex items-center p-4 gap-3">
-          {/* Checkbox for bulk */}
-          {(activeTab === "active" || activeTab === "suspended") && (
-            <input
-              type="checkbox"
-              checked={selectedIds.has(app.id)}
-              onChange={() => toggleSelect(app.id)}
-              className="w-4 h-4 accent-primary cursor-pointer shrink-0"
-            />
-          )}
-          {/* Avatar */}
-          <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-sm font-bold text-on-primary-container shrink-0">
-            {app.applicant?.firstName?.[0]}
-            {app.applicant?.lastName?.[0]}
-          </div>
-          {/* Info */}
-          <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setSelectedApp(app)}>
-            <div className="flex items-center gap-2 mb-0.5">
-              <p className="font-semibold text-foreground text-sm">
-                {app.applicant?.firstName} {app.applicant?.lastName}
-              </p>
-              <StatusBadge status={app.status} size="sm" />
+        <div className="flex flex-col sm:flex-row sm:items-center p-3 sm:p-4 gap-2 sm:gap-3">
+          {/* Top row: checkbox + avatar + info */}
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Checkbox for bulk */}
+            {(activeTab === "active" || activeTab === "suspended") && (
+              <input
+                type="checkbox"
+                checked={selectedIds.has(app.id)}
+                onChange={() => toggleSelect(app.id)}
+                className="w-4 h-4 accent-primary cursor-pointer shrink-0"
+              />
+            )}
+            {/* Avatar */}
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-primary-container flex items-center justify-center text-xs sm:text-sm font-bold text-on-primary-container shrink-0">
+              {app.applicant?.firstName?.[0]}
+              {app.applicant?.lastName?.[0]}
             </div>
-            <p className="text-xs text-outline truncate">
-              {app.trackingId} · {app.department?.name}
-              {app.applicant?.bhuEmail && ` · ${app.applicant.bhuEmail}`}
-            </p>
+            {/* Info */}
+            <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setSelectedApp(app)}>
+              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                <p className="font-semibold text-foreground text-xs sm:text-sm">
+                  {app.applicant?.firstName} {app.applicant?.lastName}
+                </p>
+                <StatusBadge status={app.status} size="sm" />
+              </div>
+              <p className="text-[11px] sm:text-xs text-outline truncate">
+                {app.trackingId} · {app.department?.name}
+                {app.applicant?.bhuEmail && ` · ${app.applicant.bhuEmail}`}
+              </p>
+            </div>
           </div>
 
           {/* Per-user storage indicator */}
           {activeTab === "active" && app.status === "PROVISIONED" && (
-            <div className="hidden sm:flex items-center gap-3 shrink-0 min-w-[220px]">
+            <div className="flex items-center gap-3 shrink-0 w-full sm:w-auto sm:min-w-[220px] pl-12 sm:pl-0">
               <div className="flex-1 min-w-[120px]">
                 <div className="flex justify-between text-[10px] text-outline mb-1">
                   <span>{usedGB} / {allocatedGB} GB</span>
@@ -362,9 +365,8 @@ export default function AdminDashboard() {
                 </div>
                 <div className="w-full bg-surface-variant rounded-full h-2 overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      usagePct > 80 ? "bg-error" : usagePct > 50 ? "bg-warning" : "bg-success"
-                    }`}
+                    className={`h-full rounded-full transition-all duration-500 ${usagePct > 80 ? "bg-error" : usagePct > 50 ? "bg-warning" : "bg-success"
+                      }`}
                     style={{ width: `${Math.max(usagePct, 3)}%` }}
                   />
                 </div>
@@ -373,7 +375,7 @@ export default function AdminDashboard() {
           )}
 
           {/* Actions */}
-          <div className="flex items-center gap-2 shrink-0">{actions}</div>
+          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center pl-12 sm:pl-0">{actions}</div>
         </div>
       </div>
     );
@@ -394,29 +396,29 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="animate-fade-in">
+    <div className="">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-serif)" }}>
-          CC Admin Dashboard
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl lg:text-[32px] font-bold text-amber-800" style={{ fontFamily: "var(--font-serif)" }}>
+          Computer Center Admin Dashboard
         </h1>
-        <p className="text-sm text-outline mt-1">User Lifecycle Management — Provisioning, Monitoring & Administration</p>
+        <p className="text-xs sm:text-[13px] text-amber-600 mt-1">User Lifecycle Management — Provisioning, Monitoring & Administration</p>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-1 bg-surface-variant/50 rounded-xl p-1 mb-6 overflow-x-auto">
+      <div className="flex gap-1 bg-surface-variant/90 rounded-xl p-1 mb-4 sm:mb-6 overflow-x-auto shadow-[0_0_9px_rgba(0,0,0,0.3)] scrollbar-none" style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => { setActiveTab(tab.id); setSelectedIds(new Set()); setSearchQuery(""); }}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-              activeTab === tab.id
-                ? "bg-primary text-on-primary shadow-sm"
-                : "text-outline hover:text-foreground hover:bg-surface"
-            }`}
+            className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === tab.id
+              ? "bg-gray-800 text-on-primary shadow-[0_0_9px_rgba(0,0,0,0.3)]"
+              : "text-gray-500 hover:text-foreground hover:bg-surface "
+              }`}
+            title={tab.label}
           >
-            <span className="material-symbols-rounded text-[18px]">{tab.icon}</span>
-            {tab.label}
+            <span className="material-symbols-rounded text-[16px] sm:text-[18px]">{tab.icon}</span>
+            <span className="hidden xs:inline sm:inline">{tab.label}</span>
           </button>
         ))}
       </div>
@@ -424,64 +426,66 @@ export default function AdminDashboard() {
       {/* Search Bar (for list tabs) */}
       {activeTab !== "audit" && (
         <div className="relative mb-4">
-          <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+          <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[20px]">search</span>
           <input
             type="text"
             placeholder="Search by name, tracking ID, email, or department..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-surface border border-outline-variant rounded-xl pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-outline/60 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
+            className="w-full bg-white border border-black/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-stone focus:outline-none focus:border-black-800 focus:ring-1 focus:ring-primary/30 transition-colors shadow-[0_0_9px_rgba(0,0,0,0.3)]"
           />
         </div>
       )}
 
       {/* Bulk Actions Bar */}
       {selectedIds.size > 0 && (activeTab === "active" || activeTab === "suspended") && (
-        <div className="flex items-center gap-3 bg-primary-container/30 border border-primary/20 rounded-xl px-5 py-3 mb-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 bg-primary-container/30 border border-primary/20 rounded-xl px-3 sm:px-5 py-3 mb-4">
           <span className="text-sm font-semibold text-primary">{selectedIds.size} selected</span>
-          <div className="flex-1" />
-          {activeTab === "active" && (
-            <Button
-              icon="pause_circle"
-              variant="outlined"
-              size="sm"
-              onClick={() => setRemarksModal({ action: "suspend", ids: Array.from(selectedIds) })}
-            >
-              Bulk Suspend
+          <div className="hidden sm:block flex-1" />
+          <div className="flex flex-wrap items-center gap-2">
+            {activeTab === "active" && (
+              <Button
+                icon="pause_circle"
+                variant="outlined"
+                size="sm"
+                onClick={() => setRemarksModal({ action: "suspend", ids: Array.from(selectedIds) })}
+              >
+                Bulk Suspend
+              </Button>
+            )}
+            {activeTab === "suspended" && (
+              <>
+                <Button
+                  icon="play_circle"
+                  variant="outlined"
+                  size="sm"
+                  onClick={() => {
+                    handleAction("reactivate", Array.from(selectedIds), "Bulk reactivated");
+                  }}
+                >
+                  Bulk Reactivate
+                </Button>
+                <Button
+                  icon="inventory_2"
+                  variant="outlined"
+                  size="sm"
+                  onClick={() => setRemarksModal({ action: "archive", ids: Array.from(selectedIds) })}
+                >
+                  Bulk Archive
+                </Button>
+              </>
+            )}
+            <Button variant="text" size="sm" onClick={() => setSelectedIds(new Set())}>
+              Clear
             </Button>
-          )}
-          {activeTab === "suspended" && (
-            <>
-              <Button
-                icon="play_circle"
-                variant="outlined"
-                size="sm"
-                onClick={() => {
-                  handleAction("reactivate", Array.from(selectedIds), "Bulk reactivated");
-                }}
-              >
-                Bulk Reactivate
-              </Button>
-              <Button
-                icon="inventory_2"
-                variant="outlined"
-                size="sm"
-                onClick={() => setRemarksModal({ action: "archive", ids: Array.from(selectedIds) })}
-              >
-                Bulk Archive
-              </Button>
-            </>
-          )}
-          <Button variant="text" size="sm" onClick={() => setSelectedIds(new Set())}>
-            Clear
-          </Button>
+          </div>
         </div>
       )}
 
       {/* ═══════════════════ TAB: PENDING QUEUE ═══════════════════ */}
       {activeTab === "pending" && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
             <StatsCard icon="queue" label="In Queue" value={pendingApps.length} variant="warning" subtitle="Awaiting provisioning" />
             <StatsCard
               icon="storage"
@@ -493,7 +497,7 @@ export default function AdminDashboard() {
             <StatsCard icon="speed" label="Avg Wait" value={pendingApps.length > 0 ? `${Math.round(pendingApps.reduce((s, a) => s + (Date.now() - new Date(a.hodApprovedAt || a.createdAt).getTime()) / 3600000, 0) / pendingApps.length)}h` : "—"} variant="default" subtitle="Since HOD approval" />
           </div>
           {filterApps(pendingApps).length === 0 ? (
-            <div className="bg-surface rounded-2xl border border-outline-variant p-12 text-center">
+            <div className="bg-surface rounded-2xl border border-gray-200 p-6 sm:p-12 text-center shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200">
               <div className="w-20 h-20 rounded-full bg-success-container flex items-center justify-center mx-auto mb-5">
                 <span className="material-symbols-rounded text-[36px] text-success">verified</span>
               </div>
@@ -526,14 +530,14 @@ export default function AdminDashboard() {
       {/* ═══════════════════ TAB: ACTIVE USERS ═══════════════════ */}
       {activeTab === "active" && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
             <StatsCard icon="verified_user" label="Active" value={activeApps.length} variant="success" subtitle="Flag 1 — ID Created" />
             <StatsCard icon="storage" label="Total Quota" value={`${quotaStats?.totalQuotaGB || 0} GB`} variant="primary" subtitle="Allocated" />
             <StatsCard icon="pause_circle" label="Suspended" value={suspendedApps.length} variant="warning" subtitle="Temporarily blocked" />
             <StatsCard icon="inventory_2" label="Archived" value={archivedApps.length} variant="default" subtitle="Retired/Left" />
           </div>
           {filterApps(activeApps).length === 0 ? (
-            <div className="bg-surface rounded-2xl border border-outline-variant p-12 text-center">
+            <div className="bg-surface rounded-2xl border border-gray-200 p-6 sm:p-12 text-center shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200">
               <div className="w-20 h-20 rounded-full bg-primary-container flex items-center justify-center mx-auto mb-5">
                 <span className="material-symbols-rounded text-[36px] text-primary">group</span>
               </div>
@@ -585,12 +589,12 @@ export default function AdminDashboard() {
       {/* ═══════════════════ TAB: SUSPENDED ═══════════════════ */}
       {activeTab === "suspended" && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
             <StatsCard icon="pause_circle" label="Suspended" value={suspendedApps.length} variant="warning" subtitle="Temporarily blocked" />
             <StatsCard icon="info" label="Note" value="Data Retained" variant="default" subtitle="Per IT rules, no deletion until tenure ends" />
           </div>
           {filterApps(suspendedApps).length === 0 ? (
-            <div className="bg-surface rounded-2xl border border-outline-variant p-12 text-center">
+            <div className="bg-surface rounded-2xl border border-gray-200 p-6 sm:p-12 text-center shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200">
               <div className="w-20 h-20 rounded-full bg-success-container flex items-center justify-center mx-auto mb-5">
                 <span className="material-symbols-rounded text-[36px] text-success">check_circle</span>
               </div>
@@ -638,12 +642,12 @@ export default function AdminDashboard() {
       {/* ═══════════════════ TAB: ARCHIVED ═══════════════════ */}
       {activeTab === "archived" && (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
             <StatsCard icon="inventory_2" label="Archived" value={archivedApps.length} variant="default" subtitle="Retired / Left" />
             <StatsCard icon="shield" label="Policy" value="IT Compliant" variant="success" subtitle="Data retained per BHU IT rules" />
           </div>
           {filterApps(archivedApps).length === 0 ? (
-            <div className="bg-surface rounded-2xl border border-outline-variant p-12 text-center">
+            <div className="bg-surface rounded-2xl border border-gray-200 p-6 sm:p-12 text-center shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200">
               <div className="w-20 h-20 rounded-full bg-surface-variant flex items-center justify-center mx-auto mb-5">
                 <span className="material-symbols-rounded text-[36px] text-outline">inventory_2</span>
               </div>
@@ -678,37 +682,37 @@ export default function AdminDashboard() {
             const totalUsedMock = Math.round(totalAllocated * 0.58);
             const totalFreeMock = totalAllocated - totalUsedMock;
             return (
-              <div className="bg-surface rounded-2xl border border-outline-variant p-6">
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200">
                 <div className="flex items-center gap-2 mb-5">
                   <span className="material-symbols-rounded text-[22px] text-primary">cloud</span>
                   <h3 className="text-base font-bold text-foreground">Organization Storage Capacity</h3>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
-                  <div className="bg-surface-variant/30 rounded-xl px-4 py-3 text-center">
-                    <p className="text-[10px] uppercase tracking-wider text-outline font-medium">Pool Size</p>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
+                  <div className="bg-gray-100 rounded-xl px-4 py-3 text-center border border-gray-300 hover:shadow-[0_0_9px_rgba(0,0,0,0.3)]">
+                    <p className="text-[12px] font-bold uppercase tracking-wider text-black font-medium">Pool Size</p>
                     <p className="text-xl font-bold text-foreground">{TOTAL_ORG_CAPACITY_GB.toLocaleString()} GB</p>
                   </div>
-                  <div className="bg-primary-container/30 rounded-xl px-4 py-3 text-center">
-                    <p className="text-[10px] uppercase tracking-wider text-outline font-medium">Allocated</p>
+                  <div className="bg-blue-100/80 rounded-xl px-4 py-3 text-center border border-blue-300 hover:shadow-[0_0_9px_rgba(0,0,0,0.3)]">
+                    <p className="text-[12px] font-bold uppercase tracking-wider text-black font-medium">Allocated</p>
                     <p className="text-xl font-bold text-primary">{totalAllocated} GB</p>
                   </div>
-                  <div className="bg-warning-container/30 rounded-xl px-4 py-3 text-center">
-                    <p className="text-[10px] uppercase tracking-wider text-outline font-medium">Used (Est.)</p>
+                  <div className="bg-orange-100/80 rounded-xl px-4 py-3 text-center border border-orange-500/30 hover:shadow-[0_0_9px_rgba(0,0,0,0.3)]">
+                    <p className="text-[12px] font-bold uppercase tracking-wider text-black font-medium">Used (Est.)</p>
                     <p className="text-xl font-bold text-warning">{totalUsedMock} GB</p>
                   </div>
-                  <div className="bg-success-container/30 rounded-xl px-4 py-3 text-center">
-                    <p className="text-[10px] uppercase tracking-wider text-outline font-medium">Free</p>
+                  <div className="bg-green-100 rounded-xl px-4 py-3 text-center border border-green-500/30 hover:shadow-[0_0_9px_rgba(0,0,0,0.3)]">
+                    <p className="text-[12px] font-bold uppercase tracking-wider text-black  font-medium">Free</p>
                     <p className="text-xl font-bold text-success">{TOTAL_ORG_CAPACITY_GB - totalAllocated} GB</p>
                   </div>
                 </div>
                 {/* Large progress bar */}
                 <div>
-                  <div className="flex justify-between text-xs text-outline mb-1.5">
+                  <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm font-medium text-black mb-1.5 gap-0.5">
                     <span>Allocated: {totalAllocated} GB / {TOTAL_ORG_CAPACITY_GB.toLocaleString()} GB</span>
                     <span className="font-semibold">{orgUsagePct.toFixed(1)}% allocated</span>
                   </div>
-                  <div className="w-full bg-surface-variant rounded-full h-4 overflow-hidden">
-                    {/* Used portion */}
+                  {/* <div className="w-full bg-surface-variant rounded-full h-4 overflow-hidden">
+                    Used portion
                     <div className="h-full rounded-full flex overflow-hidden">
                       <div
                         className="h-full bg-primary transition-all duration-700"
@@ -721,15 +725,15 @@ export default function AdminDashboard() {
                         title={`Allocated but unused: ${totalFreeMock} GB`}
                       />
                     </div>
-                  </div>
-                  <div className="flex gap-4 mt-2">
-                    <span className="flex items-center gap-1.5 text-[10px] text-outline">
+                  </div> */}
+                  <div className="flex flex-wrap gap-3 sm:gap-4 mt-2">
+                    <span className="flex items-center gap-1.5 text-[10px] text-on-primary-container">
                       <span className="w-2.5 h-2.5 rounded-full bg-primary inline-block" /> Used (Est.)
                     </span>
-                    <span className="flex items-center gap-1.5 text-[10px] text-outline">
+                    <span className="flex items-center gap-1.5 text-[10px] text-on-primary-container">
                       <span className="w-2.5 h-2.5 rounded-full bg-primary/30 inline-block" /> Allocated (Unused)
                     </span>
-                    <span className="flex items-center gap-1.5 text-[10px] text-outline">
+                    <span className="flex items-center gap-1.5 text-[10px] text-on-primary-container">
                       <span className="w-2.5 h-2.5 rounded-full bg-surface-variant inline-block" /> Unallocated
                     </span>
                   </div>
@@ -739,19 +743,19 @@ export default function AdminDashboard() {
           })()}
 
           {/* Category Policy Limits Reference */}
-          <div className="bg-surface rounded-2xl border border-outline-variant p-6">
+          <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200">
             <div className="flex items-center gap-2 mb-4">
               <span className="material-symbols-rounded text-[22px] text-secondary">policy</span>
-              <h3 className="text-base font-bold text-foreground">Category Policy Limits (BHU IT Rules)</h3>
+              <h3 className="text-sm sm:text-base font-bold text-foreground">Category Policy Limits (BHU IT Rules)</h3>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
               {Object.entries(quotaMap).map(([cat, gb]) => {
                 const catData = quotaStats?.categoryBreakdown?.[cat];
                 return (
-                  <div key={cat} className="bg-surface-variant/30 rounded-xl px-4 py-3 text-center border border-outline-variant/50">
-                    <p className="text-[10px] uppercase tracking-wider text-outline font-medium mb-1">{categoryLabels[cat] || cat}</p>
+                  <div key={cat} className="bg-gray-50 rounded-xl px-4 py-3 text-center border border-gray-500 hover:shadow-[0_0_5px_rgba(0,0,0,0.3)]">
+                    <p className="text-[11px] uppercase tracking-wider text-outline font-medium mb-1">{categoryLabels[cat] || cat}</p>
                     <p className="text-2xl font-bold text-foreground">{gb} <span className="text-xs font-normal text-outline">GB</span></p>
-                    <p className="text-[10px] text-outline mt-1">{catData?.count || 0} users active</p>
+                    <p className="text-[11px] text-outline mt-1">{catData?.count || 0} users active</p>
                   </div>
                 );
               })}
@@ -772,11 +776,11 @@ export default function AdminDashboard() {
             ];
 
             return (
-              <div className="bg-surface rounded-2xl border border-outline-variant p-6">
-                <div className="flex items-center justify-between mb-5">
+              <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-5 gap-2">
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-rounded text-[22px] text-primary">bar_chart</span>
-                    <h3 className="text-base font-bold text-foreground">Category-wise Allocation & Usage</h3>
+                    <h3 className="text-sm sm:text-base font-bold text-foreground">Category-wise Allocation & Usage</h3>
                   </div>
                   <div className="flex gap-3">
                     <span className="flex items-center gap-1.5 text-[10px] text-outline">
@@ -829,7 +833,7 @@ export default function AdminDashboard() {
           })()}
 
           {/* Total Accounts Summary */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <StatsCard icon="group" label="Total Accounts" value={quotaStats?.totalAccounts || 0} variant="primary" subtitle="Provisioned accounts" />
             <StatsCard icon="storage" label="Total Allocated" value={`${quotaStats?.totalQuotaGB || 0} GB`} variant="success" subtitle="Across all categories" />
             <StatsCard icon="cloud_off" label="Unallocated Pool" value={`${TOTAL_ORG_CAPACITY_GB - (quotaStats?.totalQuotaGB || 0)} GB`} variant="warning" subtitle={`of ${TOTAL_ORG_CAPACITY_GB.toLocaleString()} GB total`} />
@@ -839,11 +843,12 @@ export default function AdminDashboard() {
 
       {/* ═══════════════════ TAB: AUDIT LOGS ═══════════════════ */}
       {activeTab === "audit" && (
-        <div className="bg-surface rounded-2xl border border-outline-variant overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-surface rounded-2xl border border-amber-900 overflow-hidden">
+          {/* Desktop table view */}
+          <div className="hidden sm:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-surface-variant/50 text-outline text-left">
+                <tr className="bg-surface-variant/50 text-amber-800 text-left">
                   <th className="px-4 py-3 font-medium">Time</th>
                   <th className="px-4 py-3 font-medium">Action</th>
                   <th className="px-4 py-3 font-medium">Entity</th>
@@ -852,16 +857,16 @@ export default function AdminDashboard() {
               </thead>
               <tbody>
                 {auditLogs.map((log) => (
-                  <tr key={log.id} className="border-t border-outline-variant/50 hover:bg-surface-variant/20 transition-colors">
-                    <td className="px-4 py-3 text-xs text-outline whitespace-nowrap">{formatDate(log.createdAt)}</td>
+                  <tr key={log.id} className="border-t border-amber-700 hover:bg-surface-variant/20 transition-colors">
+                    <td className="px-4 py-3 text-xs text-amber-700 whitespace-nowrap">{formatDate(log.createdAt)}</td>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-container text-primary text-xs font-medium">
                         {log.action.replace(/_/g, " ")}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs text-foreground font-mono">
-                      {log.entityType === "APPLICATION" && log.entityTrackingId 
-                        ? log.entityTrackingId 
+                      {log.entityType === "APPLICATION" && log.entityTrackingId
+                        ? log.entityTrackingId
                         : `${log.entityType}: ${log.entityId.slice(0, 8)}…`}
                     </td>
                     <td className="px-4 py-3">
@@ -873,11 +878,33 @@ export default function AdminDashboard() {
               </tbody>
             </table>
           </div>
+          {/* Mobile card view */}
+          <div className="sm:hidden divide-y divide-amber-700">
+            {auditLogs.map((log) => (
+              <div key={log.id} className="p-3 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary-container text-primary text-[11px] font-medium">
+                    {log.action.replace(/_/g, " ")}
+                  </span>
+                  <span className="text-[11px] text-amber-700">{formatDate(log.createdAt)}</span>
+                </div>
+                <p className="text-[11px] text-foreground font-mono">
+                  {log.entityType === "APPLICATION" && log.entityTrackingId
+                    ? log.entityTrackingId
+                    : `${log.entityType}: ${log.entityId.slice(0, 8)}…`}
+                </p>
+                <p className="text-[11px] text-outline">
+                  <span className="font-semibold text-foreground">{log.performerName || log.performedBy.slice(0, 8)}</span>
+                  {log.performerDepartment && <span> · {log.performerDepartment}</span>}
+                </p>
+              </div>
+            ))}
+          </div>
           {auditLogs.length === 0 && (
-            <div className="p-12 text-center text-sm text-outline">No audit logs found.</div>
+            <div className="p-8 sm:p-12 text-center text-sm text-outline">No audit logs found.</div>
           )}
           {auditTotalPages > 1 && (
-            <div className="flex items-center justify-center gap-3 p-4 border-t border-outline-variant/50">
+            <div className="flex items-center justify-center gap-3 p-3 sm:p-4 border-t border-outline-variant/50">
               <Button variant="text" size="sm" onClick={() => { setAuditPage((p) => Math.max(1, p - 1)); }} disabled={auditPage <= 1}>
                 Previous
               </Button>
@@ -989,7 +1016,7 @@ export default function AdminDashboard() {
         title={`Confirm ${remarksModal?.action === "suspend" ? "Suspension" : "Archive"}`}
         size="sm"
         footer={
-          <> 
+          <>
             <Button variant="outlined" onClick={() => { setRemarksModal(null); setRemarks(""); }}>
               Cancel
             </Button>

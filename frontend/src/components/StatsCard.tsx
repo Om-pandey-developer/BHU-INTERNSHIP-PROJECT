@@ -52,7 +52,8 @@ export default function StatsCard({
   };
 
   return (
-    <div className="bg-surface rounded-2xl border border-outline-variant p-5 hover:shadow-md transition-shadow duration-300">
+    // bg-surface rounded-xl border border-outline-variant hover:shadow-md hover:border-primary/20 transition-all duration-200
+    <div className="bg-white rounded-2xl border border-gray-200 p-5 shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md  hover:border-primary/20 transition-all duration-300">
       <div className="flex items-start justify-between mb-4">
         <div
           className={`w-11 h-11 rounded-xl ${styles.iconBg} flex items-center justify-center`}

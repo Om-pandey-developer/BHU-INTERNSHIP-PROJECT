@@ -156,12 +156,12 @@ export default function HodReviewedPage() {
       <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
           <h1
-            className="text-4xl font-bold text-foreground"
+            className="text-4xl font-bold text-amber-900"
             style={{ fontFamily: "var(--font-serif)" }}
           >
             Reviewed Applications
           </h1>
-          <p className="text-sm text-gray-400  mt-1.5">
+          <p className="text-sm text-amber-700 mt-1.5">
             History of applications you have reviewed
           </p>
         </div>

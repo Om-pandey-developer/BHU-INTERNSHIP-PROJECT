@@ -260,10 +260,10 @@ export default function AdminAnalyticsPage() {
             {metrics.departmentBreakdown.every(
               (d) => d.applicationCount === 0
             ) && (
-              <p className="text-sm text-outline text-center py-4">
-                No data available
-              </p>
-            )}
+                <p className="text-sm text-outline text-center py-4">
+                  No data available
+                </p>
+              )}
           </div>
         </div>
       </div>

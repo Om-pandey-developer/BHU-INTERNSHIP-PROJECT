@@ -222,9 +222,9 @@ export default function HodDashboard() {
     try {
       const photoUrl = `/applications/${app.id}/photo`;
       const signatureUrl = `/applications/${app.id}/signature`;
-        
+
       addToast({ message: "Preparing PDF documents...", variant: "info" });
-      
+
       const photoDataUrl = await fetchImageAsBase64(photoUrl);
       const signatureDataUrl = await fetchImageAsBase64(signatureUrl);
 
@@ -329,185 +329,181 @@ export default function HodDashboard() {
       </div>
 
       {/* Tab Toggle */}
+
       <div className="flex items-center gap-2 mb-6">
         <button
           onClick={() => setActiveTab("pending")}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-all cursor-pointer ${
-            activeTab === "pending"
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all cursor-pointer ${activeTab === "pending"
               ? "bg-primary text-white shadow-sm"
               : "bg-surface-variant text-outline hover:bg-surface-variant/80"
-          }`}
+            }`}
         >
           Pending Reviews
           {applications.length > 0 && (
-            <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-              activeTab === "pending" ? "bg-white/20 text-white" : "bg-primary-container text-primary"
-            }`}>{applications.length}</span>
+            <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${activeTab === "pending" ? "bg-white/20 text-white" : "bg-primary-container text-primary"
+              }`}>{applications.length}</span>
           )}
         </button>
         <button
           onClick={() => setActiveTab("reapply")}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-all cursor-pointer ${
-            activeTab === "reapply"
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all cursor-pointer ${activeTab === "reapply"
               ? "bg-primary text-white shadow-sm"
               : "bg-surface-variant text-outline hover:bg-surface-variant/80"
-          }`}
+            }`}
         >
           Reapply Requests
           {reapplyRequests.length > 0 && (
-            <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-              activeTab === "reapply" ? "bg-white/20 text-white" : "bg-warning-container text-warning"
-            }`}>{reapplyRequests.length}</span>
+            <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${activeTab === "reapply" ? "bg-white/20 text-white" : "bg-warning-container text-warning"
+              }`}>{reapplyRequests.length}</span>
           )}
         </button>
       </div>
       {/* ═══════════════ TAB: PENDING REVIEWS ═══════════════ */}
       {activeTab === "pending" && (
         <>
-      {selectedIds.size > 0 && (
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-sm font-medium text-primary">
-              {selectedIds.size} selected
-            </span>
-            <Button
-              icon="done_all"
-              variant="tonal"
-              size="sm"
-              loading={actionLoading}
-              onClick={handleBulkApprove}
-              disabled={!hasSignature}
-            >
-              Bulk Approve
-            </Button>
-          </div>
-      )}
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-sm font-medium text-primary">
+                {selectedIds.size} selected
+              </span>
+              <Button
+                icon="done_all"
+                variant="tonal"
+                size="sm"
+                loading={actionLoading}
+                onClick={handleBulkApprove}
+                disabled={!hasSignature}
+              >
+                Bulk Approve
+              </Button>
+            </div>
+          )}
 
-      {/* Queue */}
-      {applications.length === 0 ? (
-        <div className="bg-surface rounded-2xl border border-outline-variant p-12 text-center">
-          <div className="w-20 h-20 rounded-full bg-success-container flex items-center justify-center mx-auto mb-5">
-            <span className="material-symbols-rounded text-[36px] text-success">
-              task_alt
-            </span>
-          </div>
-          <h3 className="text-lg font-bold text-foreground mb-2">
-            All caught up!
-          </h3>
-          <p className="text-sm text-outline max-w-md mx-auto">
-            There are no applications pending your review at the moment.
-            You&apos;ll be notified when new applications arrive.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {/* Select All */}
-          <div className="flex items-center gap-3 px-5 py-2">
-            <input
-              type="checkbox"
-              checked={selectedIds.size === applications.length}
-              onChange={toggleSelectAll}
-              className="w-4 h-4 rounded border-2 border-outline-variant accent-primary cursor-pointer"
-            />
-            <span className="text-xs font-medium text-outline">
-              Select All
-            </span>
-          </div>
-
-          {applications.map((app) => (
-            <div
-              key={app.id}
-              className="bg-surface rounded-xl border border-outline-variant hover:shadow-md hover:border-primary/20 transition-all duration-200"
-            >
-              <div className="flex items-center p-4 sm:p-5 gap-3 sm:gap-4 flex-wrap sm:flex-nowrap">
-                {/* Checkbox */}
+          {/* Queue */}
+          {applications.length === 0 ? (
+            <div className="bg-surface rounded-2xl border border-outline-variant p-12 text-center">
+              <div className="w-20 h-20 rounded-full bg-success-container flex items-center justify-center mx-auto mb-5">
+                <span className="material-symbols-rounded text-[36px] text-success">
+                  task_alt
+                </span>
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-2">
+                All caught up!
+              </h3>
+              <p className="text-sm text-outline max-w-md mx-auto">
+                There are no applications pending your review at the moment.
+                You&apos;ll be notified when new applications arrive.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {/* Select All */}
+              <div className="flex items-center gap-3 px-5 py-2">
                 <input
                   type="checkbox"
-                  checked={selectedIds.has(app.id)}
-                  onChange={() => toggleSelect(app.id)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-4 h-4 rounded border-2 border-outline-variant accent-primary cursor-pointer shrink-0"
+                  checked={selectedIds.size === applications.length}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 rounded border-2 border-outline-variant accent-primary cursor-pointer"
                 />
-
-                {/* Avatar */}
-                <div className="w-11 h-11 rounded-full bg-primary-container flex items-center justify-center text-sm font-bold text-on-primary-container shrink-0">
-                  {app.applicant?.firstName?.[0]}
-                  {app.applicant?.lastName?.[0]}
-                </div>
-
-                {/* Info */}
-                <div
-                  className="flex-1 min-w-0 cursor-pointer"
-                  onClick={() => setSelectedApp(app)}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-semibold text-foreground text-sm truncate">
-                      {app.applicant?.firstName} {app.applicant?.lastName}
-                    </p>
-                    <StatusBadge status={app.status} size="sm" />
-                  </div>
-                  <p className="text-xs text-outline truncate">
-                    {app.trackingId} • {app.department?.name} •{" "}
-                    {app.applicant?.alternateEmail}
-                  </p>
-                  <p className="text-[11px] text-outline/60 mt-0.5">
-                    Submitted{" "}
-                    {new Date(app.createdAt).toLocaleDateString("en-IN", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </p>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2 shrink-0 max-sm:flex-col max-sm:gap-1">
-                  <button
-                    onClick={() => {
-                      if (!hasSignature) {
-                        addToast({
-                          message:
-                            "Upload your signature in Settings before approving.",
-                          variant: "warning",
-                        });
-                        return;
-                      }
-                      setSelectedApp(app);
-                      setActionType("approve");
-                    }}
-                    className={`p-2 rounded-lg transition-colors cursor-pointer ${
-                      hasSignature
-                        ? "bg-success-container hover:bg-success/20 text-success"
-                        : "bg-surface-variant text-outline/40 cursor-not-allowed"
-                    }`}
-                    title={
-                      hasSignature
-                        ? "Approve"
-                        : "Upload your signature first"
-                    }
-                    disabled={!hasSignature}
-                  >
-                    <span className="material-symbols-rounded text-[20px]">
-                      check_circle
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedApp(app);
-                      setActionType("reject");
-                    }}
-                    className="p-2 rounded-lg bg-error-container hover:bg-error/20 text-error transition-colors cursor-pointer"
-                    title="Reject"
-                  >
-                    <span className="material-symbols-rounded text-[20px]">
-                      cancel
-                    </span>
-                  </button>
-                </div>
+                <span className="text-xs font-medium text-outline">
+                  Select All
+                </span>
               </div>
+
+              {applications.map((app) => (
+                <div
+                  key={app.id}
+                  className="bg-surface rounded-xl border border-outline-variant hover:shadow-md hover:border-primary/20 transition-all duration-200"
+                >
+                  <div className="flex items-center p-4 sm:p-5 gap-3 sm:gap-4 flex-wrap sm:flex-nowrap">
+                    {/* Checkbox */}
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(app.id)}
+                      onChange={() => toggleSelect(app.id)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-4 h-4 rounded border-2 border-outline-variant accent-primary cursor-pointer shrink-0"
+                    />
+
+                    {/* Avatar */}
+                    <div className="w-11 h-11 rounded-full bg-primary-container flex items-center justify-center text-sm font-bold text-on-primary-container shrink-0">
+                      {app.applicant?.firstName?.[0]}
+                      {app.applicant?.lastName?.[0]}
+                    </div>
+
+                    {/* Info */}
+                    <div
+                      className="flex-1 min-w-0 cursor-pointer"
+                      onClick={() => setSelectedApp(app)}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-semibold text-foreground text-sm truncate">
+                          {app.applicant?.firstName} {app.applicant?.lastName}
+                        </p>
+                        <StatusBadge status={app.status} size="sm" />
+                      </div>
+                      <p className="text-xs text-outline truncate">
+                        {app.trackingId} • {app.department?.name} •{" "}
+                        {app.applicant?.alternateEmail}
+                      </p>
+                      <p className="text-[11px] text-outline/60 mt-0.5">
+                        Submitted{" "}
+                        {new Date(app.createdAt).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 shrink-0 max-sm:flex-col max-sm:gap-1">
+                      <button
+                        onClick={() => {
+                          if (!hasSignature) {
+                            addToast({
+                              message:
+                                "Upload your signature in Settings before approving.",
+                              variant: "warning",
+                            });
+                            return;
+                          }
+                          setSelectedApp(app);
+                          setActionType("approve");
+                        }}
+                        className={`p-2 rounded-lg transition-colors cursor-pointer ${hasSignature
+                            ? "bg-success-container hover:bg-success/20 text-success"
+                            : "bg-surface-variant text-outline/40 cursor-not-allowed"
+                          }`}
+                        title={
+                          hasSignature
+                            ? "Approve"
+                            : "Upload your signature first"
+                        }
+                        disabled={!hasSignature}
+                      >
+                        <span className="material-symbols-rounded text-[20px]">
+                          check_circle
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedApp(app);
+                          setActionType("reject");
+                        }}
+                        className="p-2 rounded-lg bg-error-container hover:bg-error/20 text-error transition-colors cursor-pointer"
+                        title="Reject"
+                      >
+                        <span className="material-symbols-rounded text-[20px]">
+                          cancel
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
+          )}
         </>
       )}
 
@@ -723,11 +719,10 @@ export default function HodDashboard() {
             {/* Action form */}
             {actionType && (
               <div
-                className={`p-4 rounded-xl border ${
-                  actionType === "approve"
+                className={`p-4 rounded-xl border ${actionType === "approve"
                     ? "bg-success-container/20 border-success/20"
                     : "bg-error-container/20 border-error/20"
-                }`}
+                  }`}
               >
                 {actionType === "approve" && (
                   <div className="flex items-center gap-2 mb-3 text-xs text-success font-medium">
