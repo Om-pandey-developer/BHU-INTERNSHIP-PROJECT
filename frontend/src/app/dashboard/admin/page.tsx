@@ -68,13 +68,14 @@ const quotaMap: Record<string, number> = {
   NON_TEACHING_STAFF: 5,
 };
 
-type TabId = "pending" | "active" | "suspended" | "archived" | "audit";
+type TabId = "pending" | "active" | "suspended" | "archived" | "quota" | "audit";
 
 const tabs: { id: TabId; label: string; icon: string }[] = [
   { id: "pending", label: "Pending Queue", icon: "queue" },
   { id: "active", label: "Active Users", icon: "verified_user" },
   { id: "suspended", label: "Suspended", icon: "pause_circle" },
   { id: "archived", label: "Archived", icon: "inventory_2" },
+  { id: "quota", label: "Quota & Usage", icon: "storage" },
   { id: "audit", label: "Audit Logs", icon: "history" },
 ];
 
@@ -86,6 +87,18 @@ const categoryLabels: Record<string, string> = {
   NON_TEACHING_STAFF: "Non-Teaching Staff",
   UNKNOWN: "Unknown",
 };
+
+// ── Mocked usage data (seeded by user ID for consistency) ──
+function getMockUsage(id: string, allocated: number): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  }
+  const pct = (Math.abs(hash) % 80 + 10) / 100; // 10% - 90% usage
+  return Math.round(pct * allocated * 10) / 10;
+}
+
+const TOTAL_ORG_CAPACITY_GB = 5000; // Mocked total university workspace pool
 
 /**
  * CC Admin Dashboard — Full User Lifecycle Management
@@ -145,6 +158,15 @@ export default function AdminDashboard() {
         case "archived": {
           const { data } = await api.get("/applications/admin/archived");
           setArchivedApps(data.success ? data.data : data);
+          break;
+        }
+        case "quota": {
+          const [{ data: activeData }, { data: statsData }] = await Promise.all([
+            api.get("/applications/admin/active"),
+            api.get("/applications/admin/quota-stats"),
+          ]);
+          setActiveApps(activeData.success ? activeData.data : activeData);
+          setQuotaStats(statsData.success ? statsData.data : statsData);
           break;
         }
         case "audit": {
@@ -290,44 +312,15 @@ export default function AdminDashboard() {
     return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
   }
 
-  // ── Quota Stats Bar Chart ──
-  function QuotaChart() {
-    if (!quotaStats) return null;
-    const entries = Object.entries(quotaStats.categoryBreakdown);
-    const maxGB = Math.max(...entries.map(([, v]) => v.totalGB), 1);
-    const colors = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#06b6d4", "#8b5cf6"];
 
-    return (
-      <div className="bg-surface rounded-2xl border border-outline-variant p-5 mb-6">
-        <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-          <span className="material-symbols-rounded text-[18px] text-primary">storage</span>
-          Storage Quota Allocation — {quotaStats.totalAccounts} accounts, {quotaStats.totalQuotaGB} GB total
-        </h3>
-        <div className="space-y-3">
-          {entries.map(([cat, val], i) => (
-            <div key={cat}>
-              <div className="flex justify-between text-xs text-outline mb-1">
-                <span>{categoryLabels[cat] || cat}</span>
-                <span className="font-semibold text-foreground">{val.count} users · {val.totalGB} GB</span>
-              </div>
-              <div className="w-full bg-surface-variant rounded-full h-3 overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${Math.max((val.totalGB / maxGB) * 100, 4)}%`,
-                    backgroundColor: colors[i % colors.length],
-                  }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   // ── Application Row (reusable) ──
   function AppRow({ app, actions }: { app: Application; actions: React.ReactNode }) {
+    const allocatedGB = app.quotaAssignedGB || getExpectedQuota(app);
+    const usedGB = getMockUsage(app.id, allocatedGB);
+    const remainingGB = Math.round((allocatedGB - usedGB) * 10) / 10;
+    const usagePct = allocatedGB > 0 ? Math.min((usedGB / allocatedGB) * 100, 100) : 0;
+
     return (
       <div className="bg-surface rounded-xl border border-outline-variant hover:shadow-md hover:border-primary/20 transition-all duration-200">
         <div className="flex items-center p-4 gap-3">
@@ -358,6 +351,27 @@ export default function AdminDashboard() {
               {app.applicant?.bhuEmail && ` · ${app.applicant.bhuEmail}`}
             </p>
           </div>
+
+          {/* Per-user storage indicator */}
+          {activeTab === "active" && app.status === "PROVISIONED" && (
+            <div className="hidden sm:flex items-center gap-3 shrink-0 min-w-[220px]">
+              <div className="flex-1 min-w-[120px]">
+                <div className="flex justify-between text-[10px] text-outline mb-1">
+                  <span>{usedGB} / {allocatedGB} GB</span>
+                  <span className={usagePct > 80 ? "text-error font-semibold" : "text-success font-semibold"}>{remainingGB} GB free</span>
+                </div>
+                <div className="w-full bg-surface-variant rounded-full h-2 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      usagePct > 80 ? "bg-error" : usagePct > 50 ? "bg-warning" : "bg-success"
+                    }`}
+                    style={{ width: `${Math.max(usagePct, 3)}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex items-center gap-2 shrink-0">{actions}</div>
         </div>
@@ -512,7 +526,6 @@ export default function AdminDashboard() {
       {/* ═══════════════════ TAB: ACTIVE USERS ═══════════════════ */}
       {activeTab === "active" && (
         <>
-          <QuotaChart />
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
             <StatsCard icon="verified_user" label="Active" value={activeApps.length} variant="success" subtitle="Flag 1 — ID Created" />
             <StatsCard icon="storage" label="Total Quota" value={`${quotaStats?.totalQuotaGB || 0} GB`} variant="primary" subtitle="Allocated" />
@@ -652,6 +665,176 @@ export default function AdminDashboard() {
             </div>
           )}
         </>
+      )}
+
+      {/* ═══════════════════ TAB: QUOTA & USAGE ═══════════════════ */}
+      {activeTab === "quota" && (
+        <div className="space-y-6">
+          {/* Organization Capacity Overview */}
+          {(() => {
+            const totalAllocated = quotaStats?.totalQuotaGB || 0;
+            const orgUsagePct = Math.min((totalAllocated / TOTAL_ORG_CAPACITY_GB) * 100, 100);
+            // Mock total used across org
+            const totalUsedMock = Math.round(totalAllocated * 0.58);
+            const totalFreeMock = totalAllocated - totalUsedMock;
+            return (
+              <div className="bg-surface rounded-2xl border border-outline-variant p-6">
+                <div className="flex items-center gap-2 mb-5">
+                  <span className="material-symbols-rounded text-[22px] text-primary">cloud</span>
+                  <h3 className="text-base font-bold text-foreground">Organization Storage Capacity</h3>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+                  <div className="bg-surface-variant/30 rounded-xl px-4 py-3 text-center">
+                    <p className="text-[10px] uppercase tracking-wider text-outline font-medium">Pool Size</p>
+                    <p className="text-xl font-bold text-foreground">{TOTAL_ORG_CAPACITY_GB.toLocaleString()} GB</p>
+                  </div>
+                  <div className="bg-primary-container/30 rounded-xl px-4 py-3 text-center">
+                    <p className="text-[10px] uppercase tracking-wider text-outline font-medium">Allocated</p>
+                    <p className="text-xl font-bold text-primary">{totalAllocated} GB</p>
+                  </div>
+                  <div className="bg-warning-container/30 rounded-xl px-4 py-3 text-center">
+                    <p className="text-[10px] uppercase tracking-wider text-outline font-medium">Used (Est.)</p>
+                    <p className="text-xl font-bold text-warning">{totalUsedMock} GB</p>
+                  </div>
+                  <div className="bg-success-container/30 rounded-xl px-4 py-3 text-center">
+                    <p className="text-[10px] uppercase tracking-wider text-outline font-medium">Free</p>
+                    <p className="text-xl font-bold text-success">{TOTAL_ORG_CAPACITY_GB - totalAllocated} GB</p>
+                  </div>
+                </div>
+                {/* Large progress bar */}
+                <div>
+                  <div className="flex justify-between text-xs text-outline mb-1.5">
+                    <span>Allocated: {totalAllocated} GB / {TOTAL_ORG_CAPACITY_GB.toLocaleString()} GB</span>
+                    <span className="font-semibold">{orgUsagePct.toFixed(1)}% allocated</span>
+                  </div>
+                  <div className="w-full bg-surface-variant rounded-full h-4 overflow-hidden">
+                    {/* Used portion */}
+                    <div className="h-full rounded-full flex overflow-hidden">
+                      <div
+                        className="h-full bg-primary transition-all duration-700"
+                        style={{ width: `${(totalUsedMock / TOTAL_ORG_CAPACITY_GB) * 100}%` }}
+                        title={`Used: ${totalUsedMock} GB`}
+                      />
+                      <div
+                        className="h-full bg-primary/30 transition-all duration-700"
+                        style={{ width: `${(totalFreeMock / TOTAL_ORG_CAPACITY_GB) * 100}%` }}
+                        title={`Allocated but unused: ${totalFreeMock} GB`}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-4 mt-2">
+                    <span className="flex items-center gap-1.5 text-[10px] text-outline">
+                      <span className="w-2.5 h-2.5 rounded-full bg-primary inline-block" /> Used (Est.)
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[10px] text-outline">
+                      <span className="w-2.5 h-2.5 rounded-full bg-primary/30 inline-block" /> Allocated (Unused)
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[10px] text-outline">
+                      <span className="w-2.5 h-2.5 rounded-full bg-surface-variant inline-block" /> Unallocated
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Category Policy Limits Reference */}
+          <div className="bg-surface rounded-2xl border border-outline-variant p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="material-symbols-rounded text-[22px] text-secondary">policy</span>
+              <h3 className="text-base font-bold text-foreground">Category Policy Limits (BHU IT Rules)</h3>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              {Object.entries(quotaMap).map(([cat, gb]) => {
+                const catData = quotaStats?.categoryBreakdown?.[cat];
+                return (
+                  <div key={cat} className="bg-surface-variant/30 rounded-xl px-4 py-3 text-center border border-outline-variant/50">
+                    <p className="text-[10px] uppercase tracking-wider text-outline font-medium mb-1">{categoryLabels[cat] || cat}</p>
+                    <p className="text-2xl font-bold text-foreground">{gb} <span className="text-xs font-normal text-outline">GB</span></p>
+                    <p className="text-[10px] text-outline mt-1">{catData?.count || 0} users active</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Stacked Category Chart — Used vs Unused Allocation */}
+          {quotaStats && (() => {
+            const entries = Object.entries(quotaStats.categoryBreakdown);
+            const maxGB = Math.max(...entries.map(([, v]) => v.totalGB), 1);
+            const colors = [
+              { used: "#6366f1", unused: "#6366f133" },
+              { used: "#22c55e", unused: "#22c55e33" },
+              { used: "#f59e0b", unused: "#f59e0b33" },
+              { used: "#ef4444", unused: "#ef444433" },
+              { used: "#06b6d4", unused: "#06b6d433" },
+              { used: "#8b5cf6", unused: "#8b5cf633" },
+            ];
+
+            return (
+              <div className="bg-surface rounded-2xl border border-outline-variant p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-rounded text-[22px] text-primary">bar_chart</span>
+                    <h3 className="text-base font-bold text-foreground">Category-wise Allocation & Usage</h3>
+                  </div>
+                  <div className="flex gap-3">
+                    <span className="flex items-center gap-1.5 text-[10px] text-outline">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-primary inline-block" /> Used (Est.)
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[10px] text-outline">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-primary/20 inline-block" /> Allocated (Unused)
+                    </span>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {entries.map(([cat, val], i) => {
+                    const mockUsedGB = Math.round(val.totalGB * (0.4 + (i * 0.1) % 0.5));
+                    const unusedGB = val.totalGB - mockUsedGB;
+                    const colorSet = colors[i % colors.length];
+                    return (
+                      <div key={cat}>
+                        <div className="flex justify-between text-xs text-outline mb-1.5">
+                          <span className="font-medium text-foreground">{categoryLabels[cat] || cat}</span>
+                          <span>
+                            <span className="font-semibold text-foreground">{mockUsedGB} GB</span>
+                            <span className="text-outline"> used of </span>
+                            <span className="font-semibold text-foreground">{val.totalGB} GB</span>
+                            <span className="text-outline"> allocated · </span>
+                            <span className="font-medium">{val.count} users</span>
+                          </span>
+                        </div>
+                        <div className="w-full bg-surface-variant rounded-full h-4 overflow-hidden flex">
+                          <div
+                            className="h-full rounded-l-full transition-all duration-500"
+                            style={{
+                              width: `${Math.max((mockUsedGB / maxGB) * 100, 2)}%`,
+                              backgroundColor: colorSet.used,
+                            }}
+                          />
+                          <div
+                            className="h-full transition-all duration-500"
+                            style={{
+                              width: `${Math.max((unusedGB / maxGB) * 100, 1)}%`,
+                              backgroundColor: colorSet.unused,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Total Accounts Summary */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatsCard icon="group" label="Total Accounts" value={quotaStats?.totalAccounts || 0} variant="primary" subtitle="Provisioned accounts" />
+            <StatsCard icon="storage" label="Total Allocated" value={`${quotaStats?.totalQuotaGB || 0} GB`} variant="success" subtitle="Across all categories" />
+            <StatsCard icon="cloud_off" label="Unallocated Pool" value={`${TOTAL_ORG_CAPACITY_GB - (quotaStats?.totalQuotaGB || 0)} GB`} variant="warning" subtitle={`of ${TOTAL_ORG_CAPACITY_GB.toLocaleString()} GB total`} />
+          </div>
+        </div>
       )}
 
       {/* ═══════════════════ TAB: AUDIT LOGS ═══════════════════ */}
