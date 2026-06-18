@@ -750,7 +750,7 @@ export default function AdminDashboard() {
                   <span className="material-symbols-rounded text-[18px]">preview</span>
                   Provisioning Preview
                 </h4>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="bg-surface rounded-lg px-3 py-2">
                     <p className="text-[10px] uppercase tracking-wider text-outline font-medium">BHU Email</p>
                     <p className="text-sm text-primary font-bold">{getExpectedEmail(selectedApp)}</p>
@@ -766,7 +766,7 @@ export default function AdminDashboard() {
             {/* Application Details */}
             <div>
               <h4 className="text-sm font-semibold text-foreground mb-3">Application Details</h4>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {Object.entries(selectedApp.applicantDetails || {}).map(([key, val]) => (
                   <div key={key} className="bg-surface-variant/30 rounded-lg px-3 py-2">
                     <p className="text-[10px] uppercase tracking-wider text-outline font-medium">

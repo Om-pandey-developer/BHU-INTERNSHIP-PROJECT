@@ -211,10 +211,16 @@ body {
   }
 }
 
-/* Responsive text sizes */
+/* Responsive text sizes - only for pages that don't set their own sizes */
 @media (max-width: 480px) {
-  h1 {
+  .prose h1, .content-h1 {
     font-size: 1.375rem !important;
+  }
+
+  /* Prevent Turnstile CAPTCHA overflow on very small screens */
+  .cf-turnstile, iframe[src*="challenges.cloudflare.com"] {
+    max-width: 100%;
+    transform-origin: left center;
   }
 }
 

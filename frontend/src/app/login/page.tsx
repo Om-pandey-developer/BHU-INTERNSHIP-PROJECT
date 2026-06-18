@@ -437,7 +437,7 @@ export default function LoginPage() {
       </div>
 
       {/* ── Right Panel: Forms ── */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-background relative overflow-hidden">
+      <div className="flex-1 flex items-center justify-center p-5 sm:p-8 bg-white relative overflow-hidden overflow-y-auto min-h-screen">
         {/* logo watermark */}
         <Image
           src="/BHUlogo.png"
@@ -450,10 +450,8 @@ export default function LoginPage() {
 
           {/* Mobile branding */}
           <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-              <span className="material-symbols-rounded text-[24px] text-white">
-                school
-              </span>
+            <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center overflow-hidden">
+              <Image src="/favicon.ico" alt="BHU Logo" width={40} height={40} className="w-10 h-10 object-contain" />
             </div>
             <div>
               <h2 className="font-bold text-foreground text-lg">BHU Email Portal</h2>
@@ -468,12 +466,12 @@ export default function LoginPage() {
             <div className="animate-fade-in" key="login">
               <div className="mb-8">
                 <h2
-                  className="text-2xl font-bold text-foreground mb-2 text-[46px]"
+                  className="text-3xl sm:text-4xl font-bold text-foreground mb-2"
                   style={{ fontFamily: "var(--font-serif)" }}
                 >
                   Welcome back
                 </h2>
-                <p className="text-sm text-outline text-[18px]">
+                <p className="text-sm sm:text-base text-outline">
                   Sign in with your alternate email to access the portal
                 </p>
               </div>
@@ -680,7 +678,7 @@ export default function LoginPage() {
 
               <div className="space-y-6">
                 {/* OTP input boxes */}
-                <div className="flex justify-center gap-3">
+                <div className="flex justify-center gap-2 sm:gap-3">
                   {otpValues.map((val, i) => (
                     <input
                       key={i}
@@ -692,7 +690,7 @@ export default function LoginPage() {
                       onChange={(e) => handleOtpChange(i, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(i, e)}
                       onPaste={i === 0 ? handleOtpPaste : undefined}
-                      className="w-12 h-14 text-center text-xl font-bold rounded-lg border-2 border-outline-variant bg-surface text-foreground
+                      className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-bold rounded-lg border-2 border-outline-variant bg-surface text-foreground
                         focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20
                         transition-all duration-200 hover:border-outline"
                       autoComplete="one-time-code"

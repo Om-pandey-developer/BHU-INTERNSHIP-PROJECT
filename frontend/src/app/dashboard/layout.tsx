@@ -217,9 +217,9 @@ export default function DashboardLayout({
             <Image
               src="/BHUlogo.png"
               alt="BHU Logo"
-              width={200}
-              height={200}
-              className="object-contain w-full h-full"
+              width={160}
+              height={50}
+              className="object-contain h-11 w-auto"
             />
           </div>
 
@@ -227,10 +227,11 @@ export default function DashboardLayout({
           {user.role === "APPLICANT" && (
             <a
               href="/dashboard/applicant/new"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary-dark transition-colors"
             >
-              <span className="material-symbols-rounded text-[18px]">add_circle</span>
-              New Application
+              <span className="material-symbols-rounded text-[15px]">add_circle</span>
+              <span className="hidden sm:inline">New Application</span>
+              <span className="sm:hidden">New</span>
             </a>
           )}
 
@@ -242,7 +243,7 @@ export default function DashboardLayout({
 
         {/* ── 6. PAGE INJECTION POINT ── 
             This is where specific dashboard pages (Admin, HOD, Applicant) are rendered. */}
-        <div className="flex-1 p-6 lg:p-8">{children}</div>
+        <div className="flex-1 p-4 sm:p-6 lg:p-8">{children}</div>
       </main>
     </div>
   );

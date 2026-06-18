@@ -332,7 +332,7 @@ export default function RegisterPage() {
       </div>
 
       {/* ── REGISTRATION FORM PANEL (Right side) ──*/}
-      <div className="flex-1 flex items-center justify-center p-8 bg-background relative overflow-hidden">
+      <div className="flex-1 flex items-center justify-center p-5 sm:p-8 bg-white relative overflow-hidden overflow-y-auto min-h-screen">
         {/* BHU Logo Watermark */}
         <Image
           src="/BHUlogo.png"
@@ -344,10 +344,8 @@ export default function RegisterPage() {
         <div className="w-full max-w-lg animate-fade-in relative z-10">
           {/* Mobile branding */}
           <div className="lg:hidden flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
-              <span className="material-symbols-rounded text-[24px] text-white">
-                <Image src="/favicon.ico" alt="BHU Logo" width={40} height={40} className="rounded-xl" />
-              </span>
+            <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center overflow-hidden">
+              <Image src="/favicon.ico" alt="BHU Logo" width={40} height={40} className="w-10 h-10 object-contain" />
             </div>
             <div>
               <h2 className="font-bold text-foreground text-lg">
@@ -366,12 +364,12 @@ export default function RegisterPage() {
             <div className="animate-fade-in">
               <div className="mb-8">
                 <h2
-                  className="text-2xl font-bold text-foreground mb-2 text-[40px]"
+                  className="text-3xl sm:text-4xl font-bold text-foreground mb-2"
                   style={{ fontFamily: "var(--font-serif)" }}
                 >
                   Create an Account
                 </h2>
-                <p className="text-sm text-outline text black">
+                <p className="text-sm text-outline">
                   Fill in your details to register on the portal
                 </p>
               </div>
@@ -547,7 +545,7 @@ export default function RegisterPage() {
 
               <form onSubmit={handleCreateAccount} className="space-y-6">
                 {/* OTP input boxes */}
-                <div className="flex justify-center gap-3">
+                <div className="flex justify-center gap-2 sm:gap-3">
                   {otpValues.map((val, i) => (
                     <input
                       key={i}
@@ -559,7 +557,7 @@ export default function RegisterPage() {
                       onChange={(e) => handleOtpChange(i, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(i, e)}
                       onPaste={i === 0 ? handleOtpPaste : undefined}
-                      className="w-12 h-14 text-center text-xl font-bold rounded-lg border-2 border-outline-variant bg-surface text-foreground
+                      className="w-10 h-12 sm:w-12 sm:h-14 text-center text-lg sm:text-xl font-bold rounded-lg border-2 border-outline-variant bg-surface text-foreground
                         focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20
                         transition-all duration-200 hover:border-outline"
                       autoComplete="one-time-code"

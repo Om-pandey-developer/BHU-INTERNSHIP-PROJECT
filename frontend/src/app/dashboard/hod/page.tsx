@@ -325,7 +325,7 @@ export default function HodDashboard() {
               key={app.id}
               className="bg-surface rounded-xl border border-outline-variant hover:shadow-md hover:border-primary/20 transition-all duration-200"
             >
-              <div className="flex items-center p-5 gap-4">
+              <div className="flex items-center p-4 sm:p-5 gap-3 sm:gap-4 flex-wrap sm:flex-nowrap">
                 {/* Checkbox */}
                 <input
                   type="checkbox"
@@ -534,7 +534,7 @@ export default function HodDashboard() {
               <h4 className="text-sm font-semibold text-foreground mb-3">
                 Application Details
               </h4>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {Object.entries(selectedApp.applicantDetails || {}).map(
                   ([key, val]) => (
                     <div
