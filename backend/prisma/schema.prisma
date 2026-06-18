@@ -58,6 +58,9 @@ model User {
   applications   Application[] @relation("ApplicantApplications")
   approvedApps   Application[] @relation("HODApprovals")
 
+  // Reapply request relations
+  reapplyRequests ReapplyRequest[] @relation("ApplicantReapplyRequests")
+
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
@@ -120,6 +123,9 @@ model Application {
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
+  // Reapply requests linked to this application
+  reapplyRequests ReapplyRequest[]
+
   /// Composite index for fast HOD dashboard queries (filter by status + department)
   @@index([status, departmentId])
   @@index([applicantId])
@@ -155,3 +161,44 @@ model OtpVerification {
   @@index([email])
   @@index([expiresAt])
 }
+
+// ─────────────────────────────────────────────
+// Reapply Request System
+// ─────────────────────────────────────────────
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Reapply request submitted by an applicant after HOD rejection.
+/// Allows applicant to ask HOD for permission to re-submit their application.
+/// Maximum 5 requests per applicant lifetime.
+model ReapplyRequest {
+  id             String        @id @default(uuid())
+
+  /// The rejected application this request is for
+  applicationId  String
+  application    Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  /// The applicant who submitted this request
+  applicantId    String
+  applicant      User          @relation("ApplicantReapplyRequests", fields: [applicantId], references: [id], onDelete: Cascade)
+
+  /// Reason for re-applying
+  reason         String
+  rollNumber     String
+  studentName    String
+
+  status         RequestStatus @default(PENDING)
+  hodRemarks     String?       /// Optional remarks from HOD on approval/rejection
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([applicantId])
+  @@index([applicationId])
+  @@index([status])
+}
+

@@ -32,6 +32,29 @@ interface Application {
   };
 }
 
+interface ReapplyRequest {
+  id: string;
+  applicationId: string;
+  reason: string;
+  rollNumber: string;
+  studentName: string;
+  status: string;
+  hodRemarks?: string;
+  createdAt: string;
+  applicant?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    alternateEmail: string;
+  };
+  application?: {
+    trackingId: string;
+    status: string;
+    hodRemarks?: string;
+    department?: { name: string };
+  };
+}
+
 /**
  * HOD Dashboard — Pending Reviews
  *
@@ -49,6 +72,11 @@ export default function HodDashboard() {
   const [actionLoading, setActionLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  // Reapply requests state
+  const [activeTab, setActiveTab] = useState<"pending" | "reapply">("pending");
+  const [reapplyRequests, setReapplyRequests] = useState<ReapplyRequest[]>([]);
+  const [reapplyActionLoading, setReapplyActionLoading] = useState<string | null>(null);
+
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuthStore();
 
@@ -64,6 +92,7 @@ export default function HodDashboard() {
 
   useEffect(() => {
     fetchQueue();
+    fetchReapplyRequests();
     checkSignatureStatus();
   }, []);
 
@@ -86,6 +115,34 @@ export default function HodDashboard() {
       // empty
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchReapplyRequests() {
+    try {
+      const { data } = await api.get("/reapply/hod");
+      setReapplyRequests(data.success ? data.data : (Array.isArray(data) ? data : []));
+    } catch {
+      // empty
+    }
+  }
+
+  async function handleReapplyAction(requestId: string, action: "approve" | "reject") {
+    setReapplyActionLoading(requestId);
+    try {
+      await api.patch(`/reapply/${requestId}/${action}`, {
+        remarks: action === "approve" ? "Approved by HOD" : "Rejected by HOD",
+      });
+      addToast({
+        message: `Reapply request ${action === "approve" ? "approved" : "rejected"} successfully.`,
+        variant: action === "approve" ? "success" : "info",
+      });
+      fetchReapplyRequests();
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      addToast({ message: error.response?.data?.message || "Action failed.", variant: "error" });
+    } finally {
+      setReapplyActionLoading(null);
     }
   }
 
@@ -257,21 +314,58 @@ export default function HodDashboard() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
+      <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
         <div>
           <h1
             className="text-2xl font-bold text-foreground"
             style={{ fontFamily: "var(--font-serif)" }}
           >
-            Pending Reviews
+            HOD Dashboard
           </h1>
           <p className="text-sm text-outline mt-1">
-            {applications.length} application{applications.length !== 1 ? "s" : ""}{" "}
-            awaiting your review
+            Review applications and reapply requests for your department
           </p>
         </div>
-        {selectedIds.size > 0 && (
-          <div className="flex items-center gap-3">
+      </div>
+
+      {/* Tab Toggle */}
+      <div className="flex items-center gap-2 mb-6">
+        <button
+          onClick={() => setActiveTab("pending")}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all cursor-pointer ${
+            activeTab === "pending"
+              ? "bg-primary text-white shadow-sm"
+              : "bg-surface-variant text-outline hover:bg-surface-variant/80"
+          }`}
+        >
+          Pending Reviews
+          {applications.length > 0 && (
+            <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+              activeTab === "pending" ? "bg-white/20 text-white" : "bg-primary-container text-primary"
+            }`}>{applications.length}</span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab("reapply")}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all cursor-pointer ${
+            activeTab === "reapply"
+              ? "bg-primary text-white shadow-sm"
+              : "bg-surface-variant text-outline hover:bg-surface-variant/80"
+          }`}
+        >
+          Reapply Requests
+          {reapplyRequests.length > 0 && (
+            <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+              activeTab === "reapply" ? "bg-white/20 text-white" : "bg-warning-container text-warning"
+            }`}>{reapplyRequests.length}</span>
+          )}
+        </button>
+      </div>
+      {/* ═══════════════ TAB: PENDING REVIEWS ═══════════════ */}
+      {activeTab === "pending" && (
+        <>
+      {selectedIds.size > 0 && (
+          <div className="flex items-center gap-3 mb-4">
             <span className="text-sm font-medium text-primary">
               {selectedIds.size} selected
             </span>
@@ -286,8 +380,7 @@ export default function HodDashboard() {
               Bulk Approve
             </Button>
           </div>
-        )}
-      </div>
+      )}
 
       {/* Queue */}
       {applications.length === 0 ? (
@@ -413,6 +506,80 @@ export default function HodDashboard() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+        </>
+      )}
+
+      {/* ═══════════════ TAB: REAPPLY REQUESTS ═══════════════ */}
+      {activeTab === "reapply" && (
+        <div>
+          {reapplyRequests.length === 0 ? (
+            <div className="bg-surface rounded-2xl border border-outline-variant p-12 text-center">
+              <div className="w-20 h-20 rounded-full bg-success-container flex items-center justify-center mx-auto mb-5">
+                <span className="material-symbols-rounded text-[36px] text-success">task_alt</span>
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-2">No Reapply Requests</h3>
+              <p className="text-sm text-outline max-w-md mx-auto">There are no pending reapply requests from students in your department.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {reapplyRequests.map((req) => (
+                <div key={req.id} className="bg-surface rounded-xl border border-outline-variant p-5 hover:shadow-md hover:border-primary/20 transition-all duration-200">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-4 flex-1 min-w-0">
+                      <div className="w-11 h-11 rounded-full bg-warning-container flex items-center justify-center text-sm font-bold text-warning shrink-0">
+                        {req.applicant?.firstName?.[0]}{req.applicant?.lastName?.[0]}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <p className="font-semibold text-foreground text-sm">
+                            {req.studentName}
+                          </p>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-warning-container text-warning">
+                            PENDING
+                          </span>
+                        </div>
+                        <p className="text-xs text-outline">
+                          Roll No: {req.rollNumber} • {req.application?.trackingId} • {req.applicant?.alternateEmail}
+                        </p>
+                        <div className="mt-3 bg-surface-variant/30 rounded-lg px-4 py-3">
+                          <p className="text-[10px] uppercase tracking-wider text-outline font-medium mb-1">Reason for Re-applying</p>
+                          <p className="text-sm text-foreground">{req.reason}</p>
+                        </div>
+                        {req.application?.hodRemarks && (
+                          <p className="text-xs text-outline mt-2">
+                            <span className="font-medium">Previous rejection reason:</span> {req.application.hodRemarks}
+                          </p>
+                        )}
+                        <p className="text-[11px] text-outline/60 mt-2">
+                          Submitted {new Date(req.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => handleReapplyAction(req.id, "approve")}
+                        disabled={reapplyActionLoading === req.id}
+                        className="p-2 rounded-lg bg-success-container hover:bg-success/20 text-success transition-colors cursor-pointer disabled:opacity-50"
+                        title="Approve re-apply"
+                      >
+                        <span className="material-symbols-rounded text-[20px]">check_circle</span>
+                      </button>
+                      <button
+                        onClick={() => handleReapplyAction(req.id, "reject")}
+                        disabled={reapplyActionLoading === req.id}
+                        className="p-2 rounded-lg bg-error-container hover:bg-error/20 text-error transition-colors cursor-pointer disabled:opacity-50"
+                        title="Reject re-apply"
+                      >
+                        <span className="material-symbols-rounded text-[20px]">cancel</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

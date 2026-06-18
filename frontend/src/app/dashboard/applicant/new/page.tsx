@@ -133,6 +133,63 @@ export default function NewApplicationPage() {
   const [submittedApp, setSubmittedApp] = useState<any>(null);
   const [dbDepartments, setDbDepartments] = useState<{id: string, name: string, code: string}[]>([]);
 
+  // ── Eligibility guard ──
+  const [eligibilityChecked, setEligibilityChecked] = useState(false);
+  const [blocked, setBlocked] = useState(false);
+  const [blockReason, setBlockReason] = useState("");
+
+  useEffect(() => {
+    checkEligibility();
+  }, []);
+
+  async function checkEligibility() {
+    try {
+      const [appsRes, reqsRes] = await Promise.all([
+        api.get("/applications/my"),
+        api.get("/reapply/my").catch(() => ({ data: [] })),
+      ]);
+      const apps = appsRes.data.success ? appsRes.data.data : appsRes.data;
+      const reqs = reqsRes.data.success ? reqsRes.data.data : (Array.isArray(reqsRes.data) ? reqsRes.data : []);
+
+      const activeStatuses = ["PENDING_HOD", "APPROVED_HOD", "PENDING_CC", "PROVISIONED"];
+      const hasActive = apps.some((a: { status: string }) => activeStatuses.includes(a.status));
+      if (hasActive) {
+        setBlocked(true);
+        setBlockReason("You already have an active or provisioned application. Duplicate submissions are not allowed.");
+        setEligibilityChecked(true);
+        return;
+      }
+
+      const rejectedCount = apps.filter((a: { status: string }) => a.status === "REJECTED_HOD").length;
+      if (rejectedCount >= 5) {
+        setBlocked(true);
+        setBlockReason("Maximum re-apply limit of 5 reached. You cannot submit any more applications.");
+        setEligibilityChecked(true);
+        return;
+      }
+
+      // If latest is rejected, check for approved reapply request
+      if (apps.length > 0 && apps[0].status === "REJECTED_HOD") {
+        const latestId = apps[0].id;
+        const approvedReq = reqs.find(
+          (r: { applicationId: string; status: string }) => r.applicationId === latestId && r.status === "APPROVED"
+        );
+        if (!approvedReq) {
+          setBlocked(true);
+          setBlockReason("Your last application was rejected. Please submit a Reapply Request to your HOD from your dashboard and get approval before submitting a new application.");
+          setEligibilityChecked(true);
+          return;
+        }
+      }
+
+      setBlocked(false);
+      setEligibilityChecked(true);
+    } catch {
+      // If check fails, allow submission — backend will enforce rules
+      setEligibilityChecked(true);
+    }
+  }
+
   useEffect(() => {
     api.get("/departments")
       .then(res => {
@@ -258,6 +315,28 @@ export default function NewApplicationPage() {
   return (
     <>
     <div className="max-w-3xl mx-auto animate-fade-in">
+      {/* ── Eligibility Guard ── */}
+      {!eligibilityChecked ? (
+        <div className="space-y-4 py-12">
+          <div className="h-8 w-48 skeleton rounded-lg mx-auto" />
+          <div className="h-4 w-72 skeleton rounded mx-auto" />
+          <div className="h-32 skeleton rounded-xl mt-8" />
+        </div>
+      ) : blocked ? (
+        <div className="py-12">
+          <div className="bg-surface rounded-2xl border border-error/20 p-10 text-center max-w-lg mx-auto">
+            <div className="w-20 h-20 rounded-full bg-error-container flex items-center justify-center mx-auto mb-5">
+              <span className="material-symbols-rounded text-[36px] text-error">block</span>
+            </div>
+            <h3 className="text-lg font-bold text-foreground mb-3">Cannot Submit Application</h3>
+            <p className="text-sm text-outline mb-6">{blockReason}</p>
+            <a href="/dashboard/applicant">
+              <Button icon="arrow_back" variant="outlined">Back to My Applications</Button>
+            </a>
+          </div>
+        </div>
+      ) : (
+      <>
       {/* Header */}
       {step < 4 && (
       <div className="mb-8">
@@ -1093,6 +1172,8 @@ export default function NewApplicationPage() {
             </Button>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
 

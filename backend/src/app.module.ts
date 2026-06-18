@@ -9,6 +9,7 @@ import { DepartmentsModule } from './modules/departments/departments.module';
 import { ApplicationsModule } from './modules/applications/applications.module';
 import { GoogleWorkspaceModule } from './modules/google-workspace/google-workspace.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { ReapplyModule } from './modules/reapply/reapply.module';
 
 /**
  * AppModule — Root module of the BHU Email Portal backend.
@@ -43,6 +44,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     ApplicationsModule,
     GoogleWorkspaceModule,
     AnalyticsModule,
+    ReapplyModule,
   ],
   providers: [
     // Apply ThrottlerGuard globally to all routes

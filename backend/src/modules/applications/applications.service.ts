@@ -43,6 +43,53 @@ export class ApplicationsService {
     signaturePath: string,
     ipAddress: string,
   ) {
+    // ── Duplicate Application Prevention ──
+    const existingApps = await this.prisma.application.findMany({
+      where: { applicantId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Rule 1: Block if any application is in an active/pending/provisioned state
+    const activeStatuses: ApplicationStatus[] = [
+      ApplicationStatus.PENDING_HOD,
+      ApplicationStatus.APPROVED_HOD,
+      ApplicationStatus.PENDING_CC,
+      ApplicationStatus.PROVISIONED,
+    ];
+    const hasActiveApp = existingApps.some((a) => activeStatuses.includes(a.status));
+    if (hasActiveApp) {
+      throw new BadRequestException(
+        'You already have an active or provisioned application. Duplicate submissions are not allowed.',
+      );
+    }
+
+    // Rule 3: Hard limit — if 5 or more rejected applications, block completely
+    const rejectedCount = existingApps.filter(
+      (a) => a.status === ApplicationStatus.REJECTED_HOD,
+    ).length;
+    if (rejectedCount >= 5) {
+      throw new BadRequestException(
+        'Maximum re-apply limit of 5 reached. You cannot submit any more applications.',
+      );
+    }
+
+    // Rule 2: If last application was rejected, require an approved ReapplyRequest
+    const latestApp = existingApps[0]; // sorted desc
+    if (latestApp && latestApp.status === ApplicationStatus.REJECTED_HOD) {
+      const approvedRequest = await this.prisma.reapplyRequest.findFirst({
+        where: {
+          applicationId: latestApp.id,
+          applicantId,
+          status: 'APPROVED',
+        },
+      });
+      if (!approvedRequest) {
+        throw new BadRequestException(
+          'Your last application was rejected. Please submit a Reapply Request to your HOD and get approval before submitting a new application.',
+        );
+      }
+    }
+
     // Parse and validate the details JSON
     let parsedDetails: Record<string, unknown>;
     try {
@@ -50,6 +97,7 @@ export class ApplicationsService {
     } catch {
       throw new BadRequestException('Invalid JSON in "details" field');
     }
+
 
     // Attach the category to the JSONB details
     parsedDetails.category = dto.category;

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface ModalProps {
   isOpen: boolean;
@@ -70,7 +71,7 @@ export default function Modal({
 
   // ═══ DRAWER MODE ═══
   if (mode === "drawer") {
-    return (
+    return createPortal(
       <div
         ref={overlayRef}
         className="fixed inset-0 z-[90] flex justify-end"
@@ -80,17 +81,15 @@ export default function Modal({
       >
         {/* Backdrop */}
         <div
-          className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${
-            animateIn ? "opacity-100" : "opacity-0"
-          }`}
+          className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${animateIn ? "opacity-100" : "opacity-0"
+            }`}
           onClick={onClose}
         />
 
         {/* Drawer Panel */}
         <div
-          className={`relative ${drawerWidthClasses[size]} h-full bg-surface shadow-2xl flex flex-col transition-transform duration-300 ease-out ${
-            animateIn ? "translate-x-0" : "translate-x-full"
-          }`}
+          className={`relative ${drawerWidthClasses[size]} h-full bg-surface shadow-2xl flex flex-col transition-transform duration-300 ease-out ${animateIn ? "translate-x-0" : "translate-x-full"
+            }`}
         >
           {/* Header */}
           {title && (
@@ -122,12 +121,13 @@ export default function Modal({
             </div>
           )}
         </div>
-      </div>
+      </div>,
+      document.body
     );
   }
 
   // ═══ MODAL MODE (default) ═══
-  return (
+  return createPortal(
     <div
       ref={overlayRef}
       className="fixed inset-0 z-[90] flex items-center justify-center p-4"
@@ -172,6 +172,7 @@ export default function Modal({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

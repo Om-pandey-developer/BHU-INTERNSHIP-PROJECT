@@ -8,6 +8,7 @@ import Modal from "@/components/Modal";
 import Timeline, { buildTimelineSteps } from "@/components/Timeline";
 import { generateApplicationPdf } from "@/lib/pdfGenerator";
 import { useAuthStore } from "@/lib/store";
+import { useToastStore } from "@/components/Toast";
 
 interface Application {
   id: string;
@@ -30,12 +31,29 @@ interface Application {
   };
 }
 
+interface ReapplyRequest {
+  id: string;
+  applicationId: string;
+  reason: string;
+  rollNumber: string;
+  studentName: string;
+  status: string;
+  hodRemarks?: string;
+  createdAt: string;
+  application?: {
+    trackingId: string;
+    status: string;
+    department?: { name: string };
+  };
+}
+
 /**
  * Applicant Dashboard — My Applications
  *
  * Displays the list of email account applications submitted by the logged-in user.
  * Each row can be expanded to see full details and status timeline.
  * When HOD-approved, shows digital signature info and server-generated PDF download.
+ * Includes Reapply Request system for rejected applications.
  */
 export default function ApplicantDashboard() {
   const [applications, setApplications] = useState<Application[]>([]);
@@ -43,20 +61,75 @@ export default function ApplicantDashboard() {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const { user } = useAuthStore();
+  const { addToast } = useToastStore();
+
+  // Reapply request state
+  const [reapplyRequests, setReapplyRequests] = useState<ReapplyRequest[]>([]);
+  const [showReapplyModal, setShowReapplyModal] = useState(false);
+  const [reapplyForm, setReapplyForm] = useState({ reason: "", rollNumber: "", studentName: "" });
+  const [reapplySubmitting, setReapplySubmitting] = useState(false);
+  const [selectedRejectedAppId, setSelectedRejectedAppId] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchApplications() {
-      try {
-        const { data } = await api.get("/applications/my");
-        setApplications(data.success ? data.data : data);
-      } catch {
-        // Will show empty state
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchApplications();
+    fetchData();
   }, []);
+
+  async function fetchData() {
+    try {
+      const [appsRes, reqsRes] = await Promise.all([
+        api.get("/applications/my"),
+        api.get("/reapply/my").catch(() => ({ data: [] })),
+      ]);
+      setApplications(appsRes.data.success ? appsRes.data.data : appsRes.data);
+      const reqData = reqsRes.data.success ? reqsRes.data.data : reqsRes.data;
+      setReapplyRequests(Array.isArray(reqData) ? reqData : []);
+    } catch {
+      // Will show empty state
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Derived state
+  const latestApp = applications[0];
+  const rejectedApps = applications.filter((a) => a.status === "REJECTED_HOD");
+  const rejectedCount = rejectedApps.length;
+  const hasActiveOrPending = applications.some((a) =>
+    ["PENDING_HOD", "APPROVED_HOD", "PENDING_CC", "PROVISIONED"].includes(a.status)
+  );
+  const latestIsRejected = latestApp?.status === "REJECTED_HOD";
+  const latestReapplyForRejected = latestIsRejected
+    ? reapplyRequests.find((r) => r.applicationId === latestApp.id)
+    : null;
+  const canApply = !hasActiveOrPending && (!latestIsRejected || latestReapplyForRejected?.status === "APPROVED") && rejectedCount < 5;
+  const maxLimitReached = rejectedCount >= 5;
+
+  async function handleSubmitReapplyRequest() {
+    if (!selectedRejectedAppId) return;
+    if (!reapplyForm.reason.trim() || !reapplyForm.rollNumber.trim() || !reapplyForm.studentName.trim()) {
+      addToast({ message: "Please fill in all fields.", variant: "warning" });
+      return;
+    }
+    setReapplySubmitting(true);
+    try {
+      await api.post("/reapply", {
+        applicationId: selectedRejectedAppId,
+        reason: reapplyForm.reason.trim(),
+        rollNumber: reapplyForm.rollNumber.trim(),
+        studentName: reapplyForm.studentName.trim(),
+      });
+      addToast({ message: "Reapply request submitted successfully! Your HOD will review it.", variant: "success" });
+      setShowReapplyModal(false);
+      setSelectedRejectedAppId(null);
+      setReapplyForm({ reason: "", rollNumber: "", studentName: "" });
+      fetchData();
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      addToast({ message: error.response?.data?.message || "Failed to submit request.", variant: "error" });
+    } finally {
+      setReapplySubmitting(false);
+    }
+  }
 
   /**
    * Download the approved PDF from the server (for APPROVED_HOD+ statuses)
@@ -190,6 +263,62 @@ export default function ApplicantDashboard() {
         </div>
       </div>
 
+      {/* ── Reapply Request Status Banner ── */}
+      {latestIsRejected && !maxLimitReached && (
+        <div className="mb-6">
+          {latestReapplyForRejected?.status === "PENDING" && (
+            <div className="flex items-start gap-3 rounded-xl border border-warning/30 bg-warning-container/20 px-5 py-4">
+              <span className="material-symbols-rounded text-[22px] text-warning mt-0.5">hourglass_top</span>
+              <div>
+                <p className="text-sm font-bold text-warning">Reapply Request Pending</p>
+                <p className="text-xs text-foreground/70 mt-1">Your request to re-apply has been sent to the HOD. You will be able to submit a new application once it is approved.</p>
+              </div>
+            </div>
+          )}
+          {latestReapplyForRejected?.status === "REJECTED" && (
+            <div className="flex items-start gap-3 rounded-xl border border-error/30 bg-error-container/20 px-5 py-4">
+              <span className="material-symbols-rounded text-[22px] text-error mt-0.5">block</span>
+              <div>
+                <p className="text-sm font-bold text-error">Reapply Request Denied by HOD</p>
+                <p className="text-xs text-foreground/70 mt-1">{latestReapplyForRejected.hodRemarks || "Your HOD has denied your request to re-apply."}</p>
+              </div>
+            </div>
+          )}
+          {latestReapplyForRejected?.status === "APPROVED" && (
+            <div className="flex items-start gap-3 rounded-xl border border-success/30 bg-success-container/20 px-5 py-4">
+              <span className="material-symbols-rounded text-[22px] text-success mt-0.5">check_circle</span>
+              <div>
+                <p className="text-sm font-bold text-success">Reapply Request Approved!</p>
+                <p className="text-xs text-foreground/70 mt-1">Your HOD has approved your request. You can now submit a new application.</p>
+                <a href="/dashboard/applicant/new" className="inline-block mt-2">
+                  <Button icon="add_circle" size="sm">Submit New Application</Button>
+                </a>
+              </div>
+            </div>
+          )}
+          {!latestReapplyForRejected && (
+            <div className="flex items-start gap-3 rounded-xl border border-error/30 bg-error-container/10 px-5 py-4">
+              <span className="material-symbols-rounded text-[22px] text-error mt-0.5">error</span>
+              <div>
+                <p className="text-sm font-bold text-error">Application Rejected</p>
+                <p className="text-xs text-foreground/70 mt-1 mb-3">Your last application was rejected by HOD{latestApp?.hodRemarks ? `: "${latestApp.hodRemarks}"` : "."} To re-apply, you must submit a request to your HOD for permission.</p>
+                <Button icon="send" size="sm" onClick={() => setShowReapplyModal(true)}>Request Re-apply Permission</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {maxLimitReached && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-error/30 bg-error-container/20 px-5 py-4">
+          <span className="material-symbols-rounded text-[22px] text-error mt-0.5">dangerous</span>
+          <div>
+            <p className="text-sm font-bold text-error">Maximum Re-apply Limit Reached</p>
+            <p className="text-xs text-foreground/70 mt-1">You have reached the maximum limit of 5 rejected applications. You cannot submit any more applications.</p>
+          </div>
+        </div>
+      )}
+
       {/* Applications List */}
       {applications.length === 0 ? (
         <div className="bg-surface rounded-2xl border border-outline-variant p-12 text-center">
@@ -212,7 +341,16 @@ export default function ApplicantDashboard() {
           </a>
         </div>
       ) : (
-        <div className="space-y-3">
+        <>
+          {/* New Application button — only if allowed */}
+          {canApply && (
+            <div className="mb-4">
+              <a href="/dashboard/applicant/new">
+                <Button icon="add_circle" size="md">Submit New Application</Button>
+              </a>
+            </div>
+          )}
+          <div className="space-y-3">
           {applications.map((app) => (
             <div
               key={app.id}
@@ -248,6 +386,93 @@ export default function ApplicantDashboard() {
               </div>
             </div>
           ))}
+          </div>
+        </>
+      )}
+
+      {/* ── Reapply Requests Section ── */}
+      {rejectedCount > 0 && (
+        <div className="mt-8">
+          <h2
+            className="text-lg font-bold text-foreground mb-4 flex items-center gap-2"
+            style={{ fontFamily: "var(--font-serif)" }}
+          >
+            <span className="material-symbols-rounded text-[22px] text-primary">replay</span>
+            Reapply Requests
+          </h2>
+
+          {/* Rejected applications needing reapply */}
+          <div className="space-y-3 mb-6">
+            {rejectedApps.map((app) => {
+              const existingReq = reapplyRequests.find((r) => r.applicationId === app.id);
+              return (
+                <div key={app.id} className="bg-white rounded-xl border border-error/20 p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-error-container flex items-center justify-center shrink-0">
+                        <span className="material-symbols-rounded text-[20px] text-error">close</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                          <p className="text-sm font-semibold text-foreground">Ref: {app.trackingId}</p>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-error-container text-error">REJECTED</span>
+                          {existingReq && (
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                              existingReq.status === "PENDING" ? "bg-warning-container text-warning"
+                              : existingReq.status === "APPROVED" ? "bg-success-container text-success"
+                              : "bg-error-container text-error"
+                            }`}>Request: {existingReq.status}</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-outline">
+                          {app.department?.name} • Submitted {new Date(app.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                        </p>
+                        {app.hodRemarks && (
+                          <p className="text-xs text-error/80 mt-1"><span className="font-medium">HOD Remarks:</span> {app.hodRemarks}</p>
+                        )}
+                        {existingReq?.hodRemarks && existingReq.status !== "PENDING" && (
+                          <p className="text-xs text-primary mt-1"><span className="font-medium">Request Response:</span> {existingReq.hodRemarks}</p>
+                        )}
+                      </div>
+                    </div>
+                    {!existingReq && !maxLimitReached && (
+                      <Button
+                        icon="send"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedRejectedAppId(app.id);
+                          setShowReapplyModal(true);
+                        }}
+                      >
+                        Request Re-apply
+                      </Button>
+                    )}
+                    {existingReq && (
+                      <span className={`material-symbols-rounded text-[22px] shrink-0 ${
+                        existingReq.status === "PENDING" ? "text-warning"
+                        : existingReq.status === "APPROVED" ? "text-success"
+                        : "text-error"
+                      }`}>
+                        {existingReq.status === "PENDING" ? "hourglass_top"
+                        : existingReq.status === "APPROVED" ? "check_circle"
+                        : "cancel"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {maxLimitReached && (
+            <div className="flex items-start gap-3 rounded-xl border border-error/30 bg-error-container/20 px-5 py-4">
+              <span className="material-symbols-rounded text-[22px] text-error mt-0.5">dangerous</span>
+              <div>
+                <p className="text-sm font-bold text-error">Maximum Re-apply Limit Reached</p>
+                <p className="text-xs text-foreground/70 mt-1">You have reached the maximum limit of 5 rejected applications.</p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -420,6 +645,63 @@ export default function ApplicantDashboard() {
             </div>
           </div>
         )}
+      </Modal>
+
+      {/* ═══════════════════ REAPPLY REQUEST MODAL ═══════════════════ */}
+      <Modal
+        isOpen={showReapplyModal}
+        onClose={() => setShowReapplyModal(false)}
+        title="Request Re-apply Permission"
+        size="md"
+      >
+        <div className="space-y-5">
+          <div className="bg-primary-container/20 rounded-xl px-4 py-3">
+            <p className="text-xs text-outline">
+              This request will be sent to your department&apos;s HOD. Once approved, you can submit a new application.
+            </p>
+            <p className="text-[11px] text-outline/60 mt-1">
+              Requests used: {reapplyRequests.length} / 5
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-1.5">Student Name <span className="text-error">*</span></label>
+            <input
+              type="text"
+              value={reapplyForm.studentName}
+              onChange={(e) => setReapplyForm((f) => ({ ...f, studentName: e.target.value }))}
+              placeholder="Enter your full name"
+              className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-2.5 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-1.5">Roll / Enrollment Number <span className="text-error">*</span></label>
+            <input
+              type="text"
+              value={reapplyForm.rollNumber}
+              onChange={(e) => setReapplyForm((f) => ({ ...f, rollNumber: e.target.value }))}
+              placeholder="e.g., 21012345"
+              className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-2.5 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-1.5">Reason for Re-applying <span className="text-error">*</span></label>
+            <textarea
+              value={reapplyForm.reason}
+              onChange={(e) => setReapplyForm((f) => ({ ...f, reason: e.target.value }))}
+              placeholder="Explain why you need to re-apply..."
+              rows={4}
+              className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-3 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors resize-none"
+            />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outlined" onClick={() => setShowReapplyModal(false)}>Cancel</Button>
+            <Button icon="send" loading={reapplySubmitting} onClick={handleSubmitReapplyRequest}>Submit Request</Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
