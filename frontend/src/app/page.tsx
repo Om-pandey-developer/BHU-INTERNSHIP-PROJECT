@@ -219,10 +219,12 @@ export default function Home() {
       </section>
 
       {/* ── 5. FOOTER ── */}
-      <footer className="site-footer border-t border-white/2s0 bg-blue-900 backdrop-blur-sm py-6 px-6 text-center opacity-80 ">
+      <footer className="site-footer border-t border-white/2s0 bg-blue-900 backdrop-blur-sm py-2 px-6 text-center opacity-80 ">
         <p className="text-[14px] text-amber-200/60">
           © {new Date().getFullYear()} Banaras Hindu University — Computer
           Centre. All rights reserved.
+          <br></br>
+          Developed by <b>Hari Prakash Sharma, Om Pandey, Avnish Srivastava under the guidance of Dr. Ramesh Singh Yadav</b>
         </p>
       </footer>
     </div>
