@@ -1,0 +1,231 @@
+# BHU Email Portal — Suggestions & Enhancements Implementation
+
+यह plan आपके documentation_and_enhancements.md के Section 4 में listed सभी enhancements को implement करेगा।
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Email Notifications (SMTP):** Email notifications को real production environment में काम कराने के लिए valid SMTP credentials (Brevo, Gmail App Password, या कोई और SMTP provider) की ज़रूरत होगी। Development mode में emails console में log होंगे। क्या आपके पास SMTP credentials हैं, या mock/console mode रखें?
+
+> [!IMPORTANT]
+> **Bulk PDF ZIP Download:** यह feature `archiver` npm package का इस्तेमाल करेगा backend पर। Is it okay to add this dependency?
+
+> [!WARNING]
+> **Digital Signature Pad:** `react-signature-canvas` package frontend में install करना होगा। क्या आप इसे approve करते हैं?
+
+---
+
+## Open Questions
+
+1. **Email Notification Recipients:** जब applicant form submit करे, तो HOD को notification HOD के alternate email पर भेजें या किसी fixed email पर?
+2. **Audit History Tab:** यह tab कहाँ दिखाना है — Applicant Dashboard में (अपनी application का history), Admin Dashboard में (सभी का history), या दोनों में?
+
+---
+
+## Proposed Changes
+
+### A. Design & UI Enhancements
+
+---
+
+#### A1. Status Badges & Colors (Already Exists ✅)
+
+[StatusBadge.tsx](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/frontend/src/components/StatusBadge.tsx) already has color-coded status badges:
+- PENDING_HOD → Yellow/Amber
+- APPROVED_HOD → Purple
+- REJECTED_HOD → Red
+- PROVISIONED → Green
+- DRAFT → Gray
+
+**No changes needed** — this is already implemented.
+
+---
+
+#### A2. Modern Modals/Drawers (Already Partially Exists ✅)
+
+The project already uses [Modal.tsx](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/frontend/src/components/Modal.tsx) for application detail views. We'll **enhance it to support a Side Drawer mode** for a more modern feel when HOD/Admin clicks on an application.
+
+##### [MODIFY] [Modal.tsx](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/frontend/src/components/Modal.tsx)
+- Add a `mode` prop: `"modal"` (default, existing behavior) | `"drawer"` (slides in from right)
+- Drawer mode: full-height panel from right side with slide animation
+- Smooth CSS transition using `transform: translateX`
+
+---
+
+#### A3. Loading States & Skeletons
+
+##### [NEW] [SkeletonLoader.tsx](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/frontend/src/components/SkeletonLoader.tsx)
+- Reusable skeleton component with multiple variants: `card`, `table-row`, `stats-card`, `text-line`
+- Uses existing `shimmer` animation from globals.css
+- Premium gradient shimmer effect
+
+##### [MODIFY] [dashboard/hod/page.tsx](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/frontend/src/app/dashboard/hod/page.tsx)
+- Replace `"Loading..."` text with `<SkeletonLoader variant="table-row" count={5} />`
+
+##### [MODIFY] [dashboard/admin/page.tsx](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/frontend/src/app/dashboard/admin/page.tsx)
+- Replace loading text with skeleton loaders for stats cards and queue list
+
+##### [MODIFY] [dashboard/applicant/page.tsx](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/frontend/src/app/dashboard/applicant/page.tsx)
+- Replace loading text with skeleton loaders
+
+---
+
+#### A4. Mobile Responsiveness
+
+##### [MODIFY] [dashboard/hod/page.tsx](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/frontend/src/app/dashboard/hod/page.tsx)
+- Convert desktop table layout to responsive card layout on mobile (`sm:` breakpoint)
+- Stack approval buttons vertically on small screens
+- Make checkbox area touch-friendly (larger tap targets, min 44px)
+- Responsive bulk action bar
+
+##### [MODIFY] [dashboard/admin/page.tsx](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/frontend/src/app/dashboard/admin/page.tsx)
+- Stats cards: `grid-cols-1` on mobile → `grid-cols-3` on desktop
+- Queue items: stack layout vertically on mobile
+- Provision button: full-width on mobile
+
+##### [MODIFY] [globals.css](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/frontend/src/app/globals.css)
+- Add responsive utility classes and mobile-first media queries
+- Improve touch targets for interactive elements
+
+---
+
+### B. Functional Enhancements
+
+---
+
+#### B1. Email Notifications (Automated)
+
+##### [MODIFY] [mail.service.ts](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/backend/src/modules/mail/mail.service.ts)
+Add 3 new email template methods:
+1. `sendNewApplicationNotificationToHod(hodEmail, applicantName, trackingId, departmentName)` — sent when applicant submits form
+2. `sendApplicationStatusNotification(applicantEmail, trackingId, status, remarks?)` — sent when HOD approves/rejects
+3. `sendProvisioningNotification(applicantEmail, bhuEmail, trackingId)` — sent when CC Admin provisions the email
+
+Each with beautiful branded HTML email template matching the existing design system.
+
+##### [MODIFY] [mail.module.ts](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/backend/src/modules/mail/mail.module.ts)
+- Export MailService so it can be imported by other modules
+
+##### [MODIFY] [applications.module.ts](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/backend/src/modules/applications/applications.module.ts)
+- Import MailModule
+
+##### [MODIFY] [applications.service.ts](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/backend/src/modules/applications/applications.service.ts)
+- Inject MailService
+- In `create()`: After application creation, fetch HOD email and send notification
+- In `updateHodStatus()`: After status change, send status notification to applicant's alternate email
+
+##### [MODIFY] [google-workspace module](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/backend/src/modules/google-workspace) (provisioning service)
+- After successful provisioning, send provisioning notification email to applicant
+
+---
+
+#### B2. Digital Signature Pad
+
+##### Frontend: Install `react-signature-canvas`
+```bash
+cd frontend && npm install react-signature-canvas @types/react-signature-canvas
+```
+
+##### [NEW] [SignaturePad.tsx](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/frontend/src/components/SignaturePad.tsx)
+- Canvas-based signature drawing component
+- Clear / Undo buttons
+- Converts drawing to PNG/JPEG Blob for upload
+- Touch-optimized for mobile/tablet
+- Styled with design system colors
+
+##### [MODIFY] [dashboard/applicant/new/page.tsx](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/frontend/src/app/dashboard/applicant/new/page.tsx)
+- In the Signature Upload section (line ~674–750), add a toggle: "Upload File" | "Draw Signature"
+- When "Draw Signature" is selected, show `<SignaturePad />` instead of file upload area
+- Convert drawn signature to File object for FormData submission
+
+---
+
+#### B3. Bulk PDF ZIP Download (CC Admin)
+
+##### Backend: Install `archiver`
+```bash
+cd backend && npm install archiver @types/archiver
+```
+
+##### [MODIFY] [applications.controller.ts](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/backend/src/modules/applications/applications.controller.ts)
+- Add new endpoint: `POST /api/v1/applications/admin/bulk-download-pdf`
+- Accepts `{ applicationIds: string[] }`
+- Streams a ZIP file containing all approved PDFs
+
+##### [MODIFY] [applications.service.ts](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/backend/src/modules/applications/applications.service.ts)
+- Add `bulkDownloadPdfs(applicationIds)` method
+- Uses `archiver` to create a ZIP in-memory
+- Streams the ZIP response
+
+##### [MODIFY] [dashboard/admin/page.tsx](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/frontend/src/app/dashboard/admin/page.tsx)
+- Add checkboxes to each approved application in the queue
+- Add "Download Selected PDFs" button with zip icon
+- Calls the bulk download endpoint and triggers browser download
+
+---
+
+#### B4. Audit Logs & History Tab
+
+The backend already has [AuditLog model](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/backend/prisma/schema.prisma#L128-L143) and [getAuditLogs endpoint](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/backend/src/modules/applications/applications.controller.ts#L258-L268). We need the frontend page.
+
+##### [NEW] [dashboard/admin/history/page.tsx](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/frontend/src/app/dashboard/admin/history/page.tsx)
+- Full audit history page for CC Admin
+- Timeline-style view showing:
+  - Application submitted → timestamp
+  - HOD approved/rejected → timestamp + HOD name
+  - CC Admin provisioned → timestamp + admin name
+- Filters: by application tracking ID, date range, action type
+- Paginated table with color-coded action types
+- Search by entity ID
+
+##### [MODIFY] [applications.service.ts](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/backend/src/modules/applications/applications.service.ts)
+- Add `getApplicationHistory(applicationId)` method — returns audit logs for a specific application, enriched with user names
+
+##### [MODIFY] [applications.controller.ts](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/backend/src/modules/applications/applications.controller.ts)
+- Add `GET /api/v1/applications/:id/history` endpoint
+
+##### [MODIFY] [dashboard/layout.tsx](file:///c:/Users/Lenovo/OneDrive/Desktop/BHU%20INTERNSHIP%20PROJECT/frontend/src/app/dashboard/layout.tsx)
+- Add "History" nav item for CC_ADMIN role (icon: `history`, path: `/dashboard/admin/history`)
+
+---
+
+## Summary of Files Changed
+
+| Change | File | Type |
+|--------|------|------|
+| Enhance | `Modal.tsx` | Drawer mode |
+| Create | `SkeletonLoader.tsx` | New component |
+| Create | `SignaturePad.tsx` | New component |
+| Modify | `globals.css` | Mobile utilities |
+| Modify | `mail.service.ts` | 3 new email templates |
+| Modify | `mail.module.ts` | Export MailService |
+| Modify | `applications.module.ts` | Import MailModule |
+| Modify | `applications.service.ts` | Email hooks + history + bulk PDF |
+| Modify | `applications.controller.ts` | New endpoints |
+| Modify | `dashboard/hod/page.tsx` | Skeletons + mobile responsive |
+| Modify | `dashboard/admin/page.tsx` | Skeletons + mobile + bulk PDF |
+| Modify | `dashboard/applicant/page.tsx` | Skeletons |
+| Modify | `dashboard/applicant/new/page.tsx` | Signature pad toggle |
+| Create | `dashboard/admin/history/page.tsx` | Audit history page |
+| Modify | `dashboard/layout.tsx` | History nav item |
+
+---
+
+## Verification Plan
+
+### Automated Tests
+```bash
+cd backend && npm run build
+cd frontend && npm run build
+```
+
+### Manual Verification
+1. **Skeleton Loaders:** Open each dashboard page → verify shimmer animations show during data fetch
+2. **Drawer Modal:** Click an application in HOD panel → verify it opens as a side drawer
+3. **Email Notifications:** Submit an application in dev mode → check backend console for log messages
+4. **Signature Pad:** Go to New Application → Step 2 → toggle to "Draw Signature" → draw and verify it captures
+5. **Bulk PDF ZIP:** Select multiple apps in admin → click download → verify ZIP downloads with PDFs
+6. **History Tab:** Go to Admin → History → verify timeline with audit logs
+7. **Mobile Responsiveness:** Resize browser to 375px width → verify HOD panel is fully usable
