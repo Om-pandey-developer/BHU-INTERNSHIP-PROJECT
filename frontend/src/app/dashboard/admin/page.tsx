@@ -355,27 +355,30 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          {/* Per-user storage indicator */}
-          {activeTab === "active" && app.status === "PROVISIONED" && (
-            <div className="flex items-center gap-3 shrink-0 w-full sm:w-auto sm:min-w-[220px] pl-12 sm:pl-0">
-              <div className="flex-1 min-w-[120px]">
-                <div className="flex justify-between text-[10px] text-outline mb-1">
-                  <span>{usedGB} / {allocatedGB} GB</span>
-                  <span className={usagePct > 80 ? "text-error font-semibold" : "text-success font-semibold"}>{remainingGB} GB free</span>
-                </div>
-                <div className="w-full bg-surface-variant rounded-full h-2 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ${usagePct > 80 ? "bg-error" : usagePct > 50 ? "bg-warning" : "bg-success"
-                      }`}
-                    style={{ width: `${Math.max(usagePct, 3)}%` }}
-                  />
+          {/* Per-user storage + Actions — right aligned */}
+          <div className="flex items-center gap-3 ml-auto shrink-0 pl-12 sm:pl-0">
+            {/* Per-user storage indicator */}
+            {activeTab === "active" && app.status === "PROVISIONED" && (
+              <div className="flex items-center gap-3 shrink-0 sm:min-w-[220px]">
+                <div className="flex-1 min-w-[120px]">
+                  <div className="flex justify-between text-[10px] text-outline mb-1">
+                    <span>{usedGB} / {allocatedGB} GB</span>
+                    <span className={usagePct > 80 ? "text-error font-semibold" : "text-success font-semibold"}>{remainingGB} GB free</span>
+                  </div>
+                  <div className="w-full bg-surface-variant rounded-full h-2 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${usagePct > 80 ? "bg-error" : usagePct > 50 ? "bg-warning" : "bg-success"
+                        }`}
+                      style={{ width: `${Math.max(usagePct, 3)}%` }}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Actions */}
-          <div className="flex items-center gap-2 shrink-0 self-end sm:self-center pl-12 sm:pl-0">{actions}</div>
+            {/* Actions */}
+            <div className="flex items-center gap-2 shrink-0">{actions}</div>
+          </div>
         </div>
       </div>
     );
