@@ -25,6 +25,7 @@ const hodNav: NavItem[] = [
 const adminNav: NavItem[] = [
   { label: "Dashboard", icon: "dashboard", href: "/dashboard/admin" },
   { label: "History", icon: "history", href: "/dashboard/admin/history" },
+  { label: "Database", icon: "database", href: "/dashboard/admin/database" },
   { label: "Settings", icon: "settings", href: "/dashboard/settings" },
 ];
 
