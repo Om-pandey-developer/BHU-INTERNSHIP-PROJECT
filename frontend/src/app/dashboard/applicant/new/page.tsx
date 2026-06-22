@@ -13,6 +13,9 @@ import CountryCodeSelect from "@/components/CountryCodeSelect";
 import DepartmentSelect from "@/components/DepartmentSelect";
 import NationalitySelect from "@/components/NationalitySelect";
 import SignaturePad from "@/components/SignaturePad";
+import ImageCropper from "@/components/ImageCropper";
+import getCroppedImg from "@/lib/getCroppedImg";
+
 
 const categories = [
   {
@@ -129,6 +132,12 @@ export default function NewApplicationPage() {
   const [signatureModalOpen, setSignatureModalOpen] = useState(false);
   const [signatureMode, setSignatureMode] = useState<"upload" | "draw">("upload");
   const [isOtherEmployment, setIsOtherEmployment] = useState(false);
+  const [tempPhotoUrl, setTempPhotoUrl] = useState<string | null>(null);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [photoDimensions, setPhotoDimensions] = useState<{width: number, height: number} | null>(null);
+  const [tempSigUrl, setTempSigUrl] = useState<string | null>(null);
+  const [sigCropModalOpen, setSigCropModalOpen] = useState(false);
+  const [sigDimensions, setSigDimensions] = useState<{width: number, height: number} | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [submittedApp, setSubmittedApp] = useState<any>(null);
   const [dbDepartments, setDbDepartments] = useState<{ id: string, name: string, code: string }[]>([]);
@@ -211,28 +220,45 @@ export default function NewApplicationPage() {
     setDetails((prev) => ({ ...prev, [field]: value }));
   }
 
-  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!["image/jpeg", "image/jpg", "image/png"].includes(file.type)) {
       setError("Please upload a JPEG or PNG image.");
       return;
     }
 
-    // Validate size (2MB max)
-    if (file.size > 2 * 1024 * 1024) {
-      setError("Photo must be under 2MB. Current: " + (file.size / (1024 * 1024)).toFixed(1) + "MB");
-      return;
-    }
-
-    setError("");
-    setPhoto(file);
-    const reader = new FileReader();
-    reader.onloadend = () => setPhotoPreview(reader.result as string);
-    reader.readAsDataURL(file);
+    const url = URL.createObjectURL(file);
+    setTempPhotoUrl(url);
+    setCropModalOpen(true);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
+
+  const handleCropComplete = async (croppedAreaPixels: {width: number, height: number, x: number, y: number}) => {
+    try {
+      if (!tempPhotoUrl) return;
+      const croppedFile = await getCroppedImg(tempPhotoUrl, croppedAreaPixels, "photo.jpg");
+      if (!croppedFile) return;
+
+      if (croppedFile.size > 2 * 1024 * 1024) {
+        setError("Cropped photo must be under 2MB.");
+        setCropModalOpen(false);
+        return;
+      }
+
+      setError("");
+      setPhoto(croppedFile);
+      setPhotoDimensions({ width: Math.round(croppedAreaPixels.width), height: Math.round(croppedAreaPixels.height) });
+      const reader = new FileReader();
+      reader.onloadend = () => setPhotoPreview(reader.result as string);
+      reader.readAsDataURL(croppedFile);
+      setCropModalOpen(false);
+    } catch (e) {
+      console.error(e);
+      setError("Failed to crop image.");
+    }
+  };
 
   function handleSignatureChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -243,17 +269,36 @@ export default function NewApplicationPage() {
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      setError("Signature size must be less than 2MB.");
-      return;
-    }
-
-    setError("");
-    setSignature(file);
-    const reader = new FileReader();
-    reader.onloadend = () => setSignaturePreview(reader.result as string);
-    reader.readAsDataURL(file);
+    const url = URL.createObjectURL(file);
+    setTempSigUrl(url);
+    setSigCropModalOpen(true);
+    if (signatureInputRef.current) signatureInputRef.current.value = "";
   }
+
+  const handleSigCropComplete = async (croppedAreaPixels: {width: number, height: number, x: number, y: number}) => {
+    try {
+      if (!tempSigUrl) return;
+      const croppedFile = await getCroppedImg(tempSigUrl, croppedAreaPixels, "signature.png");
+      if (!croppedFile) return;
+
+      if (croppedFile.size > 2 * 1024 * 1024) {
+        setError("Cropped signature must be under 2MB.");
+        setSigCropModalOpen(false);
+        return;
+      }
+
+      setError("");
+      setSignature(croppedFile);
+      setSigDimensions({ width: Math.round(croppedAreaPixels.width), height: Math.round(croppedAreaPixels.height) });
+      const reader = new FileReader();
+      reader.onloadend = () => setSignaturePreview(reader.result as string);
+      reader.readAsDataURL(croppedFile);
+      setSigCropModalOpen(false);
+    } catch (e) {
+      console.error(e);
+      setError("Failed to crop signature.");
+    }
+  };
 
   function canProceedStep2(): boolean {
     if (!categoryConfig) return false;
@@ -703,6 +748,7 @@ export default function NewApplicationPage() {
                           <p className="text-xs text-outline mt-0.5">
                             {((photo?.size || 0) / 1024).toFixed(0)} KB •{" "}
                             {photo?.type}
+                            {photoDimensions && ` • ${photoDimensions.width}x${photoDimensions.height} px`}
                           </p>
                           <button
                             type="button"
@@ -739,7 +785,7 @@ export default function NewApplicationPage() {
                           Click to upload your photograph
                         </p>
                         <p className="text-xs text-outline/60 mt-1">
-                          JPEG or PNG, max 2MB
+                          JPEG or PNG, max 2MB. Aspect Ratio: 3:4 (e.g. 300x400 pixels)
                         </p>
                       </>
                     )}
@@ -810,6 +856,7 @@ export default function NewApplicationPage() {
                             <p className="text-xs text-outline mt-0.5">
                               {((signature?.size || 0) / 1024).toFixed(0)} KB •{" "}
                               {signature?.type}
+                              {sigDimensions && ` • ${sigDimensions.width}x${sigDimensions.height} px`}
                             </p>
                             <button
                               type="button"
@@ -846,7 +893,7 @@ export default function NewApplicationPage() {
                             Click to upload your signature
                           </p>
                           <p className="text-xs text-outline/60 mt-1">
-                            JPEG or PNG, max 2MB
+                            JPEG or PNG, max 2MB. Aspect Ratio: 3:1 (e.g. 300x100 pixels)
                           </p>
                         </>
                       )}
@@ -1203,6 +1250,25 @@ export default function NewApplicationPage() {
           </div>
         )}
       </Modal>
+      {cropModalOpen && tempPhotoUrl && (
+        <ImageCropper
+          imageSrc={tempPhotoUrl}
+          onCropComplete={handleCropComplete}
+          onCancel={() => setCropModalOpen(false)}
+          aspectRatio={3 / 4}
+          title="Crop Photo (3:4 Ratio)"
+        />
+      )}
+
+      {sigCropModalOpen && tempSigUrl && (
+        <ImageCropper
+          imageSrc={tempSigUrl}
+          onCropComplete={handleSigCropComplete}
+          onCancel={() => setSigCropModalOpen(false)}
+          aspectRatio={3 / 1}
+          title="Crop Signature (3:1 Ratio)"
+        />
+      )}
     </>
   );
 }

@@ -7,6 +7,8 @@ import { useAuthStore } from "@/lib/store";
 import Button from "@/components/Button";
 import Input from "@/components/Input";
 import PasswordStrength from "@/components/PasswordStrength";
+import ImageCropper from "@/components/ImageCropper";
+import getCroppedImg from "@/lib/getCroppedImg";
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -29,6 +31,9 @@ export default function SettingsPage() {
   const [sigError, setSigError] = useState("");
   const [sigSuccess, setSigSuccess] = useState("");
   const [sigDragOver, setSigDragOver] = useState(false);
+  const [tempSigUrl, setTempSigUrl] = useState<string | null>(null);
+  const [sigCropModalOpen, setSigCropModalOpen] = useState(false);
+  const [sigDimensions, setSigDimensions] = useState<{width: number, height: number} | null>(null);
 
   const handlePasswordValidChange = useCallback((isValid: boolean) => {
     setPasswordValid(isValid);
@@ -74,17 +79,35 @@ export default function SettingsPage() {
       setSigError("Only JPEG and PNG files are allowed.");
       return;
     }
-    if (file.size > 1 * 1024 * 1024) {
-      setSigError("File size must be under 1MB.");
-      return;
-    }
 
-    setSigFile(file);
-    // Preview
-    const reader = new FileReader();
-    reader.onloadend = () => setSignaturePreview(reader.result as string);
-    reader.readAsDataURL(file);
+    const url = URL.createObjectURL(file);
+    setTempSigUrl(url);
+    setSigCropModalOpen(true);
   }
+
+  const handleSigCropComplete = async (croppedAreaPixels: {width: number, height: number, x: number, y: number}) => {
+    try {
+      if (!tempSigUrl) return;
+      const croppedFile = await getCroppedImg(tempSigUrl, croppedAreaPixels, "signature.png");
+      if (!croppedFile) return;
+
+      if (croppedFile.size > 1 * 1024 * 1024) {
+        setSigError("Cropped signature must be under 1MB.");
+        setSigCropModalOpen(false);
+        return;
+      }
+
+      setSigFile(croppedFile);
+      setSigDimensions({ width: Math.round(croppedAreaPixels.width), height: Math.round(croppedAreaPixels.height) });
+      const reader = new FileReader();
+      reader.onloadend = () => setSignaturePreview(reader.result as string);
+      reader.readAsDataURL(croppedFile);
+      setSigCropModalOpen(false);
+    } catch (e) {
+      console.error(e);
+      setSigError("Failed to crop signature.");
+    }
+  };
 
   async function handleSigUpload() {
     if (!sigFile) return;
@@ -258,7 +281,7 @@ export default function SettingsPage() {
                     : "Click or drag to upload your signature"}
               </p>
               <p className="text-xs text-outline mt-1">
-                JPEG or PNG • Max 1MB
+                JPEG or PNG • Max 1MB • Aspect Ratio: 3:1
               </p>
             </div>
 
@@ -272,6 +295,7 @@ export default function SettingsPage() {
                   {sigFile.name}{" "}
                   <span className="text-outline">
                     ({(sigFile.size / 1024).toFixed(0)} KB)
+                    {sigDimensions && ` • ${sigDimensions.width}x${sigDimensions.height} px`}
                   </span>
                 </div>
                 <Button
@@ -443,6 +467,16 @@ export default function SettingsPage() {
           </form>
         </div>
       </div>
+
+      {sigCropModalOpen && tempSigUrl && (
+        <ImageCropper
+          imageSrc={tempSigUrl}
+          onCropComplete={handleSigCropComplete}
+          onCancel={() => setSigCropModalOpen(false)}
+          aspectRatio={3 / 1}
+          title="Crop Signature (3:1 Ratio)"
+        />
+      )}
     </div>
   );
 }
