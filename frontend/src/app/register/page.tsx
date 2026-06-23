@@ -68,40 +68,18 @@ export default function RegisterPage() {
 
   // ── Fetch departments ──
   useEffect(() => {
-    async function fetchDepartments() {
-      try {
-        const { data } = await api.get("/departments");
-        const deptList = data?.data ?? data;
-        if (Array.isArray(deptList) && deptList.length > 0) {
-          setDepartments(deptList);
+    api.get("/departments")
+      .then(res => {
+        const payload = res.data;
+        if (Array.isArray(payload)) {
+          setDepartments(payload);
+        } else if (payload && payload.data && Array.isArray(payload.data)) {
+          setDepartments(payload.data);
         } else {
-          throw new Error("Empty department list");
+          setDepartments([]);
         }
-      } catch {
-        setDepartments([
-          { id: "dept-cs", name: "Computer Science", code: "COMP_SCI" },
-          { id: "dept-phy", name: "Physics", code: "PHYSICS" },
-          { id: "dept-chem", name: "Chemistry", code: "CHEMISTRY" },
-          { id: "dept-math", name: "Mathematics", code: "MATHEMATICS" },
-          { id: "dept-bio", name: "Biological Sciences", code: "BIO_SCI" },
-          { id: "dept-eng", name: "English", code: "ENGLISH" },
-          { id: "dept-hist", name: "History", code: "HISTORY" },
-          { id: "dept-eco", name: "Economics", code: "ECONOMICS" },
-          { id: "dept-law", name: "Law", code: "LAW" },
-          { id: "dept-med", name: "Medical Sciences", code: "MED_SCI" },
-          { id: "dept-edu", name: "Education", code: "EDUCATION" },
-          { id: "dept-mech", name: "Mechanical Engineering", code: "MECH_ENG" },
-          { id: "dept-civil", name: "Civil Engineering", code: "CIVIL_ENG" },
-          { id: "dept-elec", name: "Electrical Engineering", code: "ELEC_ENG" },
-          { id: "dept-arts", name: "Faculty of Arts", code: "ARTS" },
-          { id: "dept-soc", name: "Faculty of Social Sciences", code: "SOCIAL_SCIENCES" },
-          { id: "dept-com", name: "Faculty of Commerce", code: "COMMERCE" },
-          { id: "dept-agri", name: "Institute of Agricultural Sciences", code: "AGRI_SCI" },
-          { id: "dept-env", name: "Institute of Environment & Sustainable Development", code: "IESD" },
-        ]);
-      }
-    }
-    fetchDepartments();
+      })
+      .catch(err => console.error("Failed to fetch departments", err));
   }, []);
 
   // ── Countdown timer for OTP resend ──

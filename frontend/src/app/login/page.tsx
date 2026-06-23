@@ -471,8 +471,8 @@ export default function LoginPage() {
                 >
                   Welcome back
                 </h2>
-                <p className="text-sm sm:text-base text-outline">
-                  Sign in with your alternate email to access the portal
+                <p className="text-base sm:text-lg text-outline">
+                  This portal is for HOD, Teaching Staff, Non-Teaching Staff, Non-Teaching Group A, CC Admin, and others. Sign in with your alternate email to access the portal.
                 </p>
               </div>
 
@@ -484,7 +484,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  autoComplete="email"
+                  autoComplete="off"
                 />
 
                 <Input
@@ -494,7 +494,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                 />
 
                 {/* Cloudflare Turnstile CAPTCHA */}
