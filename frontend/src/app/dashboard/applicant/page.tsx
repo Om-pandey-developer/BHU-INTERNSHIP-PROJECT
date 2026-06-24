@@ -1,14 +1,27 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
-import Timeline, { buildTimelineSteps } from "@/components/Timeline";
+import { buildTimelineSteps } from "@/components/Timeline";
 import { generateApplicationPdf } from "@/lib/pdfGenerator";
 import { useAuthStore } from "@/lib/store";
 import { useToastStore } from "@/components/Toast";
+import Input from "@/components/Input";
+import CountryCodeSelect from "@/components/CountryCodeSelect";
+import DepartmentSelect from "@/components/DepartmentSelect";
+import NationalitySelect from "@/components/NationalitySelect";
+import SignaturePad from "@/components/SignaturePad";
+import ImageCropper from "@/components/ImageCropper";
+import getCroppedImg from "@/lib/getCroppedImg";
+import { countryCodes } from "@/lib/countryCodes";
+
+/* ═══════════════════════════════════════════════════════════════════
+   TYPES & CONFIG
+   ═══════════════════════════════════════════════════════════════════ */
 
 interface Application {
   id: string;
@@ -24,11 +37,7 @@ interface Application {
   provisionedAt?: string;
   digitalSignatureHash?: string;
   approvedPdfPath?: string;
-  department?: {
-    id: string;
-    name: string;
-    code: string;
-  };
+  department?: { id: string; name: string; code: string };
 }
 
 interface ReapplyRequest {
@@ -47,32 +56,234 @@ interface ReapplyRequest {
   };
 }
 
-/**
- * Applicant Dashboard — My Applications
- *
- * Displays the list of email account applications submitted by the logged-in user.
- * Each row can be expanded to see full details and status timeline.
- * When HOD-approved, shows digital signature info and server-generated PDF download.
- * Includes Reapply Request system for rejected applications.
- */
+const categories = [
+  {
+    value: "GROUP_A_OFFICER",
+    label: "Group A Officer",
+    icon: "admin_panel_settings",
+    desc: "senior administrative, academic, Group A government officers",
+    quota: "20 GB",
+    fields: [
+      "designation", "dateOfAppointment", "facultyInstituteCentre",
+      "employeeId", "dateOfBirth", "typeOfEmployment",
+      "nationality", "dateOfRetirement", "mobileNo", "emailChoice",
+    ],
+  },
+  {
+    value: "TEACHING_STAFF",
+    label: "Teaching Staff",
+    icon: "school",
+    desc: "Professors, Associate & Assistant Professors",
+    quota: "20 GB",
+    fields: [
+      "designation", "dateOfAppointment", "facultyInstituteCentre",
+      "employeeId", "dateOfBirth", "typeOfEmployment",
+      "nationality", "dateOfRetirement", "mobileNo", "emailChoice",
+    ],
+  },
+  {
+    value: "NON_TEACHING_STAFF",
+    label: "Non-Teaching Staff",
+    icon: "badge",
+    desc: "Administrative and support staff",
+    quota: "5 GB",
+    fields: [
+      "designation", "dateOfAppointment", "facultyInstituteCentre",
+      "employeeId", "dateOfBirth", "typeOfEmployment",
+      "nationality", "dateOfRetirement", "mobileNo", "emailChoice",
+    ],
+  },
+  {
+    value: "RESEARCH_SCHOLAR",
+    label: "Research Scholar",
+    icon: "science",
+    desc: "PhD and research students",
+    quota: "10 GB",
+    fields: [
+      "programEnrolled", "admissionAcademicYear", "facultyInstituteCentre",
+      "enrollmentNo", "dateOfBirth", "courseCompletionYear",
+      "nationality", "mobileNo", "emailChoice",
+    ],
+  },
+  {
+    value: "POST_GRADUATE_STUDENT",
+    label: "Post Graduate Student",
+    icon: "menu_book",
+    desc: "MA, MSc, MCA, MBA and other PG students",
+    quota: "5 GB",
+    fields: [
+      "programEnrolled", "admissionAcademicYear", "facultyInstituteCentre",
+      "enrollmentNo", "dateOfBirth", "courseCompletionYear",
+      "nationality", "mobileNo", "emailChoice",
+    ],
+  },
+];
+
+const fieldLabels: Record<string, { label: string; icon: string; type?: string }> = {
+  designation: { label: "Designation", icon: "work" },
+  dateOfAppointment: { label: "Date of Appointment", icon: "calendar_month", type: "date" },
+  employeeId: { label: "Employee ID", icon: "badge" },
+  typeOfEmployment: { label: "Type of Employment", icon: "work_history" },
+  dateOfRetirement: { label: "Date of Retirement", icon: "event_busy", type: "date" },
+  programEnrolled: { label: "Program Enrolled", icon: "menu_book" },
+  admissionAcademicYear: { label: "Admission Academic Year", icon: "event", type: "number" },
+  enrollmentNo: { label: "Enrollment Number", icon: "tag" },
+  courseCompletionYear: { label: "Course Completion Year", icon: "school", type: "number" },
+  facultyInstituteCentre: { label: "Faculty / Institute / Centre", icon: "domain" },
+  dateOfBirth: { label: "Date of Birth", icon: "cake", type: "date" },
+  nationality: { label: "Nationality", icon: "public" },
+  mobileNo: { label: "Mobile Number", icon: "phone", type: "tel" },
+  emailChoice: { label: "Choice of Email Id", icon: "alternate_email", type: "custom" },
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   HORIZONTAL PROGRESS BAR COMPONENT
+   ═══════════════════════════════════════════════════════════════════ */
+
+function HorizontalProgressBar({ status }: { status: string }) {
+  const steps = buildTimelineSteps(status);
+  return (
+    <div className="flex items-center gap-0 w-full">
+      {steps.map((step, i) => {
+        const isLast = i === steps.length - 1;
+        const dotColor =
+          step.status === "completed" ? "bg-success text-white" :
+          step.status === "active" ? "bg-primary text-white animate-pulse" :
+          step.status === "error" ? "bg-error text-white" :
+          "bg-outline-variant text-outline";
+        const lineColor =
+          step.status === "completed" ? "bg-success" :
+          step.status === "error" ? "bg-error/30" :
+          "bg-outline-variant";
+        return (
+          <React.Fragment key={i}>
+            <div className="flex flex-col items-center min-w-0">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${dotColor}`}>
+                <span className="material-symbols-rounded text-[16px]">
+                  {step.status === "completed" ? "check" : step.status === "error" ? "close" : step.icon}
+                </span>
+              </div>
+              <p className={`text-[10px] mt-1 text-center leading-tight max-w-[80px] ${
+                step.status === "completed" ? "text-foreground font-medium" :
+                step.status === "active" ? "text-primary font-semibold" :
+                step.status === "error" ? "text-error font-semibold" :
+                "text-outline"
+              }`}>
+                {step.label}
+              </p>
+              {step.date && (
+                <p className="text-[9px] text-outline/60 mt-0.5">{step.date}</p>
+              )}
+            </div>
+            {!isLast && (
+              <div className={`flex-1 h-0.5 rounded-full mx-1 mt-[-16px] ${lineColor}`} />
+            )}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════════════════════════ */
+
 export default function ApplicantDashboard() {
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const router = useRouter();
   const { user } = useAuthStore();
   const { addToast } = useToastStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const signatureInputRef = useRef<HTMLInputElement>(null);
 
-  // Reapply request state
+  // ── Application list state ──
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedAppId, setExpandedAppId] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  // ── Reapply state ──
   const [reapplyRequests, setReapplyRequests] = useState<ReapplyRequest[]>([]);
   const [showReapplyModal, setShowReapplyModal] = useState(false);
   const [reapplyForm, setReapplyForm] = useState({ reason: "", rollNumber: "", studentName: "" });
   const [reapplySubmitting, setReapplySubmitting] = useState(false);
   const [selectedRejectedAppId, setSelectedRejectedAppId] = useState<string | null>(null);
 
+  // ── Form state (merged from new/page.tsx) ──
+  const [formStep, setFormStep] = useState(0); // 0=no form, 1=category, 2=details, 3=review, 4=success
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [departmentId, setDepartmentId] = useState("");
+  const [details, setDetails] = useState<Record<string, string>>({});
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [signature, setSignature] = useState<File | null>(null);
+  const [signaturePreview, setSignaturePreview] = useState<string | null>(null);
+  const [policyAccepted, setPolicyAccepted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
+  const [signatureModalOpen, setSignatureModalOpen] = useState(false);
+  const [signatureMode, setSignatureMode] = useState<"upload" | "draw">("upload");
+  const [isOtherEmployment, setIsOtherEmployment] = useState(false);
+  const [tempPhotoUrl, setTempPhotoUrl] = useState<string | null>(null);
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [photoDimensions, setPhotoDimensions] = useState<{width: number, height: number} | null>(null);
+  const [tempSigUrl, setTempSigUrl] = useState<string | null>(null);
+  const [sigCropModalOpen, setSigCropModalOpen] = useState(false);
+  const [sigDimensions, setSigDimensions] = useState<{width: number, height: number} | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [submittedApp, setSubmittedApp] = useState<any>(null);
+  const [dbDepartments, setDbDepartments] = useState<{ id: string, name: string, code: string }[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // ── Double-click tracking for desktop ──
+  const [lastClickedCategory, setLastClickedCategory] = useState<string | null>(null);
+  const lastClickTimeRef = useRef<number>(0);
+
+  // ── Derived state ──
+  const latestApp = applications[0];
+  const rejectedApps = applications.filter((a) => a.status === "REJECTED_HOD");
+  const rejectedCount = rejectedApps.length;
+  const hasActiveOrPending = applications.some((a) =>
+    ["PENDING_HOD", "APPROVED_HOD", "PENDING_CC", "PROVISIONED"].includes(a.status)
+  );
+  const latestIsRejected = latestApp?.status === "REJECTED_HOD";
+  const latestReapplyForRejected = latestIsRejected
+    ? reapplyRequests.find((r) => r.applicationId === latestApp.id)
+    : null;
+  const canApply = !hasActiveOrPending && (!latestIsRejected || latestReapplyForRejected?.status === "APPROVED") && rejectedCount < 5;
+  const maxLimitReached = rejectedCount >= 5;
+
+  // Show form section when canApply and not in step 4 (just submitted)
+  const showFormSection = canApply && formStep !== 4;
+
+  /* ── Data fetching ── */
+  useEffect(() => { fetchData(); }, []);
+
   useEffect(() => {
-    fetchData();
+    api.get("/departments")
+      .then(res => {
+        const payload = res.data;
+        if (Array.isArray(payload)) setDbDepartments(payload);
+        else if (payload?.data && Array.isArray(payload.data)) setDbDepartments(payload.data);
+        else setDbDepartments([]);
+      })
+      .catch(err => console.error("Failed to fetch departments", err));
   }, []);
+
+  // Auto-fill department from user profile
+  useEffect(() => {
+    if (user?.departmentId && !departmentId) {
+      setDepartmentId(user.departmentId);
+    }
+  }, [user?.departmentId, departmentId]);
+
+  // When canApply becomes true and no applications exist, auto-show category selection
+  useEffect(() => {
+    if (!loading && canApply && applications.length === 0 && formStep === 0) {
+      setFormStep(1);
+    }
+  }, [loading, canApply, applications.length, formStep]);
 
   async function fetchData() {
     try {
@@ -90,20 +301,250 @@ export default function ApplicantDashboard() {
     }
   }
 
-  // Derived state
-  const latestApp = applications[0];
-  const rejectedApps = applications.filter((a) => a.status === "REJECTED_HOD");
-  const rejectedCount = rejectedApps.length;
-  const hasActiveOrPending = applications.some((a) =>
-    ["PENDING_HOD", "APPROVED_HOD", "PENDING_CC", "PROVISIONED"].includes(a.status)
-  );
-  const latestIsRejected = latestApp?.status === "REJECTED_HOD";
-  const latestReapplyForRejected = latestIsRejected
-    ? reapplyRequests.find((r) => r.applicationId === latestApp.id)
-    : null;
-  const canApply = !hasActiveOrPending && (!latestIsRejected || latestReapplyForRejected?.status === "APPROVED") && rejectedCount < 5;
-  const maxLimitReached = rejectedCount >= 5;
+  /* ── Category double-click handler (desktop only) ── */
+  const handleCategoryClick = useCallback((catValue: string) => {
+    const now = Date.now();
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
+    if (isTouchDevice) {
+      // Mobile: just select, user will use Continue button
+      setSelectedCategory(catValue);
+      return;
+    }
+
+    // Desktop: double-click detection
+    if (lastClickedCategory === catValue && now - lastClickTimeRef.current < 400) {
+      // Double-click detected → go directly to form
+      setSelectedCategory(catValue);
+      setFormStep(2);
+      setLastClickedCategory(null);
+      lastClickTimeRef.current = 0;
+    } else {
+      // First click → select
+      setSelectedCategory(catValue);
+      setLastClickedCategory(catValue);
+      lastClickTimeRef.current = now;
+    }
+  }, [lastClickedCategory]);
+
+  /* ── Phone length helper ── */
+  function getPhoneLength(countryCode: string): number {
+    const country = countryCodes.find(c => c.code === countryCode);
+    return country?.phoneLength || 10;
+  }
+
+  /* ── Form helpers ── */
+  const categoryConfig = categories.find((c) => c.value === selectedCategory);
+
+  function handleDetailChange(field: string, value: string) {
+    setDetails((prev) => ({ ...prev, [field]: value }));
+    // Clear field error when user types
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  }
+
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!["image/jpeg", "image/jpg", "image/png"].includes(file.type)) {
+      setError("Please upload a JPEG or PNG image.");
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setTempPhotoUrl(url);
+    setCropModalOpen(true);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  const handleCropComplete = async (croppedAreaPixels: {width: number, height: number, x: number, y: number}) => {
+    try {
+      if (!tempPhotoUrl) return;
+      const croppedFile = await getCroppedImg(tempPhotoUrl, croppedAreaPixels, "photo.jpg");
+      if (!croppedFile) return;
+      if (croppedFile.size > 2 * 1024 * 1024) {
+        setError("Cropped photo must be under 2MB.");
+        setCropModalOpen(false);
+        return;
+      }
+      setError("");
+      setPhoto(croppedFile);
+      setPhotoDimensions({ width: Math.round(croppedAreaPixels.width), height: Math.round(croppedAreaPixels.height) });
+      const reader = new FileReader();
+      reader.onloadend = () => setPhotoPreview(reader.result as string);
+      reader.readAsDataURL(croppedFile);
+      setCropModalOpen(false);
+    } catch (e) {
+      console.error(e);
+      setError("Failed to crop image.");
+    }
+  };
+
+  function handleSignatureChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.match(/(jpeg|jpg|png)$/i)) {
+      setError("Signature must be a JPEG or PNG image.");
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setTempSigUrl(url);
+    setSigCropModalOpen(true);
+    if (signatureInputRef.current) signatureInputRef.current.value = "";
+  }
+
+  const handleSigCropComplete = async (croppedAreaPixels: {width: number, height: number, x: number, y: number}) => {
+    try {
+      if (!tempSigUrl) return;
+      const croppedFile = await getCroppedImg(tempSigUrl, croppedAreaPixels, "signature.png");
+      if (!croppedFile) return;
+      if (croppedFile.size > 2 * 1024 * 1024) {
+        setError("Cropped signature must be under 2MB.");
+        setSigCropModalOpen(false);
+        return;
+      }
+      setError("");
+      setSignature(croppedFile);
+      setSigDimensions({ width: Math.round(croppedAreaPixels.width), height: Math.round(croppedAreaPixels.height) });
+      const reader = new FileReader();
+      reader.onloadend = () => setSignaturePreview(reader.result as string);
+      reader.readAsDataURL(croppedFile);
+      setSigCropModalOpen(false);
+    } catch (e) {
+      console.error(e);
+      setError("Failed to crop signature.");
+    }
+  };
+
+  /* ── Validation with red error highlighting ── */
+  function validateAndProceedToReview(): boolean {
+    if (!categoryConfig) return false;
+    const errors: Record<string, string> = {};
+
+    if (!departmentId) errors["departmentId"] = "Department is required";
+
+    for (const field of categoryConfig.fields) {
+      if (field === "emailChoice") {
+        if (!details["emailChoice1"]?.trim()) errors["emailChoice1"] = "At least 1st preference is required";
+      } else if (field === "mobileNo") {
+        const phoneLen = getPhoneLength(details['countryCode'] || "+91");
+        if (!details[field]?.trim()) {
+          errors[field] = "Mobile number is required";
+        } else if (details[field].length !== phoneLen) {
+          errors[field] = `Mobile number must be ${phoneLen} digits for selected country`;
+        }
+      } else {
+        if (!details[field]?.trim()) {
+          errors[field] = `${fieldLabels[field]?.label || field} is required`;
+        }
+      }
+    }
+
+    if (!photo) errors["photo"] = "Photograph is required";
+    if (!signature) errors["signature"] = "Signature is required";
+    if (!details.applicantPlace?.trim()) errors["applicantPlace"] = "Place is required";
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      // Scroll to first error
+      const firstErrorKey = Object.keys(errors)[0];
+      const el = document.getElementById(`field-${firstErrorKey}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      return false;
+    }
+
+    setFieldErrors({});
+    return true;
+  }
+
+  async function handleSubmit() {
+    if (!categoryConfig || !photo || !signature) return;
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const payloadDetails = { ...details };
+      if (payloadDetails.mobileNo) {
+        const code = payloadDetails.countryCode || "+91";
+        payloadDetails.mobileNo = `${code}-${payloadDetails.mobileNo}`;
+        delete payloadDetails.countryCode;
+      }
+
+      const formData = new FormData();
+      formData.append("departmentId", departmentId);
+      formData.append("category", selectedCategory);
+      formData.append("details", JSON.stringify(payloadDetails));
+      formData.append("photo", photo);
+      formData.append("signature", signature);
+
+      const { data } = await api.post("/applications", formData);
+      const result = data.success ? data.data : data;
+      addToast({ message: `Application ${result.trackingId} submitted successfully!`, variant: "success" });
+      setSubmittedApp(result);
+      setFormStep(4);
+      // Refresh application list
+      fetchData();
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || "Failed to submit application. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  /* ── PDF download ── */
+  async function handleDownloadPdf(app: Application) {
+    setPdfLoading(true);
+    try {
+      if (app.approvedPdfPath && (app.status === "APPROVED_HOD" || app.status === "PENDING_CC" || app.status === "PROVISIONED")) {
+        const response = await api.get(`/applications/${app.id}/approved-pdf`, { responseType: "blob" });
+        const blob = new Blob([response.data], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${app.trackingId}_Approved.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } else {
+        let photoDataUrl = null;
+        let signatureDataUrl = null;
+        try {
+          const res = await api.get(`/applications/${app.id}/photo`, { responseType: "blob" });
+          photoDataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(res.data);
+          });
+        } catch (e) { console.error("Failed to load photo", e); }
+        try {
+          const resSig = await api.get(`/applications/${app.id}/signature`, { responseType: "blob" });
+          signatureDataUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(resSig.data);
+          });
+        } catch (e) { console.error("Failed to load signature", e); }
+        generateApplicationPdf(app, {
+          firstName: user?.firstName || "",
+          lastName: user?.lastName || "",
+          email: user?.email || "",
+        }, photoDataUrl, signatureDataUrl);
+      }
+    } catch (e) {
+      console.error("PDF download failed", e);
+      alert("Failed to download PDF. Please try again.");
+    } finally {
+      setPdfLoading(false);
+    }
+  }
+
+  /* ── Reapply handler ── */
   async function handleSubmitReapplyRequest() {
     if (!selectedRejectedAppId) return;
     if (!reapplyForm.reason.trim() || !reapplyForm.rollNumber.trim() || !reapplyForm.studentName.trim()) {
@@ -131,84 +572,11 @@ export default function ApplicantDashboard() {
     }
   }
 
-  /**
-   * Download the approved PDF from the server (for APPROVED_HOD+ statuses)
-   * or generate a client-side draft PDF (for PENDING_HOD).
-   */
-  async function handleDownloadPdf(app: Application) {
-    setPdfLoading(true);
+  const maxDOB = new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0];
 
-    try {
-      // If approved → download server-generated PDF with both signatures
-      if (
-        app.approvedPdfPath &&
-        (app.status === "APPROVED_HOD" ||
-          app.status === "PENDING_CC" ||
-          app.status === "PROVISIONED")
-      ) {
-        const response = await api.get(
-          `/applications/${app.id}/approved-pdf`,
-          { responseType: "blob" }
-        );
-
-        const blob = new Blob([response.data], { type: "application/pdf" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `${app.trackingId}_Approved.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      } else {
-        // Draft PDF — generate client-side (no HOD signature)
-        let photoDataUrl = null;
-        let signatureDataUrl = null;
-
-        try {
-          const res = await api.get(`/applications/${app.id}/photo`, {
-            responseType: "blob",
-          });
-          photoDataUrl = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(res.data);
-          });
-        } catch (e) {
-          console.error("Failed to load photo", e);
-        }
-
-        try {
-          const resSig = await api.get(`/applications/${app.id}/signature`, {
-            responseType: "blob",
-          });
-          signatureDataUrl = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(resSig.data);
-          });
-        } catch (e) {
-          console.error("Failed to load signature", e);
-        }
-
-        generateApplicationPdf(
-          app,
-          {
-            firstName: user?.firstName || "",
-            lastName: user?.lastName || "",
-            email: user?.email || "",
-          },
-          photoDataUrl,
-          signatureDataUrl
-        );
-      }
-    } catch (e) {
-      console.error("PDF download failed", e);
-      alert("Failed to download PDF. Please try again.");
-    } finally {
-      setPdfLoading(false);
-    }
-  }
+  /* ═══════════════════════════════════════════════════════════════
+     RENDER
+     ═══════════════════════════════════════════════════════════════ */
 
   if (loading) {
     return (
@@ -226,13 +594,10 @@ export default function ApplicantDashboard() {
 
   return (
     <div className="animate-fade-in">
-      {/* Header */}
+      {/* ════════════════ HEADER ════════════════ */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
         <div>
-          <h1
-            className="text-2xl font-bold text-foreground text-[32px]"
-            style={{ fontFamily: "var(--font-serif)" }}
-          >
+          <h1 className="text-2xl font-bold text-foreground text-[32px]" style={{ fontFamily: "var(--font-serif)" }}>
             My Applications
           </h1>
           <p className="text-sm-bold text-orange-900 mt-1">
@@ -241,13 +606,11 @@ export default function ApplicantDashboard() {
         </div>
       </div>
 
-      {/* Steps to Follow */}
+      {/* ════════════════ STEPS TO FOLLOW ════════════════ */}
       <div className="bg-white rounded-xl border border-black/25 p-3 shadowp-5 mb-8 shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer group">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center shrink-0">
-            <span className="material-symbols-rounded text-[22px] text-primary">
-              lightbulb
-            </span>
+            <span className="material-symbols-rounded text-[22px] text-primary">lightbulb</span>
           </div>
           <div>
             <h3 className="text-sm font-bold text-orange-700 mb-2 text-[20px]">Steps to Follow</h3>
@@ -263,7 +626,7 @@ export default function ApplicantDashboard() {
         </div>
       </div>
 
-      {/* ── Reapply Request Status Banner ── */}
+      {/* ════════════════ REAPPLY STATUS BANNERS ════════════════ */}
       {latestIsRejected && !maxLimitReached && (
         <div className="mb-6">
           {latestReapplyForRejected?.status === "PENDING" && (
@@ -289,10 +652,7 @@ export default function ApplicantDashboard() {
               <span className="material-symbols-rounded text-[22px] text-success mt-0.5">check_circle</span>
               <div>
                 <p className="text-sm font-bold text-success">Reapply Request Approved!</p>
-                <p className="text-xs text-foreground/70 mt-1">Your HOD has approved your request. You can now submit a new application.</p>
-                <a href="/dashboard/applicant/new" className="inline-block mt-2">
-                  <Button icon="add_circle" size="sm">Submit New Application</Button>
-                </a>
+                <p className="text-xs text-foreground/70 mt-1">Your HOD has approved your request. You can now submit a new application below.</p>
               </div>
             </div>
           )}
@@ -319,89 +679,758 @@ export default function ApplicantDashboard() {
         </div>
       )}
 
-      {/* Applications List */}
-      {applications.length === 0 ? (
-        <div className="bg-surface rounded-2xl border border-outline-variant p-12 text-center">
-          <div className="w-20 h-20 rounded-full bg-primary-container flex items-center justify-center mx-auto mb-5">
-            <span className="material-symbols-rounded text-[36px] text-primary">
-              description
-            </span>
-          </div>
-          <h3 className="text-lg font-bold text-foreground mb-2">
-            No applications yet
-          </h3>
-          <p className="text-sm text-outline mb-6 max-w-md mx-auto">
-            You haven&apos;t submitted any email account applications. Start by
-            creating a new application to get your @bhu.ac.in email.
-          </p>
-          <a href="/dashboard/applicant/new">
-            <Button icon="add_circle" size="lg">
-              Submit Your First Application
-            </Button>
-          </a>
-        </div>
-      ) : (
-        <>
-          {/* New Application button — only if allowed */}
-          {canApply && (
-            <div className="mb-4">
-              <a href="/dashboard/applicant/new">
-                <Button icon="add_circle" size="md">Submit New Application</Button>
-              </a>
-            </div>
-          )}
-          <div className="space-y-3">
-          {applications.map((app) => (
-            <div
-              key={app.id}
-              onClick={() => setSelectedApp(app)}
-              className="bg-white rounded-xl border border-black/25 p-5 shadowp-5 mb-8 shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200 cursor-pointer group">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-11 h-11 rounded-xl bg-primary-container flex items-center justify-center shrink-0">
-                    <span className="material-symbols-rounded text-[22px] text-primary">
-                      mail
-                    </span>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2.5 mb-.5">
-                      <p className="font-semibold text-foreground text-md ">
-                        Ref. No: {app.trackingId}
-                      </p>
-                      <StatusBadge status={app.status} size="sm" />
+      {/* ════════════════════════════════════════════════════════
+          INLINE APPLICATION FORM (merged from new/page.tsx)
+          ════════════════════════════════════════════════════════ */}
+      {showFormSection && (
+        <div className="mb-8">
+          {/* ═══ STEP 1: Category Selection ═══ */}
+          {(formStep === 0 || formStep === 1) && (
+            <div className="bg-white rounded-2xl border border-black/25 p-6 shadow-[0_0_9px_rgba(0,0,0,0.3)]">
+              <div className="mb-4">
+                <h2 className="text-[22px] font-semibold text-foreground flex items-center gap-2">
+                  <span className="material-symbols-rounded text-[24px] text-primary">add_circle</span>
+                  New Email Application
+                </h2>
+                <p className="text-xs text-outline mt-1">
+                  Choose the category that best describes your role at BHU. <span className="hidden sm:inline text-primary font-medium">Double-click a category to continue directly.</span>
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.value}
+                    onClick={() => handleCategoryClick(cat.value)}
+                    className={`w-full text-left p-5 rounded-xl border-2 transition-all duration-200 cursor-pointer group ${
+                      selectedCategory === cat.value
+                        ? "border-primary bg-primary-container/30 shadow-sm"
+                        : "border-outline-variant hover:border-primary/40 hover:bg-primary-container/80"
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                        selectedCategory === cat.value
+                          ? "bg-primary text-white"
+                          : "bg-surface-variant text-outline group-hover:bg-primary-container group-hover:text-primary"
+                      }`}>
+                        <span className="material-symbols-rounded text-[24px]">{cat.icon}</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-semibold text-foreground">{cat.label}</p>
+                          <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
+                            selectedCategory === cat.value ? "bg-primary text-white" : "bg-surface-variant text-outline"
+                          }`}>{cat.quota}</span>
+                        </div>
+                        <p className="text-xs text-outline mt-1">{cat.desc}</p>
+                      </div>
                     </div>
-                    <p className="text-xs text-orange-800 ">
-                      {app.department?.name || "—"} • Submitted{" "}
-                      {new Date(app.createdAt).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </p>
-                  </div>
-                </div>
-                <span className="material-symbols-rounded text-[20px] text-outline group-hover:text-primary transition-colors">
-                  chevron_right
-                </span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <Button icon="arrow_forward" disabled={!selectedCategory} onClick={() => setFormStep(2)}>
+                  Continue
+                </Button>
               </div>
             </div>
-          ))}
-          </div>
-        </>
+          )}
+
+          {/* ═══ STEP 2: Application Details Form ═══ */}
+          {formStep === 2 && categoryConfig && (
+            <div className="bg-white rounded-2xl border border-black/25 p-6 shadow-[0_0_9px_rgba(0,0,0,0.3)]">
+              {/* Step indicator */}
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <button onClick={() => setFormStep(1)} className="p-1.5 rounded-lg hover:bg-surface-variant transition-colors cursor-pointer">
+                    <span className="material-symbols-rounded text-[20px] text-outline">arrow_back</span>
+                  </button>
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground">Application Details</h2>
+                    <p className="text-xs text-outline">{categoryConfig.label} — {categoryConfig.quota} quota</p>
+                  </div>
+                  <div className="ml-auto">
+                    <button onClick={() => setFormStep(1)} className="text-sm text-primary hover:text-primary-dark font-medium transition-colors cursor-pointer">
+                      Change category
+                    </button>
+                  </div>
+                </div>
+
+                {/* Step dots */}
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3].map((s) => (
+                    <React.Fragment key={s}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
+                        (formStep - 1) >= s ? "bg-primary text-white" : "bg-surface-variant text-outline"
+                      }`}>
+                        {(formStep - 1) > s ? <span className="material-symbols-rounded text-[16px]">check</span> : s}
+                      </div>
+                      {s < 3 && <div className={`flex-1 h-0.5 rounded-full transition-colors ${(formStep - 1) > s ? "bg-primary" : "bg-outline-variant"}`} />}
+                    </React.Fragment>
+                  ))}
+                </div>
+                <div className="flex justify-between mt-2">
+                  <span className="text-[11px] text-outline">Category</span>
+                  <span className="text-[11px] text-outline">Details</span>
+                  <span className="text-[11px] text-outline">Review</span>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* Department */}
+                <div id="field-departmentId">
+                  <DepartmentSelect
+                    departments={dbDepartments}
+                    value={departmentId}
+                    onChange={(val) => {
+                      setDepartmentId(val);
+                      if (fieldErrors["departmentId"]) {
+                        setFieldErrors(prev => { const n = {...prev}; delete n["departmentId"]; return n; });
+                      }
+                    }}
+                  />
+                  {fieldErrors["departmentId"] && (
+                    <p className="text-xs text-error mt-1 font-medium animate-fade-in">{fieldErrors["departmentId"]}</p>
+                  )}
+                </div>
+
+                {/* Dynamic Fields */}
+                {categoryConfig.fields.map((field) => {
+                  const config = fieldLabels[field];
+
+                  if (field === "emailChoice") {
+                    return (
+                      <div key={field} id="field-emailChoice1" className="bg-surface-variant/30 rounded-xl p-5 border border-outline-variant">
+                        <div className="flex items-center gap-2 mb-4">
+                          <span className="material-symbols-rounded text-[20px] text-primary">alternate_email</span>
+                          <p className="text-sm font-semibold text-foreground">Choice of Email Id *</p>
+                        </div>
+                        <p className="text-xs text-outline mb-4">
+                          Enter your preferred email handles (e.g., firstname.lastname). Default is your full name.
+                        </p>
+                        <div className="space-y-3">
+                          {["1st", "2nd", "3rd"].map((label, idx) => (
+                            <div key={label} className="flex items-center gap-3">
+                              <span className="text-xs font-semibold text-outline w-8 shrink-0">{label}</span>
+                              <Input
+                                label={`${label} Choice`}
+                                icon="mail"
+                                value={details[`emailChoice${idx + 1}`] || ""}
+                                onChange={(e) => handleDetailChange(`emailChoice${idx + 1}`, e.target.value.replace(/@.*/, ""))}
+                                suffix="@bhu.ac.in"
+                                required={idx === 0}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        {fieldErrors["emailChoice1"] && (
+                          <p className="text-xs text-error mt-2 font-medium animate-fade-in">{fieldErrors["emailChoice1"]}</p>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  if (field === "typeOfEmployment") {
+                    const standardOptions = ["Permanent", "Contractual", "Guest Faculty"];
+                    return (
+                      <div key={field} id={`field-${field}`} className="space-y-3">
+                        <div className="relative">
+                          <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-outline z-10">{config.icon}</span>
+                          <select
+                            value={isOtherEmployment ? "Other" : (details[field] || "")}
+                            onChange={(e) => {
+                              if (e.target.value === "Other") { setIsOtherEmployment(true); handleDetailChange(field, ""); }
+                              else { setIsOtherEmployment(false); handleDetailChange(field, e.target.value); }
+                            }}
+                            className={`w-full rounded-lg border-2 ${fieldErrors[field] ? "border-error" : "border-outline-variant"} bg-surface px-4 py-3 text-sm text-foreground pl-11 appearance-none hover:border-outline focus:border-primary focus:outline-none transition-colors cursor-pointer`}
+                            required
+                          >
+                            <option value="">Select Employment Type *</option>
+                            {standardOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                            <option value="Other">Other</option>
+                          </select>
+                          <span className="material-symbols-rounded absolute right-3 top-1/2 -translate-y-1/2 text-[20px] text-outline pointer-events-none">expand_more</span>
+                        </div>
+                        {isOtherEmployment && (
+                          <Input label="Specify Employment Type *" icon="edit" value={details[field] || ""} onChange={(e) => handleDetailChange(field, e.target.value)} required />
+                        )}
+                        {fieldErrors[field] && <p className="text-xs text-error mt-1 font-medium animate-fade-in">{fieldErrors[field]}</p>}
+                      </div>
+                    );
+                  }
+
+                  if (field === "admissionAcademicYear" || field === "courseCompletionYear") {
+                    const currentYear = new Date().getFullYear();
+                    const years = Array.from({ length: 50 }, (_, i) => currentYear - 30 + i);
+                    return (
+                      <div key={field} id={`field-${field}`}>
+                        <div className="relative">
+                          <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-outline z-10">{config.icon}</span>
+                          <select
+                            value={details[field] || ""}
+                            onChange={(e) => handleDetailChange(field, e.target.value)}
+                            className={`w-full rounded-lg border-2 ${fieldErrors[field] ? "border-error" : "border-outline-variant"} bg-surface px-4 py-3 text-sm text-foreground pl-11 appearance-none hover:border-outline focus:border-primary focus:outline-none transition-colors cursor-pointer`}
+                            required
+                          >
+                            <option value="">{config.label} *</option>
+                            {years.map(y => <option key={y} value={y}>{y}</option>)}
+                          </select>
+                          <span className="material-symbols-rounded absolute right-3 top-1/2 -translate-y-1/2 text-[20px] text-outline pointer-events-none">expand_more</span>
+                        </div>
+                        {fieldErrors[field] && <p className="text-xs text-error mt-1 font-medium animate-fade-in">{fieldErrors[field]}</p>}
+                      </div>
+                    );
+                  }
+
+                  if (field === "mobileNo") {
+                    const phoneLen = getPhoneLength(details['countryCode'] || "+91");
+                    return (
+                      <div key={field} id={`field-${field}`}>
+                        <div className="flex gap-2">
+                          <CountryCodeSelect
+                            value={details['countryCode'] || "+91"}
+                            onChange={(val) => handleDetailChange('countryCode', val)}
+                          />
+                          <div className="flex-1">
+                            <Input
+                              label={`${config.label} * (${phoneLen} digits)`}
+                              icon={config.icon}
+                              type="tel"
+                              value={details[field] || ""}
+                              onChange={(e) => handleDetailChange(field, e.target.value.replace(/\D/g, ""))}
+                              maxLength={phoneLen}
+                              required
+                            />
+                          </div>
+                        </div>
+                        {fieldErrors[field] && <p className="text-xs text-error mt-1 font-medium animate-fade-in">{fieldErrors[field]}</p>}
+                      </div>
+                    );
+                  }
+
+                  if (field === "nationality") {
+                    return (
+                      <div key={field} id={`field-${field}`}>
+                        <NationalitySelect
+                          value={details[field] || ""}
+                          onChange={(val) => handleDetailChange(field, val)}
+                        />
+                        {fieldErrors[field] && <p className="text-xs text-error mt-1 font-medium animate-fade-in">{fieldErrors[field]}</p>}
+                      </div>
+                    );
+                  }
+
+                  // Default input field
+                  let onChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => handleDetailChange(field, e.target.value);
+                  if (field === "facultyInstituteCentre") onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[0-9]/g, ""));
+                  else if (field === "employeeId") onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase());
+                  else if (field === "enrollmentNo") onChangeHandler = (e) => handleDetailChange(field, e.target.value.toUpperCase());
+                  else if (field === "designation") onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[0-9]/g, ""));
+                  else if (field === "programEnrolled") onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[^a-zA-Z\s.]/g, ""));
+                  else if (field === "dateOfBirth") onChangeHandler = (e) => {
+                    const val = e.target.value;
+                    if (val && val > maxDOB) { addToast({ message: "Age must be older than 18 years", variant: "warning" }); handleDetailChange(field, ""); }
+                    else handleDetailChange(field, val);
+                  };
+
+                  return (
+                    <div key={field} id={`field-${field}`}>
+                      <Input
+                        label={config.label + " *"}
+                        icon={config.icon}
+                        type={config.type || "text"}
+                        value={details[field] || ""}
+                        onChange={onChangeHandler}
+                        max={field === "dateOfBirth" ? maxDOB : undefined}
+                        required
+                      />
+                      {fieldErrors[field] && <p className="text-xs text-error mt-1 font-medium animate-fade-in">{fieldErrors[field]}</p>}
+                    </div>
+                  );
+                })}
+
+                {/* Photo Upload */}
+                <div id="field-photo">
+                  <p className="text-sm font-semibold text-foreground mb-2">Certified Photograph *</p>
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${
+                      fieldErrors["photo"] ? "border-error bg-error-container/5" :
+                      photo ? "border-success bg-success-container/10" : "border-outline-variant hover:border-primary hover:bg-primary/3"
+                    }`}
+                  >
+                    <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png" className="hidden" onChange={handlePhotoChange} />
+                    {photoPreview ? (
+                      <div className="flex items-center gap-4">
+                        <img src={photoPreview} alt="Preview" className="w-20 h-20 rounded-xl object-cover border border-outline-variant" />
+                        <div className="text-left flex-1">
+                          <p className="text-sm font-medium text-foreground">{photo?.name}</p>
+                          <p className="text-xs text-outline mt-0.5">
+                            {((photo?.size || 0) / 1024).toFixed(0)} KB • {photo?.type}
+                            {photoDimensions && ` • ${photoDimensions.width}x${photoDimensions.height} px`}
+                          </p>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setPhoto(null); setPhotoPreview(null); }} className="text-xs text-error font-medium mt-1 hover:underline cursor-pointer">Remove</button>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setPhotoModalOpen(true); }} className="text-xs text-primary font-medium mt-1 hover:underline cursor-pointer ml-3">View Full Size</button>
+                        </div>
+                        <span className="material-symbols-rounded text-[24px] text-success">check_circle</span>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="material-symbols-rounded text-[40px] text-outline/50 mb-2">add_photo_alternate</span>
+                        <p className="text-sm text-outline">Click to upload your photograph</p>
+                        <p className="text-xs text-outline/60 mt-1">JPEG or PNG, max 2MB. Aspect Ratio: 3:4 (e.g. 300x400 pixels)</p>
+                      </>
+                    )}
+                  </div>
+                  {fieldErrors["photo"] && <p className="text-xs text-error mt-1 font-medium animate-fade-in">{fieldErrors["photo"]}</p>}
+                </div>
+
+                {/* Signature Upload / Draw */}
+                <div id="field-signature">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold text-foreground">Certified Signature *</p>
+                    <div className="flex items-center bg-surface-variant rounded-lg p-0.5">
+                      <button type="button" onClick={() => setSignatureMode("upload")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${signatureMode === "upload" ? "bg-primary text-white shadow-sm" : "text-outline hover:text-foreground"}`}>
+                        <span className="material-symbols-rounded text-[14px]">upload_file</span>Upload
+                      </button>
+                      <button type="button" onClick={() => setSignatureMode("draw")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${signatureMode === "draw" ? "bg-primary text-white shadow-sm" : "text-outline hover:text-foreground"}`}>
+                        <span className="material-symbols-rounded text-[14px]">draw</span>Draw
+                      </button>
+                    </div>
+                  </div>
+
+                  {signatureMode === "upload" ? (
+                    <div
+                      onClick={() => signatureInputRef.current?.click()}
+                      className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${
+                        fieldErrors["signature"] ? "border-error bg-error-container/5" :
+                        signature ? "border-success bg-success-container/10" : "border-outline-variant hover:border-primary hover:bg-primary/3"
+                      }`}
+                    >
+                      <input ref={signatureInputRef} type="file" accept="image/jpeg,image/jpg,image/png" className="hidden" onChange={handleSignatureChange} />
+                      {signaturePreview ? (
+                        <div className="flex items-center gap-4">
+                          <img src={signaturePreview} alt="Signature Preview" className="w-20 h-20 rounded-xl object-contain border border-outline-variant bg-white" />
+                          <div className="text-left flex-1">
+                            <p className="text-sm font-medium text-foreground">{signature?.name}</p>
+                            <p className="text-xs text-outline mt-0.5">
+                              {((signature?.size || 0) / 1024).toFixed(0)} KB • {signature?.type}
+                              {sigDimensions && ` • ${sigDimensions.width}x${sigDimensions.height} px`}
+                            </p>
+                            <button type="button" onClick={(e) => { e.stopPropagation(); setSignature(null); setSignaturePreview(null); }} className="text-xs text-error font-medium mt-1 hover:underline cursor-pointer">Remove</button>
+                            <button type="button" onClick={(e) => { e.stopPropagation(); setSignatureModalOpen(true); }} className="text-xs text-primary font-medium mt-1 hover:underline cursor-pointer ml-3">View Full Size</button>
+                          </div>
+                          <span className="material-symbols-rounded text-[24px] text-success">check_circle</span>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="material-symbols-rounded text-[40px] text-outline/50 mb-2">upload_file</span>
+                          <p className="text-sm text-outline">Click to upload your signature</p>
+                          <p className="text-xs text-outline/60 mt-1">JPEG or PNG, max 2MB. Aspect Ratio: 3:1 (e.g. 300x100 pixels)</p>
+                        </>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      {signaturePreview ? (
+                        <div className="border-2 border-success rounded-xl p-4 bg-success-container/10">
+                          <div className="flex items-center gap-4">
+                            <img src={signaturePreview} alt="Drawn Signature" className="w-24 h-16 rounded-lg object-contain border border-outline-variant bg-white" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                                <span className="material-symbols-rounded text-[16px] text-success">check_circle</span>Signature captured
+                              </p>
+                              <p className="text-xs text-outline mt-0.5">{signature ? `${((signature.size || 0) / 1024).toFixed(0)} KB` : ""}</p>
+                            </div>
+                            <button type="button" onClick={() => { setSignature(null); setSignaturePreview(null); }} className="text-xs text-error font-medium hover:underline cursor-pointer">Re-draw</button>
+                          </div>
+                        </div>
+                      ) : (
+                        <SignaturePad
+                          onSignatureCapture={(file, previewUrl) => { setSignature(file); setSignaturePreview(previewUrl); }}
+                          onClear={() => { setSignature(null); setSignaturePreview(null); }}
+                        />
+                      )}
+                    </div>
+                  )}
+                  {fieldErrors["signature"] && <p className="text-xs text-error mt-1 font-medium animate-fade-in">{fieldErrors["signature"]}</p>}
+                </div>
+
+                {/* Place & Date */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                  <div id="field-applicantPlace">
+                    <Input
+                      label="Place *"
+                      icon="location_on"
+                      value={details.applicantPlace || ""}
+                      onChange={(e) => handleDetailChange("applicantPlace", e.target.value.replace(/[^a-zA-Z\s]/g, "").toUpperCase())}
+                      required
+                      placeholder="e.g. Varanasi"
+                    />
+                    {fieldErrors["applicantPlace"] && <p className="text-xs text-error mt-1 font-medium animate-fade-in">{fieldErrors["applicantPlace"]}</p>}
+                  </div>
+                  <Input
+                    label="Date *"
+                    icon="calendar_today"
+                    type="date"
+                    value={details.applicantDate || new Date().toISOString().split("T")[0]}
+                    onChange={(e) => handleDetailChange("applicantDate", e.target.value)}
+                    required
+                  />
+                </div>
+
+                {error && (
+                  <div className="flex items-center gap-2 rounded-lg bg-error-container px-4 py-3 text-sm text-error animate-fade-in">
+                    <span className="material-symbols-rounded text-[18px]">error</span>
+                    {error}
+                  </div>
+                )}
+
+                <div className="flex justify-between pt-2">
+                  <Button variant="outlined" onClick={() => setFormStep(1)}>Back</Button>
+                  <Button
+                    icon="arrow_forward"
+                    onClick={() => {
+                      setError("");
+                      if (validateAndProceedToReview()) setFormStep(3);
+                    }}
+                  >
+                    Review Application
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ═══ STEP 3: Review & Submit ═══ */}
+          {formStep === 3 && categoryConfig && (
+            <div className="bg-white rounded-2xl border border-black/25 p-6 shadow-[0_0_9px_rgba(0,0,0,0.3)] space-y-6">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Review Your Application</h2>
+                <p className="text-sm text-outline">Please verify all details before submitting.</p>
+              </div>
+
+              {/* ⚠️ Warning banner */}
+              <div className="flex items-start gap-3 rounded-xl border border-warning/40 bg-warning-container/20 px-5 py-4">
+                <span className="material-symbols-rounded text-[22px] text-warning mt-0.5">warning</span>
+                <div>
+                  <p className="text-sm font-bold text-warning">Important Notice</p>
+                  <p className="text-xs text-foreground/70 mt-1">
+                    Once submitted, you <strong>cannot edit</strong> any details. Please review all information carefully.
+                    To make changes after submission, you will need to contact CC Admin.
+                  </p>
+                  <p className="text-xs text-foreground/70 mt-1">
+                    <strong>Save your Reference ID</strong> and <strong>download the preview form</strong> for your records.
+                  </p>
+                </div>
+              </div>
+
+              {/* Summary card */}
+              <div className="bg-surface rounded-2xl border border-outline-variant overflow-hidden">
+                <div className="bg-primary-container/40 px-5 py-3 flex items-center justify-between border-b border-outline-variant">
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-rounded text-[22px] text-primary">{categoryConfig.icon}</span>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{categoryConfig.label}</p>
+                      <p className="text-xs text-outline">{dbDepartments.find((d) => d.id === departmentId)?.name}</p>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-primary text-white text-xs font-semibold">{categoryConfig.quota}</span>
+                </div>
+
+                <div className="p-5 grid grid-cols-2 gap-3">
+                  {categoryConfig.fields.map((field) => {
+                    if (field === "emailChoice") {
+                      return (
+                        <div key={field} className="col-span-2 bg-surface-variant/40 rounded-lg px-3 py-2">
+                          <p className="text-[10px] uppercase tracking-wider text-outline font-medium mb-1">Choice of Email Id</p>
+                          <div className="space-y-0.5">
+                            {[1, 2, 3].map((n) => (
+                              details[`emailChoice${n}`] && (
+                                <p key={n} className="text-sm text-foreground font-medium">
+                                  {n === 1 ? "1st" : n === 2 ? "2nd" : "3rd"}: {details[`emailChoice${n}`]}
+                                </p>
+                              )
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={field} className="bg-surface-variant/40 rounded-lg px-3 py-2">
+                        <p className="text-[10px] uppercase tracking-wider text-outline font-medium">{fieldLabels[field].label}</p>
+                        <p className="text-sm text-foreground font-medium">{details[field]}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {photoPreview && (
+                  <div className="px-5 pb-5 flex items-center gap-3">
+                    <img src={photoPreview} alt="Photo" className="w-14 h-14 rounded-xl object-cover border border-outline-variant" />
+                    <div>
+                      <p className="text-xs font-medium text-foreground">{photo?.name}</p>
+                      <p className="text-[11px] text-outline">{((photo?.size || 0) / 1024).toFixed(0)} KB</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* IT Policy Agreement */}
+              <div className="bg-surface-variant/30 rounded-xl p-5 border border-outline-variant">
+                <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <span className="material-symbols-rounded text-[18px] text-warning">policy</span>
+                  IT Policy Agreement
+                </h4>
+                <div className="text-xs text-outline space-y-2 mb-4 max-h-32 overflow-y-auto pr-2">
+                  <p>By submitting this application, I confirm that all information provided is accurate and complete.</p>
+                  <p>I agree to abide by the BHU IT Usage Policy, including but not limited to: responsible use of institutional email, prohibition of sharing credentials, compliance with data protection guidelines, and acceptable use of Google Workspace services.</p>
+                  <p>I understand that misuse of the email account may result in suspension or termination of email services and may be subject to disciplinary action.</p>
+                </div>
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={policyAccepted}
+                    onChange={(e) => setPolicyAccepted(e.target.checked)}
+                    className="w-4.5 h-4.5 rounded border-2 border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer"
+                  />
+                  <span className="text-sm text-foreground font-medium">I have read and accept the IT Usage Policy</span>
+                </label>
+              </div>
+
+              {error && (
+                <div className="flex items-center gap-2 rounded-lg bg-error-container px-4 py-3 text-sm text-error animate-fade-in">
+                  <span className="material-symbols-rounded text-[18px]">error</span>
+                  {error}
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-2">
+                <Button variant="outlined" onClick={() => setFormStep(2)}>Back</Button>
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="outlined"
+                    icon="download"
+                    onClick={() => {
+                      const previewData = {
+                        trackingId: "PREVIEW",
+                        status: "DRAFT",
+                        createdAt: new Date().toISOString(),
+                        department: dbDepartments.find((d) => d.id === departmentId),
+                        applicantDetails: { ...details, category: selectedCategory },
+                      };
+                      generateApplicationPdf(previewData, {
+                        firstName: user?.firstName || "",
+                        lastName: user?.lastName || "",
+                        email: user?.email || "",
+                      }, photoPreview);
+                    }}
+                  >
+                    Download Preview
+                  </Button>
+                  <Button icon="send" disabled={!policyAccepted || submitting} loading={submitting} onClick={handleSubmit} size="lg">
+                    Submit Application
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ═══ STEP 4: Success ═══ */}
+          {formStep === 4 && submittedApp && (
+            <div className="bg-white rounded-2xl border border-black/25 p-6 shadow-[0_0_9px_rgba(0,0,0,0.3)] space-y-6 text-center py-10 animate-fade-in">
+              <div className="w-20 h-20 rounded-full bg-success-container flex items-center justify-center mx-auto mb-6">
+                <span className="material-symbols-rounded text-[40px] text-success">check_circle</span>
+              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">Application Submitted</h2>
+              <p className="text-sm text-outline max-w-md mx-auto">
+                Your application for BHU institutional email has been successfully submitted.
+              </p>
+              <div className="bg-primary-container/30 rounded-xl px-5 py-4 max-w-sm mx-auto">
+                <p className="text-xs text-outline font-medium uppercase tracking-wider mb-1">Your Reference ID</p>
+                <p className="text-xl font-bold text-primary">{submittedApp.trackingId}</p>
+                <p className="text-xs text-foreground/70 mt-2">
+                  Save your Reference ID and download the preview form for your records.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+                <Button
+                  variant="outlined"
+                  icon="download"
+                  size="lg"
+                  onClick={() => {
+                    const fullAppForPdf = {
+                      ...submittedApp,
+                      department: dbDepartments.find((d) => d.id === departmentId),
+                      applicantDetails: { ...details, category: selectedCategory },
+                      createdAt: new Date().toISOString(),
+                    };
+                    generateApplicationPdf(fullAppForPdf, {
+                      firstName: user?.firstName || "",
+                      lastName: user?.lastName || "",
+                      email: user?.email || "",
+                    }, photoPreview, signaturePreview);
+                  }}
+                >
+                  Download Form
+                </Button>
+                <Button icon="visibility" size="lg" onClick={() => { setFormStep(0); setExpandedAppId(submittedApp.id); }}>
+                  View My Applications
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
-      {/* ── Reapply Requests Section ── */}
+      {/* Show "New Application" button when canApply and form is not active and applications exist */}
+      {canApply && formStep === 0 && applications.length > 0 && (
+        <div className="mb-4">
+          <Button icon="add_circle" size="md" onClick={() => setFormStep(1)}>Submit New Application</Button>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════
+          APPLICATIONS LIST — INLINE ACCORDION
+          ════════════════════════════════════════════════════════ */}
+      {applications.length > 0 && (
+        <div className="space-y-3">
+          {applications.map((app) => {
+            const isExpanded = expandedAppId === app.id;
+            return (
+              <div key={app.id} className="bg-white rounded-xl border border-black/25 shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200 overflow-hidden">
+                {/* Row header — click to expand/collapse */}
+                <div
+                  onClick={() => setExpandedAppId(isExpanded ? null : app.id)}
+                  className="p-5 cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-11 h-11 rounded-xl bg-primary-container flex items-center justify-center shrink-0">
+                        <span className="material-symbols-rounded text-[22px] text-primary">mail</span>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2.5 mb-.5">
+                          <p className="font-semibold text-foreground text-md">Ref. No: {app.trackingId}</p>
+                          <StatusBadge status={app.status} size="sm" />
+                        </div>
+                        <p className="text-xs text-orange-800">
+                          {app.department?.name || "—"} • Submitted{" "}
+                          {new Date(app.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                        </p>
+                      </div>
+                    </div>
+                    <span className={`material-symbols-rounded text-[20px] text-outline group-hover:text-primary transition-all duration-200 ${isExpanded ? "rotate-90" : ""}`}>
+                      chevron_right
+                    </span>
+                  </div>
+                </div>
+
+                {/* Expanded details — slide down */}
+                {isExpanded && (
+                  <div className="border-t border-outline-variant px-5 pb-5 pt-4 space-y-5 animate-fade-in">
+                    {/* Horizontal Progress Bar */}
+                    <div className="bg-surface-variant/30 rounded-xl p-4">
+                      <h4 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                        <span className="material-symbols-rounded text-[18px] text-primary">timeline</span>
+                        Application Progress
+                      </h4>
+                      <HorizontalProgressBar status={app.status} />
+                    </div>
+
+                    {/* Digitally Signed Card */}
+                    {(app.status === "APPROVED_HOD" || app.status === "PENDING_CC" || app.status === "PROVISIONED") && app.digitalSignatureHash && (
+                      <div className="bg-gradient-to-r from-success-container/40 to-primary-container/30 rounded-xl px-5 py-4 border border-success/25">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="material-symbols-rounded text-[22px] text-success">verified</span>
+                          <p className="text-sm font-bold text-success">Digitally Signed & Approved by HOD</p>
+                        </div>
+                        {app.hodApprovedAt && (
+                          <p className="text-xs text-foreground/70 mb-1">
+                            <span className="font-medium">Approved on:</span>{" "}
+                            {new Date(app.hodApprovedAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 mt-2 bg-surface/60 rounded-lg px-3 py-2">
+                          <span className="material-symbols-rounded text-[14px] text-outline">fingerprint</span>
+                          <p className="text-[11px] font-mono text-outline tracking-wider">
+                            Hash: {app.digitalSignatureHash.substring(0, 24).toUpperCase()}…
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Details Grid */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground mb-3">Application Details</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {Object.entries(app.applicantDetails || {}).map(([key, val]) => (
+                          <div key={key} className="bg-surface-variant/30 rounded-lg px-3 py-2">
+                            <p className="text-[10px] uppercase tracking-wider text-outline font-medium">
+                              {key.replace(/([A-Z])/g, " $1").replace(/_/g, " ")}
+                            </p>
+                            <p className="text-sm text-foreground font-medium truncate">{String(val)}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Remarks */}
+                    {app.hodRemarks && (
+                      <div className="bg-primary-container/30 rounded-xl px-5 py-4">
+                        <p className="text-xs font-semibold text-primary mb-1">HOD Remarks</p>
+                        <p className="text-sm text-foreground">{app.hodRemarks}</p>
+                      </div>
+                    )}
+                    {app.ccAdminRemarks && (
+                      <div className="bg-tertiary-container/30 rounded-xl px-5 py-4">
+                        <p className="text-xs font-semibold text-tertiary mb-1">CC Admin Remarks</p>
+                        <p className="text-sm text-foreground">{app.ccAdminRemarks}</p>
+                      </div>
+                    )}
+
+                    {/* Provisioned Info */}
+                    {app.status === "PROVISIONED" && (
+                      <div className="bg-success-container/30 rounded-xl px-5 py-4 border border-success/20">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="material-symbols-rounded text-[20px] text-success">verified</span>
+                          <p className="text-sm font-bold text-success">Account Provisioned</p>
+                        </div>
+                        <p className="text-sm text-foreground">Your BHU email account has been provisioned. Credentials have been sent to your alternate email address.</p>
+                        {app.quotaAssignedGB && <p className="text-xs text-outline mt-2">Storage Quota: {app.quotaAssignedGB} GB</p>}
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div className="pt-4 border-t border-outline-variant flex flex-col sm:flex-row items-center justify-end gap-3">
+                      <Button
+                        icon={app.approvedPdfPath ? "verified" : "download"}
+                        size="md"
+                        loading={pdfLoading}
+                        onClick={() => handleDownloadPdf(app)}
+                      >
+                        {app.approvedPdfPath ? "Download Signed PDF" : "Download Draft PDF"}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ════════════════ REAPPLY REQUESTS SECTION ════════════════ */}
       {rejectedCount > 0 && (
         <div className="mt-8">
-          <h2
-            className="text-lg font-bold text-foreground mb-4 flex items-center gap-2"
-            style={{ fontFamily: "var(--font-serif)" }}
-          >
+          <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2" style={{ fontFamily: "var(--font-serif)" }}>
             <span className="material-symbols-rounded text-[22px] text-primary">replay</span>
             Reapply Requests
           </h2>
 
-          {/* Rejected applications needing reapply */}
           <div className="space-y-3 mb-6">
             {rejectedApps.map((app) => {
               const existingReq = reapplyRequests.find((r) => r.applicationId === app.id);
@@ -427,23 +1456,14 @@ export default function ApplicantDashboard() {
                         <p className="text-xs text-outline">
                           {app.department?.name} • Submitted {new Date(app.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                         </p>
-                        {app.hodRemarks && (
-                          <p className="text-xs text-error/80 mt-1"><span className="font-medium">HOD Remarks:</span> {app.hodRemarks}</p>
-                        )}
+                        {app.hodRemarks && <p className="text-xs text-error/80 mt-1"><span className="font-medium">HOD Remarks:</span> {app.hodRemarks}</p>}
                         {existingReq?.hodRemarks && existingReq.status !== "PENDING" && (
                           <p className="text-xs text-primary mt-1"><span className="font-medium">Request Response:</span> {existingReq.hodRemarks}</p>
                         )}
                       </div>
                     </div>
                     {!existingReq && !maxLimitReached && (
-                      <Button
-                        icon="send"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedRejectedAppId(app.id);
-                          setShowReapplyModal(true);
-                        }}
-                      >
+                      <Button icon="send" size="sm" onClick={() => { setSelectedRejectedAppId(app.id); setShowReapplyModal(true); }}>
                         Request Re-apply
                       </Button>
                     )}
@@ -453,9 +1473,7 @@ export default function ApplicantDashboard() {
                         : existingReq.status === "APPROVED" ? "text-success"
                         : "text-error"
                       }`}>
-                        {existingReq.status === "PENDING" ? "hourglass_top"
-                        : existingReq.status === "APPROVED" ? "check_circle"
-                        : "cancel"}
+                        {existingReq.status === "PENDING" ? "hourglass_top" : existingReq.status === "APPROVED" ? "check_circle" : "cancel"}
                       </span>
                     )}
                   </div>
@@ -476,194 +1494,41 @@ export default function ApplicantDashboard() {
         </div>
       )}
 
-      {/* Application Detail Modal */}
-      <Modal
-        isOpen={!!selectedApp}
-        onClose={() => setSelectedApp(null)}
-        title={`Application ${selectedApp?.trackingId || ""}`}
-        size="lg"
-      >
-        {selectedApp && (
-          <div className="space-y-6">
-            {/* Status + Department */}
-            <div className="flex items-center gap-3 flex-wrap">
-              <StatusBadge status={selectedApp.status} />
-              <span className="text-sm text-outline">
-                {selectedApp.department?.name}
-              </span>
-            </div>
+      {/* ════════════════ MODALS ════════════════ */}
 
-            {/* ── Digitally Signed & Approved Card ── */}
-            {(selectedApp.status === "APPROVED_HOD" ||
-              selectedApp.status === "PENDING_CC" ||
-              selectedApp.status === "PROVISIONED") &&
-              selectedApp.digitalSignatureHash && (
-                <div className="bg-gradient-to-r from-success-container/40 to-primary-container/30 rounded-xl px-5 py-4 border border-success/25 animate-fade-in">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="material-symbols-rounded text-[22px] text-success">
-                      verified
-                    </span>
-                    <p className="text-sm font-bold text-success">
-                      Digitally Signed & Approved by HOD
-                    </p>
-                  </div>
-                  {selectedApp.hodApprovedAt && (
-                    <p className="text-xs text-foreground/70 mb-1">
-                      <span className="font-medium">Approved on:</span>{" "}
-                      {new Date(selectedApp.hodApprovedAt).toLocaleDateString(
-                        "en-IN",
-                        {
-                          day: "numeric",
-                          month: "long",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        }
-                      )}
-                    </p>
-                  )}
-                  <div className="flex items-center gap-2 mt-2 bg-surface/60 rounded-lg px-3 py-2">
-                    <span className="material-symbols-rounded text-[14px] text-outline">
-                      fingerprint
-                    </span>
-                    <p className="text-[11px] font-mono text-outline tracking-wider">
-                      Hash:{" "}
-                      {selectedApp.digitalSignatureHash
-                        .substring(0, 24)
-                        .toUpperCase()}
-                      …
-                    </p>
-                  </div>
-                </div>
-              )}
-
-            {/* Timeline */}
-            <div className="bg-blackrounded-xl p-5">
-              <h4 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-                <span className="material-symbols-rounded text-[18px] text-primary">
-                  timeline
-                </span>
-                Application Progress
-              </h4>
-              <Timeline
-                steps={buildTimelineSteps(selectedApp.status, {
-                  createdAt: selectedApp.createdAt,
-                  hodApprovedAt: selectedApp.hodApprovedAt,
-                  provisionedAt: selectedApp.provisionedAt,
-                })}
-              />
-            </div>
-
-            {/* Details Grid */}
-            <div>
-              <h4 className="text-sm font-semibold text-foreground mb-3">
-                Application Details
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {Object.entries(
-                  selectedApp.applicantDetails || {}
-                ).map(([key, val]) => (
-                  <div
-                    key={key}
-                    className="bg-surface-variant/30 rounded-lg px-3 py-2"
-                  >
-                    <p className="text-[10px] uppercase tracking-wider text-outline font-medium">
-                      {key.replace(/([A-Z])/g, " $1").replace(/_/g, " ")}
-                    </p>
-                    <p className="text-sm text-foreground font-medium truncate">
-                      {String(val)}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Remarks */}
-            {selectedApp.hodRemarks && (
-              <div className="bg-primary-container/30 rounded-xl px-5 py-4">
-                <p className="text-xs font-semibold text-primary mb-1">
-                  HOD Remarks
-                </p>
-                <p className="text-sm text-foreground">
-                  {selectedApp.hodRemarks}
-                </p>
-              </div>
-            )}
-
-            {selectedApp.ccAdminRemarks && (
-              <div className="bg-tertiary-container/30 rounded-xl px-5 py-4">
-                <p className="text-xs font-semibold text-tertiary mb-1">
-                  CC Admin Remarks
-                </p>
-                <p className="text-sm text-foreground">
-                  {selectedApp.ccAdminRemarks}
-                </p>
-              </div>
-            )}
-
-            {/* Provisioned Info */}
-            {selectedApp.status === "PROVISIONED" && (
-              <div className="bg-success-container/30 rounded-xl px-5 py-4 border border-success/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="material-symbols-rounded text-[20px] text-success">
-                    verified
-                  </span>
-                  <p className="text-sm font-bold text-success">
-                    Account Provisioned
-                  </p>
-                </div>
-                <p className="text-sm text-foreground">
-                  Your BHU email account has been provisioned. Credentials have
-                  been sent to your alternate email address.
-                </p>
-                {selectedApp.quotaAssignedGB && (
-                  <p className="text-xs text-outline mt-2">
-                    Storage Quota: {selectedApp.quotaAssignedGB} GB
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="pt-4 border-t border-outline-variant flex flex-col sm:flex-row items-center justify-end gap-3">
-              <Button
-                variant="outlined"
-                onClick={() => setSelectedApp(null)}
-              >
-                Close
-              </Button>
-              <Button
-                icon={selectedApp.approvedPdfPath ? "verified" : "download"}
-                size="md"
-                loading={pdfLoading}
-                onClick={() => handleDownloadPdf(selectedApp)}
-              >
-                {selectedApp.approvedPdfPath
-                  ? "Download Signed PDF"
-                  : "Download Draft PDF"}
-              </Button>
-            </div>
+      {/* Photo Preview Modal */}
+      <Modal isOpen={photoModalOpen} onClose={() => setPhotoModalOpen(false)} title="Photo Preview" size="md">
+        {photoPreview && (
+          <div className="flex justify-center p-4">
+            <img src={photoPreview} alt="Full Size Preview" className="max-w-full max-h-[60vh] rounded-xl object-contain border border-outline-variant" />
           </div>
         )}
       </Modal>
 
-      {/* ═══════════════════ REAPPLY REQUEST MODAL ═══════════════════ */}
-      <Modal
-        isOpen={showReapplyModal}
-        onClose={() => setShowReapplyModal(false)}
-        title="Request Re-apply Permission"
-        size="md"
-      >
+      {/* Signature Preview Modal */}
+      <Modal isOpen={signatureModalOpen} onClose={() => setSignatureModalOpen(false)} title="Signature Preview" size="md">
+        {signaturePreview && (
+          <div className="flex justify-center p-4">
+            <img src={signaturePreview} alt="Full Size Signature" className="max-w-full max-h-[60vh] rounded-xl object-contain border border-outline-variant bg-white" />
+          </div>
+        )}
+      </Modal>
+
+      {/* Image Croppers */}
+      {cropModalOpen && tempPhotoUrl && (
+        <ImageCropper imageSrc={tempPhotoUrl} onCropComplete={handleCropComplete} onCancel={() => setCropModalOpen(false)} aspectRatio={3 / 4} title="Crop Photo (3:4 Ratio)" />
+      )}
+      {sigCropModalOpen && tempSigUrl && (
+        <ImageCropper imageSrc={tempSigUrl} onCropComplete={handleSigCropComplete} onCancel={() => setSigCropModalOpen(false)} aspectRatio={3 / 1} title="Crop Signature (3:1 Ratio)" />
+      )}
+
+      {/* Reapply Request Modal */}
+      <Modal isOpen={showReapplyModal} onClose={() => setShowReapplyModal(false)} title="Request Re-apply Permission" size="md">
         <div className="space-y-5">
           <div className="bg-primary-container/20 rounded-xl px-4 py-3">
-            <p className="text-xs text-outline">
-              This request will be sent to your department&apos;s HOD. Once approved, you can submit a new application.
-            </p>
-            <p className="text-[11px] text-outline/60 mt-1">
-              Requests used: {reapplyRequests.length} / 5
-            </p>
+            <p className="text-xs text-outline">This request will be sent to your department&apos;s HOD. Once approved, you can submit a new application.</p>
+            <p className="text-[11px] text-outline/60 mt-1">Requests used: {reapplyRequests.length} / 5</p>
           </div>
-
           <div>
             <label className="block text-sm font-semibold text-foreground mb-1.5">Student Name <span className="text-error">*</span></label>
             <input
@@ -674,7 +1539,6 @@ export default function ApplicantDashboard() {
               className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-2.5 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors"
             />
           </div>
-
           <div>
             <label className="block text-sm font-semibold text-foreground mb-1.5">Roll / Enrollment Number <span className="text-error">*</span></label>
             <input
@@ -685,7 +1549,6 @@ export default function ApplicantDashboard() {
               className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-2.5 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors"
             />
           </div>
-
           <div>
             <label className="block text-sm font-semibold text-foreground mb-1.5">Reason for Re-applying <span className="text-error">*</span></label>
             <textarea
@@ -696,7 +1559,6 @@ export default function ApplicantDashboard() {
               className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-3 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors resize-none"
             />
           </div>
-
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="outlined" onClick={() => setShowReapplyModal(false)}>Cancel</Button>
             <Button icon="send" loading={reapplySubmitting} onClick={handleSubmitReapplyRequest}>Submit Request</Button>
