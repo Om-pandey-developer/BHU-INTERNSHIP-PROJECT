@@ -218,6 +218,31 @@ export class ApplicationsService {
   }
 
   /**
+   * Get applications provisioned for a specific department.
+   * Used by HOD Provisioned dashboard tab.
+   */
+  async findProvisionedForHod(departmentId: string) {
+    return this.prisma.application.findMany({
+      where: {
+        departmentId,
+        status: ApplicationStatus.PROVISIONED,
+      },
+      include: {
+        applicant: {
+          select: {
+            id: true,
+            alternateEmail: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        department: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
+
+  /**
    * HOD approves or rejects an application.
    * Validates that the HOD belongs to the same department.
    */

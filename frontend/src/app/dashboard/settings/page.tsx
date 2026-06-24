@@ -182,7 +182,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto space-y-8">
       <div className="mb-8">
         <h1
           className="text-3xl font-bold text-foreground mb-2"
@@ -195,6 +195,7 @@ export default function SettingsPage() {
         </p>
       </div>
 
+      <div className={`grid grid-cols-1 ${user?.role === "HOD" ? "md:grid-cols-2" : ""} gap-8 items-start`}>
       {/* ══════════════════════════════════════
           HOD SIGNATURE UPLOAD CARD
          ══════════════════════════════════════ */}
@@ -284,6 +285,10 @@ export default function SettingsPage() {
                 JPEG or PNG • Max 1MB • Aspect Ratio: 3:1
               </p>
             </div>
+            
+            <p className="text-sm font-medium text-center text-primary mt-2">
+              Upload/update signature here
+            </p>
 
             {/* Selected file + upload button */}
             {sigFile && (
@@ -477,6 +482,7 @@ export default function SettingsPage() {
           title="Crop Signature (3:1 Ratio)"
         />
       )}
+      </div>
     </div>
   );
 }

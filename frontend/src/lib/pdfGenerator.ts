@@ -96,7 +96,8 @@ export async function generateApplicationPdf(
   app: ApplicationData,
   userName?: { firstName: string; lastName: string; email?: string },
   photoDataUrl?: string | null,
-  signatureDataUrl?: string | null
+  signatureDataUrl?: string | null,
+  returnAsBlob: boolean = false
 ) {
   // Dynamically import html2pdf to prevent SSR issues
   const html2pdf = (await import('html2pdf.js')).default;
@@ -361,10 +362,17 @@ export async function generateApplicationPdf(
   };
 
   try {
-      await html2pdf().set(opt).from(element).save();
+      if (returnAsBlob) {
+          return await html2pdf().set(opt).from(element).outputPdf('blob');
+      } else {
+          await html2pdf().set(opt).from(element).save();
+      }
   } catch (err) {
       console.error('PDF generation error:', err);
-      alert('Failed to generate PDF. Please try again.');
+      if (!returnAsBlob) {
+          alert('Failed to generate PDF. Please try again.');
+      }
+      throw err;
   } finally {
       document.body.removeChild(container);
   }

@@ -1,24 +1,27 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import api from "@/lib/axios";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/Button";
-import Modal from "@/components/Modal";
 import SkeletonLoader from "@/components/SkeletonLoader";
 import { useToastStore } from "@/components/Toast";
 import { useAuthStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import { generateApplicationPdf } from "@/lib/pdfGenerator";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 interface Application {
   id: string;
   trackingId: string;
   status: string;
-  applicantDetails: Record<string, unknown>;
-  photoStoragePath: string;
+  applicantDetails: Record<string, any>;
+  photoStoragePath?: string;
   signatureStoragePath?: string;
+  hodRemarks?: string;
   createdAt: string;
+  hodApprovedAt?: string;
   applicant?: {
     id: string;
     alternateEmail: string;
@@ -55,30 +58,32 @@ interface ReapplyRequest {
   };
 }
 
-/**
- * HOD Dashboard — Pending Reviews
- *
- * Shows all applications pending HOD review for the HOD's department.
- * Supports single approve/reject with remarks, and bulk approve.
- * Gates approval behind signature upload requirement.
- */
 export default function HodDashboard() {
   const { addToast } = useToastStore();
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
-  const [actionType, setActionType] = useState<"approve" | "reject" | null>(null);
-  const [remarks, setRemarks] = useState("");
-  const [actionLoading, setActionLoading] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  // Reapply requests state
-  const [activeTab, setActiveTab] = useState<"pending" | "reapply">("pending");
-  const [reapplyRequests, setReapplyRequests] = useState<ReapplyRequest[]>([]);
-  const [reapplyActionLoading, setReapplyActionLoading] = useState<string | null>(null);
-
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuthStore();
+
+  // Data states
+  const [pendingApps, setPendingApps] = useState<Application[]>([]);
+  const [reviewedApps, setReviewedApps] = useState<Application[]>([]);
+  const [provisionedApps, setProvisionedApps] = useState<Application[]>([]);
+  const [reapplyRequests, setReapplyRequests] = useState<ReapplyRequest[]>([]);
+  
+  const [loading, setLoading] = useState(true);
+  const [hasSignature, setHasSignature] = useState<boolean | null>(null);
+  
+  // UI states
+  const [activeTab, setActiveTab] = useState<"pending" | "reviewed" | "reapply" | "provisioned">("pending");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState<"sm" | "md" | "lg">("md");
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [remarksInput, setRemarksInput] = useState<Record<string, string>>({});
+  const [isZipping, setIsZipping] = useState(false);
 
   // Role guard
   useEffect(() => {
@@ -87,168 +92,144 @@ export default function HodDashboard() {
     }
   }, [user, authLoading, router]);
 
-  // ── Signature status ──
-  const [hasSignature, setHasSignature] = useState<boolean | null>(null);
-
+  // Fetch all data
   useEffect(() => {
-    fetchQueue();
-    fetchReapplyRequests();
+    fetchAllData();
     checkSignatureStatus();
   }, []);
+
+  // Reset pagination on tab/filter change
+  useEffect(() => {
+    setCurrentPage(1);
+    setSelectedIds(new Set());
+    setExpandedRows(new Set());
+  }, [activeTab, searchQuery, categoryFilter, entriesPerPage]);
 
   async function checkSignatureStatus() {
     try {
       const { data } = await api.get("/users/me/signature");
-      const result = data.success ? data.data : data;
-      setHasSignature(result.hasSignature);
+      setHasSignature(data.success ? data.data.hasSignature : data.hasSignature);
     } catch {
       setHasSignature(false);
     }
   }
 
-  async function fetchQueue() {
+  async function fetchAllData() {
     setLoading(true);
     try {
-      const { data } = await api.get("/applications/hod-queue");
-      setApplications(data.success ? data.data : data);
-    } catch {
-      // empty
+      const [pendingRes, reviewedRes, provisionedRes, reapplyRes] = await Promise.allSettled([
+        api.get("/applications/hod-queue"),
+        api.get("/applications/hod-reviewed"),
+        api.get("/applications/hod-provisioned"),
+        api.get("/reapply/hod")
+      ]);
+
+      if (pendingRes.status === "fulfilled") setPendingApps(pendingRes.value.data.success ? pendingRes.value.data.data : pendingRes.value.data);
+      if (reviewedRes.status === "fulfilled") setReviewedApps(reviewedRes.value.data.success ? reviewedRes.value.data.data : reviewedRes.value.data);
+      if (provisionedRes.status === "fulfilled") setProvisionedApps(provisionedRes.value.data.success ? provisionedRes.value.data.data : provisionedRes.value.data);
+      if (reapplyRes.status === "fulfilled") setReapplyRequests(reapplyRes.value.data.success ? reapplyRes.value.data.data : reapplyRes.value.data);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   }
 
-  async function fetchReapplyRequests() {
-    try {
-      const { data } = await api.get("/reapply/hod");
-      setReapplyRequests(data.success ? data.data : (Array.isArray(data) ? data : []));
-    } catch {
-      // empty
-    }
-  }
+  // Active data selection
+  const activeData = useMemo(() => {
+    let data: any[] = [];
+    if (activeTab === "pending") data = pendingApps;
+    else if (activeTab === "reviewed") data = reviewedApps;
+    else if (activeTab === "provisioned") data = provisionedApps;
+    else if (activeTab === "reapply") data = reapplyRequests;
 
-  async function handleReapplyAction(requestId: string, action: "approve" | "reject") {
-    setReapplyActionLoading(requestId);
-    try {
-      await api.patch(`/reapply/${requestId}/${action}`, {
-        remarks: action === "approve" ? "Approved by HOD" : "Rejected by HOD",
+    // Filter
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      data = data.filter(item => {
+        const name = activeTab === "reapply" ? item.studentName : `${item.applicant?.firstName} ${item.applicant?.lastName}`;
+        const email = item.applicant?.alternateEmail || "";
+        const id = activeTab === "reapply" ? item.application?.trackingId : item.trackingId;
+        const roll = activeTab === "reapply" ? item.rollNumber : "";
+        return name?.toLowerCase().includes(q) || email?.toLowerCase().includes(q) || id?.toLowerCase().includes(q) || roll?.toLowerCase().includes(q);
       });
-      addToast({
-        message: `Reapply request ${action === "approve" ? "approved" : "rejected"} successfully.`,
-        variant: action === "approve" ? "success" : "info",
-      });
-      fetchReapplyRequests();
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      addToast({ message: error.response?.data?.message || "Action failed.", variant: "error" });
-    } finally {
-      setReapplyActionLoading(null);
     }
-  }
 
-  function toggleSelect(id: string) {
-    setSelectedIds((prev) => {
+    if (categoryFilter !== "ALL" && activeTab !== "reapply") {
+      data = data.filter(item => item.applicantDetails?.category === categoryFilter);
+    }
+
+    return data;
+  }, [activeTab, pendingApps, reviewedApps, provisionedApps, reapplyRequests, searchQuery, categoryFilter]);
+
+  // Pagination
+  const totalPages = Math.ceil(activeData.length / entriesPerPage);
+  const paginatedData = activeData.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  }
+  };
 
-  function toggleSelectAll() {
-    if (selectedIds.size === applications.length) {
+  const toggleSelectAll = () => {
+    if (selectedIds.size === paginatedData.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(applications.map((a) => a.id)));
+      setSelectedIds(new Set(paginatedData.map(item => item.id)));
     }
-  }
+  };
 
-  async function handleAction() {
-    if (!selectedApp || !actionType) return;
-    if (actionType === "reject" && !remarks.trim()) {
+  const toggleExpand = (id: string) => {
+    setExpandedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  // Actions
+  async function handleApproveReject(id: string, action: "approve" | "reject") {
+    if (action === "reject" && !remarksInput[id]?.trim()) {
       addToast({ message: "Remarks are mandatory for rejection.", variant: "warning" });
       return;
     }
 
-    setActionLoading(true);
+    if (action === "approve" && !hasSignature) {
+      addToast({ message: "Please upload your signature in Settings before approving.", variant: "warning" });
+      return;
+    }
+
+    setActionLoading(id);
     try {
-      const status = actionType === "approve" ? "APPROVED_HOD" : "REJECTED_HOD";
-      await api.patch(`/applications/${selectedApp.id}/hod-status`, {
+      const status = action === "approve" ? "APPROVED_HOD" : "REJECTED_HOD";
+      await api.patch(`/applications/${id}/hod-status`, {
         status,
-        remarks: remarks.trim() || undefined,
+        remarks: remarksInput[id]?.trim() || undefined,
       });
 
-      addToast({
-        message:
-          actionType === "approve"
-            ? `Application ${selectedApp.trackingId} approved & digitally signed.`
-            : `Application ${selectedApp.trackingId} rejected.`,
-        variant: actionType === "approve" ? "success" : "info",
-      });
-
-      setSelectedApp(null);
-      setActionType(null);
-      setRemarks("");
-      fetchQueue();
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } } };
-      addToast({
-        message: error.response?.data?.message || "Action failed.",
-        variant: "error",
-      });
+      addToast({ message: `Application ${action === "approve" ? "approved & digitally signed" : "rejected"}.`, variant: action === "approve" ? "success" : "info" });
+      setRemarksInput(prev => ({ ...prev, [id]: "" }));
+      fetchAllData();
+    } catch (err: any) {
+      addToast({ message: err.response?.data?.message || "Action failed.", variant: "error" });
     } finally {
-      setActionLoading(false);
-    }
-  }
-
-  async function fetchImageAsBase64(url: string | null): Promise<string | null> {
-    if (!url) return null;
-    try {
-      const response = await api.get(url, { responseType: 'blob' });
-      const blob = response.data;
-      return new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    } catch (err) {
-      console.error("Failed to fetch image", err);
-      return null; // Don't return the URL, it won't work in the PDF without auth
-    }
-  }
-
-  async function handleDownloadPdf(app: Application) {
-    try {
-      const photoUrl = `/applications/${app.id}/photo`;
-      const signatureUrl = `/applications/${app.id}/signature`;
-
-      addToast({ message: "Preparing PDF documents...", variant: "info" });
-
-      const photoDataUrl = await fetchImageAsBase64(photoUrl);
-      const signatureDataUrl = await fetchImageAsBase64(signatureUrl);
-
-      addToast({ message: "Generating PDF...", variant: "info" });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await generateApplicationPdf(app as any, undefined, photoDataUrl, signatureDataUrl);
-      addToast({ message: "PDF downloaded successfully", variant: "success" });
-    } catch (error) {
-      addToast({ message: "Failed to generate PDF", variant: "error" });
+      setActionLoading(null);
     }
   }
 
   async function handleBulkApprove() {
     if (selectedIds.size === 0) return;
     if (!hasSignature) {
-      addToast({
-        message: "Please upload your signature in Settings before approving applications.",
-        variant: "warning",
-      });
+      addToast({ message: "Please upload your signature in Settings before approving.", variant: "warning" });
       return;
     }
 
-    setActionLoading(true);
-
+    setActionLoading("bulk");
     let successCount = 0;
     let failCount = 0;
 
@@ -265,48 +246,143 @@ export default function HodDashboard() {
     }
 
     addToast({
-      message: `Bulk action: ${successCount} approved & signed${failCount > 0 ? `, ${failCount} failed` : ""}.`,
+      message: `Bulk action: ${successCount} approved${failCount > 0 ? `, ${failCount} failed` : ""}.`,
       variant: failCount > 0 ? "warning" : "success",
     });
 
     setSelectedIds(new Set());
-    setActionLoading(false);
-    fetchQueue();
+    setActionLoading(null);
+    fetchAllData();
   }
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="space-y-2">
-          <div className="h-8 w-48 skeleton rounded-lg" />
-          <div className="h-4 w-72 skeleton rounded" />
-        </div>
-        <SkeletonLoader variant="table-row" count={5} />
-      </div>
-    );
+  async function handleReapplyAction(requestId: string, action: "approve" | "reject") {
+    setActionLoading(requestId);
+    try {
+      await api.patch(`/reapply/${requestId}/${action}`, {
+        remarks: action === "approve" ? "Approved by HOD" : "Rejected by HOD",
+      });
+      addToast({ message: `Reapply request ${action === "approve" ? "approved" : "rejected"}.`, variant: action === "approve" ? "success" : "info" });
+      fetchAllData();
+    } catch (err: any) {
+      addToast({ message: err.response?.data?.message || "Action failed.", variant: "error" });
+    } finally {
+      setActionLoading(null);
+    }
   }
+
+  // PDF Generation helpers
+  async function fetchImageAsBase64(url: string | null): Promise<string | null> {
+    if (!url) return null;
+    try {
+      const response = await api.get(url, { responseType: 'blob' });
+      const blob = response.data;
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  async function handleDownloadPdf(app: Application) {
+    if (app.status === "APPROVED_HOD" || app.status === "PROVISIONED") {
+      try {
+        addToast({ message: "Downloading signed PDF...", variant: "info" });
+        const response = await api.get(`/applications/${app.id}/approved-pdf`, { responseType: "blob" });
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `${app.trackingId}_Approved.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        return;
+      } catch {
+        addToast({ message: "Failed to download signed PDF, generating locally...", variant: "warning" });
+      }
+    }
+
+    try {
+      addToast({ message: "Generating PDF...", variant: "info" });
+      const photoUrl = `/applications/${app.id}/photo`;
+      const signatureUrl = `/applications/${app.id}/signature`;
+      const photoDataUrl = await fetchImageAsBase64(photoUrl);
+      const signatureDataUrl = await fetchImageAsBase64(signatureUrl);
+      await generateApplicationPdf(app as any, undefined, photoDataUrl, signatureDataUrl, false);
+      addToast({ message: "PDF downloaded successfully", variant: "success" });
+    } catch {
+      addToast({ message: "Failed to generate PDF", variant: "error" });
+    }
+  }
+
+  async function handleBulkZipDownload() {
+    if (selectedIds.size === 0) return;
+    setIsZipping(true);
+    addToast({ message: `Preparing ZIP file for ${selectedIds.size} applications... Please wait.`, variant: "info" });
+    
+    try {
+      const zip = new JSZip();
+      const appsToZip = activeData.filter(a => selectedIds.has(a.id));
+
+      for (const app of appsToZip) {
+        let pdfBlob: Blob | null = null;
+        
+        if (app.status === "APPROVED_HOD" || app.status === "PROVISIONED") {
+          try {
+            const res = await api.get(`/applications/${app.id}/approved-pdf`, { responseType: "blob" });
+            pdfBlob = res.data;
+          } catch {
+            // Fallback to local generation
+          }
+        }
+
+        if (!pdfBlob) {
+          const photoDataUrl = await fetchImageAsBase64(`/applications/${app.id}/photo`);
+          const signatureDataUrl = await fetchImageAsBase64(`/applications/${app.id}/signature`);
+          const generated = await generateApplicationPdf(app as any, undefined, photoDataUrl, signatureDataUrl, true);
+          if (generated) pdfBlob = generated as Blob;
+        }
+
+        if (pdfBlob) {
+          zip.file(`${app.trackingId}_${app.applicant?.firstName}.pdf`, pdfBlob);
+        }
+      }
+
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, "Applications_Bulk_Export.zip");
+      addToast({ message: "ZIP downloaded successfully", variant: "success" });
+      setSelectedIds(new Set());
+    } catch (err) {
+      console.error(err);
+      addToast({ message: "Failed to generate ZIP", variant: "error" });
+    } finally {
+      setIsZipping(false);
+    }
+  }
+
+  // Zoom styles
+  const zoomClasses = {
+    sm: "text-xs px-2 py-2",
+    md: "text-sm px-4 py-3",
+    lg: "text-base px-5 py-4"
+  };
+  const cellClass = `align-middle border-b border-outline-variant ${zoomClasses[zoomLevel]}`;
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in p-6 max-w-[1600px] mx-auto space-y-6">
+      
       {/* ── Signature warning banner ── */}
       {hasSignature === false && (
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-error/30 bg-error-container/30 px-5 py-4 animate-fade-in">
-          <span className="material-symbols-rounded text-[22px] text-error mt-0.5">
-            warning
-          </span>
+        <div className="flex items-start gap-4 rounded-xl border-2 border-error bg-error-container p-6 animate-fade-in shadow-sm">
+          <span className="material-symbols-rounded text-[32px] text-error mt-1">warning</span>
           <div>
-            <p className="text-sm font-semibold text-error">
-              Signature Required
-            </p>
-            <p className="text-xs text-error/80 mt-1">
-              You must upload your digital signature before approving
-              applications. Please visit{" "}
-              <a
-                href="/dashboard/settings"
-                className="underline font-semibold hover:text-error transition-colors"
-              >
-                Settings → Digital Signature
-              </a>{" "}
+            <p className="text-xl font-bold text-error">Signature Required</p>
+            <p className="text-base text-error/90 mt-2 font-medium">
+              You must upload your digital signature before approving applications. Please visit{" "}
+              <a href="/dashboard/settings" className="underline font-bold hover:text-error transition-colors">Settings → Digital Signature</a>{" "}
               to upload it.
             </p>
           </div>
@@ -314,447 +390,322 @@ export default function HodDashboard() {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
-        <div>
-          <h1
-            className="text-2xl font-bold text-foreground"
-            style={{ fontFamily: "var(--font-serif)" }}
+      <div>
+        <h1 className="text-3xl font-bold text-foreground" style={{ fontFamily: "var(--font-serif)" }}>
+          HOD Dashboard
+        </h1>
+        <p className="text-sm text-outline mt-1">Review applications, reapply requests, and provisioned accounts for your department.</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide border-b border-outline-variant">
+        {[
+          { id: "pending", label: "Pending Reviews", count: pendingApps.length },
+          { id: "reviewed", label: "Reviewed", count: reviewedApps.length },
+          { id: "reapply", label: "Reapply Requests", count: reapplyRequests.length },
+          { id: "provisioned", label: "Provisioned", count: provisionedApps.length }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id as any)}
+            className={`px-5 py-3 rounded-t-xl text-sm font-semibold transition-all whitespace-nowrap ${
+              activeTab === tab.id 
+                ? "bg-surface border-t border-x border-outline-variant text-primary shadow-[0_-4px_6px_-2px_rgba(0,0,0,0.05)]" 
+                : "text-outline hover:bg-surface-variant hover:text-foreground border border-transparent"
+            }`}
           >
-            HOD Dashboard
-          </h1>
-          <p className="text-sm text-outline mt-1">
-            Review applications and reapply requests for your department
-          </p>
-        </div>
-      </div>
-
-      {/* Tab Toggle */}
-
-      <div className="flex items-center gap-2 mb-6">
-        <button
-          onClick={() => setActiveTab("pending")}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-all cursor-pointer ${activeTab === "pending"
-              ? "bg-primary text-white shadow-sm"
-              : "bg-surface-variant text-outline hover:bg-surface-variant/80"
-            }`}
-        >
-          Pending Reviews
-          {applications.length > 0 && (
-            <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${activeTab === "pending" ? "bg-white/20 text-white" : "bg-primary-container text-primary"
-              }`}>{applications.length}</span>
-          )}
-        </button>
-        <button
-          onClick={() => setActiveTab("reapply")}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-all cursor-pointer ${activeTab === "reapply"
-              ? "bg-primary text-white shadow-sm"
-              : "bg-surface-variant text-outline hover:bg-surface-variant/80"
-            }`}
-        >
-          Reapply Requests
-          {reapplyRequests.length > 0 && (
-            <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${activeTab === "reapply" ? "bg-white/20 text-white" : "bg-warning-container text-warning"
-              }`}>{reapplyRequests.length}</span>
-          )}
-        </button>
-      </div>
-      {/* ═══════════════ TAB: PENDING REVIEWS ═══════════════ */}
-      {activeTab === "pending" && (
-        <>
-          {selectedIds.size > 0 && (
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-sm font-medium text-primary">
-                {selectedIds.size} selected
+            {tab.label}
+            {tab.count > 0 && (
+              <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                activeTab === tab.id ? "bg-primary-container text-primary" : "bg-surface-variant text-outline"
+              }`}>
+                {tab.count}
               </span>
-              <Button
-                icon="done_all"
-                variant="tonal"
-                size="sm"
-                loading={actionLoading}
-                onClick={handleBulkApprove}
-                disabled={!hasSignature}
-              >
-                Bulk Approve
-              </Button>
-            </div>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Action Bar */}
+      <div className="bg-surface border border-outline-variant rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-sm">
+        <div className="flex flex-wrap items-center gap-4 flex-1">
+          {/* Search */}
+          <div className="relative w-full max-w-sm">
+            <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+            <input
+              type="text"
+              placeholder="Search by ID, Name, Email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-surface-variant/50 border border-outline-variant rounded-xl text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+            />
+          </div>
+
+          {/* Filter */}
+          {activeTab !== "reapply" && (
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="px-4 py-2 bg-surface-variant/50 border border-outline-variant rounded-xl text-sm focus:outline-none focus:border-primary transition-all appearance-none cursor-pointer"
+            >
+              <option value="ALL">All Categories</option>
+              <option value="TEACHING_STAFF">Teaching Staff</option>
+              <option value="NON_TEACHING_STAFF">Non-Teaching Staff</option>
+              <option value="GROUP_A_OFFICER">Group A Officer</option>
+              <option value="RESEARCH_SCHOLAR">Research Scholar</option>
+              <option value="POST_GRADUATE_STUDENT">PG Student</option>
+            </select>
           )}
 
-          {/* Queue */}
-          {applications.length === 0 ? (
-            <div className="bg-surface rounded-2xl border border-outline-variant p-12 text-center">
-              <div className="w-20 h-20 rounded-full bg-success-container flex items-center justify-center mx-auto mb-5">
-                <span className="material-symbols-rounded text-[36px] text-success">
-                  task_alt
-                </span>
-              </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">
-                All caught up!
-              </h3>
-              <p className="text-sm text-outline max-w-md mx-auto">
-                There are no applications pending your review at the moment.
-                You&apos;ll be notified when new applications arrive.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {/* Select All */}
-              <div className="flex items-center gap-3 px-5 py-2">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.size === applications.length}
-                  onChange={toggleSelectAll}
-                  className="w-4 h-4 rounded border-2 border-outline-variant accent-primary cursor-pointer"
-                />
-                <span className="text-xs font-medium text-outline">
-                  Select All
-                </span>
-              </div>
+          {/* Entries per page */}
+          <div className="flex items-center gap-2 text-sm text-outline">
+            <span>Show</span>
+            <select
+              value={entriesPerPage}
+              onChange={(e) => setEntriesPerPage(Number(e.target.value))}
+              className="px-2 py-1 bg-surface-variant/50 border border-outline-variant rounded-lg text-sm focus:outline-none cursor-pointer"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+            <span>entries</span>
+          </div>
+        </div>
 
-              {applications.map((app) => (
-                <div
-                  key={app.id}
-                  className="bg-surface rounded-xl border border-outline-variant hover:shadow-md hover:border-primary/20 transition-all duration-200"
-                >
-                  <div className="flex items-center p-4 sm:p-5 gap-3 sm:gap-4 flex-wrap sm:flex-nowrap">
-                    {/* Checkbox */}
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(app.id)}
-                      onChange={() => toggleSelect(app.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-4 h-4 rounded border-2 border-outline-variant accent-primary cursor-pointer shrink-0"
-                    />
+        {/* Right Actions */}
+        <div className="flex items-center gap-3">
+          <div className="flex bg-surface-variant/50 p-1 rounded-xl border border-outline-variant">
+            <button onClick={() => setZoomLevel("sm")} className={`p-1.5 rounded-lg ${zoomLevel === 'sm' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Small text"><span className="material-symbols-rounded text-[18px]">format_size</span></button>
+            <button onClick={() => setZoomLevel("md")} className={`p-1.5 rounded-lg ${zoomLevel === 'md' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Medium text"><span className="material-symbols-rounded text-[20px]">format_size</span></button>
+            <button onClick={() => setZoomLevel("lg")} className={`p-1.5 rounded-lg ${zoomLevel === 'lg' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Large text"><span className="material-symbols-rounded text-[24px]">format_size</span></button>
+          </div>
 
-                    {/* Avatar */}
-                    <div className="w-11 h-11 rounded-full bg-primary-container flex items-center justify-center text-sm font-bold text-on-primary-container shrink-0">
-                      {app.applicant?.firstName?.[0]}
-                      {app.applicant?.lastName?.[0]}
-                    </div>
-
-                    {/* Info */}
-                    <div
-                      className="flex-1 min-w-0 cursor-pointer"
-                      onClick={() => setSelectedApp(app)}
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="font-semibold text-foreground text-sm truncate">
-                          {app.applicant?.firstName} {app.applicant?.lastName}
-                        </p>
-                        <StatusBadge status={app.status} size="sm" />
-                      </div>
-                      <p className="text-xs text-outline truncate">
-                        {app.trackingId} • {app.department?.name} •{" "}
-                        {app.applicant?.alternateEmail}
-                      </p>
-                      <p className="text-[11px] text-outline/60 mt-0.5">
-                        Submitted{" "}
-                        {new Date(app.createdAt).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </p>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 shrink-0 max-sm:flex-col max-sm:gap-1">
-                      <button
-                        onClick={() => {
-                          if (!hasSignature) {
-                            addToast({
-                              message:
-                                "Upload your signature in Settings before approving.",
-                              variant: "warning",
-                            });
-                            return;
-                          }
-                          setSelectedApp(app);
-                          setActionType("approve");
-                        }}
-                        className={`p-2 rounded-lg transition-colors cursor-pointer ${hasSignature
-                            ? "bg-success-container hover:bg-success/20 text-success"
-                            : "bg-surface-variant text-outline/40 cursor-not-allowed"
-                          }`}
-                        title={
-                          hasSignature
-                            ? "Approve"
-                            : "Upload your signature first"
-                        }
-                        disabled={!hasSignature}
-                      >
-                        <span className="material-symbols-rounded text-[20px]">
-                          check_circle
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedApp(app);
-                          setActionType("reject");
-                        }}
-                        className="p-2 rounded-lg bg-error-container hover:bg-error/20 text-error transition-colors cursor-pointer"
-                        title="Reject"
-                      >
-                        <span className="material-symbols-rounded text-[20px]">
-                          cancel
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+          {selectedIds.size > 0 && activeTab === "pending" && (
+            <Button icon="done_all" onClick={handleBulkApprove} loading={actionLoading === "bulk"} disabled={!hasSignature} size="sm">
+              Bulk Approve ({selectedIds.size})
+            </Button>
           )}
-        </>
-      )}
 
-      {/* ═══════════════ TAB: REAPPLY REQUESTS ═══════════════ */}
-      {activeTab === "reapply" && (
-        <div>
-          {reapplyRequests.length === 0 ? (
-            <div className="bg-surface rounded-2xl border border-outline-variant p-12 text-center">
-              <div className="w-20 h-20 rounded-full bg-success-container flex items-center justify-center mx-auto mb-5">
-                <span className="material-symbols-rounded text-[36px] text-success">task_alt</span>
-              </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">No Reapply Requests</h3>
-              <p className="text-sm text-outline max-w-md mx-auto">There are no pending reapply requests from students in your department.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {reapplyRequests.map((req) => (
-                <div key={req.id} className="bg-surface rounded-xl border border-outline-variant p-5 hover:shadow-md hover:border-primary/20 transition-all duration-200">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-4 flex-1 min-w-0">
-                      <div className="w-11 h-11 rounded-full bg-warning-container flex items-center justify-center text-sm font-bold text-warning shrink-0">
-                        {req.applicant?.firstName?.[0]}{req.applicant?.lastName?.[0]}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <p className="font-semibold text-foreground text-sm">
-                            {req.studentName}
-                          </p>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-warning-container text-warning">
-                            PENDING
-                          </span>
-                        </div>
-                        <p className="text-xs text-outline">
-                          Roll No: {req.rollNumber} • {req.application?.trackingId} • {req.applicant?.alternateEmail}
-                        </p>
-                        <div className="mt-3 bg-surface-variant/30 rounded-lg px-4 py-3">
-                          <p className="text-[10px] uppercase tracking-wider text-outline font-medium mb-1">Reason for Re-applying</p>
-                          <p className="text-sm text-foreground">{req.reason}</p>
-                        </div>
-                        {req.application?.hodRemarks && (
-                          <p className="text-xs text-outline mt-2">
-                            <span className="font-medium">Previous rejection reason:</span> {req.application.hodRemarks}
-                          </p>
-                        )}
-                        <p className="text-[11px] text-outline/60 mt-2">
-                          Submitted {new Date(req.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => handleReapplyAction(req.id, "approve")}
-                        disabled={reapplyActionLoading === req.id}
-                        className="p-2 rounded-lg bg-success-container hover:bg-success/20 text-success transition-colors cursor-pointer disabled:opacity-50"
-                        title="Approve re-apply"
-                      >
-                        <span className="material-symbols-rounded text-[20px]">check_circle</span>
-                      </button>
-                      <button
-                        onClick={() => handleReapplyAction(req.id, "reject")}
-                        disabled={reapplyActionLoading === req.id}
-                        className="p-2 rounded-lg bg-error-container hover:bg-error/20 text-error transition-colors cursor-pointer disabled:opacity-50"
-                        title="Reject re-apply"
-                      >
-                        <span className="material-symbols-rounded text-[20px]">cancel</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+          {selectedIds.size > 0 && activeTab !== "reapply" && (
+            <Button icon="folder_zip" variant="outlined" onClick={handleBulkZipDownload} loading={isZipping} size="sm">
+              Download ZIP ({selectedIds.size})
+            </Button>
           )}
         </div>
-      )}
+      </div>
 
-      {/* Detail / Action Modal */}
-      <Modal
-        isOpen={!!selectedApp}
-        onClose={() => {
-          setSelectedApp(null);
-          setActionType(null);
-          setRemarks("");
-        }}
-        title={
-          actionType
-            ? `${actionType === "approve" ? "Approve" : "Reject"} Application`
-            : `Application ${selectedApp?.trackingId || ""}`
-        }
-        size="lg"
-        mode="drawer"
-        footer={
-          actionType ? (
-            <>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  setActionType(null);
-                  setRemarks("");
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                icon={actionType === "approve" ? "check_circle" : "cancel"}
-                loading={actionLoading}
-                onClick={handleAction}
-                className={
-                  actionType === "reject"
-                    ? "!bg-error hover:!bg-error/90"
-                    : "!bg-success hover:!bg-success/90"
-                }
-              >
-                {actionType === "approve" ? "Approve & Sign" : "Reject"}
-              </Button>
-            </>
-          ) : (
-            <div className="flex items-center justify-between w-full">
-              <Button
-                variant="text"
-                onClick={() => {
-                  setSelectedApp(null);
-                  setActionType(null);
-                  setRemarks("");
-                }}
-              >
-                Close
-              </Button>
-              <div className="flex gap-2">
-                <Button
-                  variant="outlined"
-                  onClick={() => setActionType("reject")}
-                  className="!border-error !text-error"
-                >
-                  Reject
-                </Button>
-                <Button
-                  variant="outlined"
-                  icon="download"
-                  onClick={() => handleDownloadPdf(selectedApp!)}
-                  className="!border-primary !text-primary hover:!bg-primary/10"
-                >
-                  Download PDF
-                </Button>
-                <Button
-                  icon="check_circle"
-                  onClick={() => {
-                    if (!hasSignature) {
-                      addToast({
-                        message:
-                          "Upload your signature in Settings before approving.",
-                        variant: "warning",
-                      });
-                      return;
-                    }
-                    setActionType("approve");
-                  }}
-                  className="!bg-success"
-                  disabled={!hasSignature}
-                >
-                  Approve
-                </Button>
-              </div>
+      {/* Table Area */}
+      <div className="bg-surface border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
+        {loading ? (
+          <div className="p-8"><SkeletonLoader variant="table-row" count={5} /></div>
+        ) : paginatedData.length === 0 ? (
+          <div className="p-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-surface-variant flex items-center justify-center mx-auto mb-4">
+              <span className="material-symbols-rounded text-[32px] text-outline">search_off</span>
             </div>
-          )
-        }
-      >
-        {selectedApp && (
-          <div className="space-y-5">
-            {/* Applicant info */}
-            <div className="flex items-center gap-4 p-4 bg-surface-variant/30 rounded-xl">
-              <div className="w-14 h-14 rounded-full bg-primary-container flex items-center justify-center text-lg font-bold text-on-primary-container">
-                {selectedApp.applicant?.firstName?.[0]}
-                {selectedApp.applicant?.lastName?.[0]}
-              </div>
-              <div>
-                <p className="font-bold text-foreground">
-                  {selectedApp.applicant?.firstName}{" "}
-                  {selectedApp.applicant?.lastName}
-                </p>
-                <p className="text-sm text-outline">
-                  {selectedApp.applicant?.alternateEmail}
-                </p>
-                <p className="text-xs text-outline/60">
-                  {selectedApp.department?.name}
-                </p>
-              </div>
-            </div>
-
-            {/* Details grid */}
-            <div>
-              <h4 className="text-sm font-semibold text-foreground mb-3">
-                Application Details
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {Object.entries(selectedApp.applicantDetails || {}).map(
-                  ([key, val]) => (
-                    <div
-                      key={key}
-                      className="bg-surface-variant/30 rounded-lg px-3 py-2"
-                    >
-                      <p className="text-[10px] uppercase tracking-wider text-outline font-medium">
-                        {key.replace(/([A-Z])/g, " $1").replace(/_/g, " ")}
-                      </p>
-                      <p className="text-sm text-foreground font-medium truncate">
-                        {String(val)}
-                      </p>
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-
-            {/* Action form */}
-            {actionType && (
-              <div
-                className={`p-4 rounded-xl border ${actionType === "approve"
-                    ? "bg-success-container/20 border-success/20"
-                    : "bg-error-container/20 border-error/20"
-                  }`}
-              >
-                {actionType === "approve" && (
-                  <div className="flex items-center gap-2 mb-3 text-xs text-success font-medium">
-                    <span className="material-symbols-rounded text-[16px]">
-                      verified
-                    </span>
-                    Your digital signature will be automatically applied
-                  </div>
-                )}
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Remarks{" "}
-                  {actionType === "reject" && (
-                    <span className="text-error">*</span>
-                  )}
-                </label>
-                <textarea
-                  value={remarks}
-                  onChange={(e) => setRemarks(e.target.value)}
-                  placeholder={
-                    actionType === "approve"
-                      ? "Optional remarks for approval..."
-                      : "Provide reason for rejection (mandatory)..."
-                  }
-                  rows={3}
-                  className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-3 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors resize-none"
-                  required={actionType === "reject"}
-                />
-              </div>
-            )}
+            <h3 className="text-lg font-bold text-foreground">No records found</h3>
+            <p className="text-sm text-outline mt-1">Try adjusting your search or filters.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-surface-variant/30 text-outline uppercase tracking-wider font-semibold">
+                  <th className={`${cellClass} w-10 text-center`}>
+                    <input type="checkbox" checked={selectedIds.size > 0 && selectedIds.size === paginatedData.length} onChange={toggleSelectAll} className="w-4 h-4 rounded border-2 border-outline-variant accent-primary cursor-pointer" />
+                  </th>
+                  <th className={cellClass}>Applicant Details</th>
+                  <th className={cellClass}>Reference / Info</th>
+                  <th className={cellClass}>Date / Status</th>
+                  <th className={`${cellClass} text-right`}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedData.map((item) => {
+                  const isExpanded = expandedRows.has(item.id);
+                  const isReapply = activeTab === "reapply";
+                  const name = isReapply ? item.studentName : `${item.applicant?.firstName} ${item.applicant?.lastName}`;
+                  const email = isReapply ? item.applicant?.alternateEmail : item.applicant?.alternateEmail;
+                  const trackId = isReapply ? item.application?.trackingId : item.trackingId;
+                  const department = isReapply ? item.application?.department?.name : item.department?.name;
+                  
+                  return (
+                    <React.Fragment key={item.id}>
+                      <tr className={`hover:bg-surface-variant/10 transition-colors ${isExpanded ? 'bg-primary/5' : ''}`}>
+                        <td className={`${cellClass} text-center`}>
+                          <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => toggleSelect(item.id)} className="w-4 h-4 rounded border-2 border-outline-variant accent-primary cursor-pointer" />
+                        </td>
+                        <td className={cellClass}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-sm font-bold text-on-primary-container shrink-0">
+                              {name?.[0]?.toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-bold text-foreground">{name}</p>
+                              <p className="text-xs text-outline">{email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className={cellClass}>
+                          <p className="font-semibold text-foreground">{trackId || (isReapply ? item.rollNumber : 'N/A')}</p>
+                          <p className="text-xs text-outline">{department}</p>
+                          {!isReapply && item.applicantDetails?.category && (
+                            <span className="inline-block px-2 py-0.5 mt-1 rounded bg-surface-variant text-[10px] font-medium text-outline uppercase tracking-wide">
+                              {item.applicantDetails.category.replace(/_/g, ' ')}
+                            </span>
+                          )}
+                        </td>
+                        <td className={cellClass}>
+                          <p className="text-xs font-medium text-foreground mb-1">
+                            {new Date(item.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </p>
+                          <StatusBadge status={item.status} size="sm" />
+                        </td>
+                        <td className={`${cellClass} text-right`}>
+                          <div className="flex items-center justify-end gap-2">
+                            <button onClick={() => toggleExpand(item.id)} className="p-2 rounded-lg bg-surface hover:bg-surface-variant text-outline border border-outline-variant transition-colors" title="View Details">
+                              <span className="material-symbols-rounded text-[18px]">{isExpanded ? 'expand_less' : 'expand_more'}</span>
+                            </button>
+                            {!isReapply && (
+                              <button onClick={() => handleDownloadPdf(item)} className="p-2 rounded-lg bg-surface hover:bg-primary-container hover:text-primary text-outline border border-outline-variant transition-colors" title="Download PDF">
+                                <span className="material-symbols-rounded text-[18px]">download</span>
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                      
+                      {/* Expanded Row Content */}
+                      {isExpanded && (
+                        <tr className="bg-surface-variant/10">
+                          <td colSpan={5} className="p-0 border-b border-outline-variant">
+                            <div className="p-6 border-l-4 border-primary m-2 bg-surface rounded-xl shadow-inner">
+                              
+                              {/* Reapply Specific View */}
+                              {isReapply ? (
+                                <div className="space-y-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <p className="text-xs text-outline font-semibold uppercase tracking-wider mb-1">Reason for Re-applying</p>
+                                      <div className="bg-surface-variant/30 p-3 rounded-lg text-sm text-foreground">{item.reason}</div>
+                                    </div>
+                                    {item.application?.hodRemarks && (
+                                      <div>
+                                        <p className="text-xs text-outline font-semibold uppercase tracking-wider mb-1">Previous Rejection Remarks</p>
+                                        <div className="bg-error-container/30 border border-error/20 p-3 rounded-lg text-sm text-error">{item.application.hodRemarks}</div>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  {item.status === 'PENDING' && (
+                                    <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant">
+                                      <Button variant="outlined" onClick={() => handleReapplyAction(item.id, "reject")} loading={actionLoading === item.id} className="!border-error !text-error hover:!bg-error/10">Reject Request</Button>
+                                      <Button onClick={() => handleReapplyAction(item.id, "approve")} loading={actionLoading === item.id}>Approve Request</Button>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                /* Normal Application View */
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                  <div className="lg:col-span-2 space-y-4">
+                                    <h4 className="text-sm font-bold text-foreground border-b border-outline-variant pb-2">Application Details</h4>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                      {Object.entries(item.applicantDetails || {}).map(([k, v]) => (
+                                        <div key={k}>
+                                          <p className="text-[10px] uppercase tracking-wider text-outline font-bold mb-0.5">{k.replace(/([A-Z])/g, ' $1').trim()}</p>
+                                          <p className="text-sm text-foreground font-medium">{String(v || '-')}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                    {item.hodRemarks && (
+                                      <div className="mt-4 bg-primary-container/20 border border-primary/20 p-3 rounded-xl">
+                                        <p className="text-xs text-primary font-bold uppercase mb-1">HOD Remarks</p>
+                                        <p className="text-sm text-foreground">{item.hodRemarks}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="space-y-4 border-l border-outline-variant pl-6">
+                                    <h4 className="text-sm font-bold text-foreground border-b border-outline-variant pb-2">Documents</h4>
+                                    <div className="flex gap-4">
+                                      {item.photoStoragePath && (
+                                        <div className="text-center">
+                                          <div className="w-24 h-24 bg-surface-variant rounded-lg border border-outline-variant overflow-hidden mb-2">
+                                            <img src={`/applications/${item.id}/photo`} alt="Photo" className="w-full h-full object-cover hover:scale-110 transition-transform cursor-pointer" onClick={() => window.open(`/applications/${item.id}/photo`, '_blank')} />
+                                          </div>
+                                          <p className="text-[10px] font-bold text-outline">PHOTO</p>
+                                        </div>
+                                      )}
+                                      {item.signatureStoragePath && (
+                                        <div className="text-center">
+                                          <div className="w-24 h-24 bg-surface-variant rounded-lg border border-outline-variant overflow-hidden mb-2 flex items-center justify-center p-2">
+                                            <img src={`/applications/${item.id}/signature`} alt="Signature" className="max-w-full max-h-full object-contain cursor-pointer" onClick={() => window.open(`/applications/${item.id}/signature`, '_blank')} />
+                                          </div>
+                                          <p className="text-[10px] font-bold text-outline">SIGNATURE</p>
+                                        </div>
+                                      )}
+                                    </div>
+                                    
+                                    {activeTab === "pending" && (
+                                      <div className="pt-4 mt-4 border-t border-outline-variant">
+                                        <h4 className="text-sm font-bold text-foreground mb-3">HOD Action</h4>
+                                        <textarea
+                                          placeholder="Add remarks (required for rejection)..."
+                                          value={remarksInput[item.id] || ""}
+                                          onChange={(e) => setRemarksInput(prev => ({...prev, [item.id]: e.target.value}))}
+                                          className="w-full text-sm p-3 border border-outline-variant rounded-xl bg-surface mb-3 focus:outline-none focus:border-primary resize-none"
+                                          rows={2}
+                                        />
+                                        <div className="flex gap-2">
+                                          <Button variant="outlined" onClick={() => handleApproveReject(item.id, "reject")} loading={actionLoading === item.id} className="flex-1 !border-error !text-error hover:!bg-error/10" size="sm">Reject</Button>
+                                          <Button onClick={() => handleApproveReject(item.id, "approve")} loading={actionLoading === item.id} disabled={!hasSignature} className="flex-1" size="sm">Approve</Button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
-      </Modal>
+
+        {/* Pagination Footer */}
+        {totalPages > 0 && (
+          <div className="p-4 border-t border-outline-variant flex flex-wrap items-center justify-between gap-4 bg-surface-variant/10">
+            <p className="text-sm text-outline">
+              Showing <span className="font-bold text-foreground">{(currentPage - 1) * entriesPerPage + 1}</span> to <span className="font-bold text-foreground">{Math.min(currentPage * entriesPerPage, activeData.length)}</span> of <span className="font-bold text-foreground">{activeData.length}</span> entries
+            </p>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="p-1.5 rounded border border-outline-variant text-outline hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed">
+                <span className="material-symbols-rounded text-[18px]">chevron_left</span>
+              </button>
+              
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 rounded text-sm font-semibold ${currentPage === page ? 'bg-primary text-white border-transparent' : 'border border-outline-variant text-outline hover:bg-surface'}`}
+                >
+                  {page}
+                </button>
+              ))}
+
+              <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="p-1.5 rounded border border-outline-variant text-outline hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed">
+                <span className="material-symbols-rounded text-[18px]">chevron_right</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

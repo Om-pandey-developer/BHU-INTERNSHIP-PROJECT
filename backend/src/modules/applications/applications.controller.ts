@@ -154,6 +154,25 @@ export class ApplicationsController {
   }
 
   /**
+   * GET /api/v1/applications/hod-provisioned
+   * Get applications provisioned for the HOD's department.
+   * Accessible by: HOD
+   */
+  @Get('hod-provisioned')
+  @Roles(Role.HOD)
+  @UseGuards(RolesGuard)
+  @ApiOperation({
+    summary: "Get provisioned applications for HOD's department",
+  })
+  async findHodProvisioned(
+    @Req()
+    req: Request & { user: { userId: string; departmentId?: string } },
+  ) {
+    const user = req.user as { userId: string; departmentId: string };
+    return this.applicationsService.findProvisionedForHod(user.departmentId);
+  }
+
+  /**
    * PATCH /api/v1/applications/:id/hod-status
    * HOD approves or rejects an application.
    * Accessible by: HOD

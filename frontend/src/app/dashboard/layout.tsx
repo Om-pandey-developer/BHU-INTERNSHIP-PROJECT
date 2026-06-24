@@ -96,8 +96,8 @@ export default function DashboardLayout({
     // ── 1. PAGE CONTAINER ──
     <div className="page-dashboard min-h-screen flex bg-olive-200">
 
-      {/* ── 2. SIDEBAR (HOD & Admin only) ── */}
-      {!isApplicant && (
+      {/* ── 2. SIDEBAR (Admin only) ── */}
+      {user.role === "CC_ADMIN" && (
         <>
           {/* Mobile overlay */}
           {sidebarOpen && (
@@ -200,8 +200,8 @@ export default function DashboardLayout({
         {/* ── 5. TOP NAVIGATION BAR ── */}
         <header className="site-header sticky top-0 z-30 bg-white backdrop-blur-md border-b border-black/30 px-6 py-3 flex items-center gap-4 shadow-[0_0_9px_rgba(0,0,0,0.3)]">
 
-          {/* Hamburger menu — only for HOD/Admin */}
-          {!isApplicant && (
+          {/* Hamburger menu — only for Admin */}
+          {user.role === "CC_ADMIN" && (
             <button
               onClick={() => setSidebarOpen(true)}
               className="p-1.5 rounded-lg hover:bg-surface-variant transition-colors cursor-pointer"
@@ -222,8 +222,8 @@ export default function DashboardLayout({
 
           <div className="flex-1" />
 
-          {/* ── Applicant navbar actions: Settings + Logout ── */}
-          {isApplicant && (
+          {/* ── Applicant & HOD navbar actions: Settings + Logout ── */}
+          {(isApplicant || user.role === "HOD") && (
             <div className="flex items-center gap-1">
               <a
                 href="/dashboard/settings"
