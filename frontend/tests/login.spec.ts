@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+ import { test, expect } from '@playwright/test';
 
 test('has title and login flow basic check', async ({ page }) => {
   // Go to the home page

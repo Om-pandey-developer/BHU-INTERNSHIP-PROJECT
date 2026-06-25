@@ -363,13 +363,7 @@ export default function HodDashboard() {
     }
   }
 
-  // Zoom styles
-  const zoomClasses = {
-    sm: "text-xs px-2 py-2",
-    md: "text-sm px-4 py-3",
-    lg: "text-base px-5 py-4"
-  };
-  const cellClass = `align-middle border-b border-outline-variant ${zoomClasses[zoomLevel]}`;
+
 
   return (
     <div className="animate-fade-in p-6 max-w-[1600px] mx-auto space-y-6">
@@ -509,66 +503,106 @@ export default function HodDashboard() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full text-left border-collapse min-w-[1400px]">
               <thead>
-                <tr className="bg-surface-variant/30 text-outline uppercase tracking-wider font-semibold">
-                  <th className={`${cellClass} w-10 text-center`}>
+                <tr className="bg-surface-variant/50 text-outline text-left">
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider w-10 text-center">
                     <input type="checkbox" checked={selectedIds.size > 0 && selectedIds.size === paginatedData.length} onChange={toggleSelectAll} className="w-4 h-4 rounded border-2 border-outline-variant accent-primary cursor-pointer" />
                   </th>
-                  <th className={cellClass}>Applicant Details</th>
-                  <th className={cellClass}>Reference / Info</th>
-                  <th className={cellClass}>Date / Status</th>
-                  <th className={`${cellClass} text-right`}>Actions</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider w-12">S.No</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Tracking ID</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Applicant Name</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Email</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Department</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Category</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">{activeTab === "reapply" ? "Roll No." : "Designation"}</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Date Applied</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">{activeTab === "reapply" ? "Reapply Reason" : "HOD Reviewed"}</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Status</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {paginatedData.map((item) => {
+                {paginatedData.map((item, idx) => {
                   const isExpanded = expandedRows.has(item.id);
                   const isReapply = activeTab === "reapply";
                   const name = isReapply ? item.studentName : `${item.applicant?.firstName} ${item.applicant?.lastName}`;
                   const email = isReapply ? item.applicant?.alternateEmail : item.applicant?.alternateEmail;
                   const trackId = isReapply ? item.application?.trackingId : item.trackingId;
                   const department = isReapply ? item.application?.department?.name : item.department?.name;
+                  const category = !isReapply ? (item.applicantDetails?.category || "—") : "—";
+                  const designation = !isReapply ? (item.applicantDetails?.designation || item.applicantDetails?.post || "—") : item.rollNumber || "—";
+                  const dateApplied = new Date(item.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+                  const hodReviewedDate = item.hodApprovedAt
+                    ? new Date(item.hodApprovedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+                    : "—";
+                  const reapplyReason = isReapply ? (item.reason?.length > 30 ? item.reason.substring(0, 30) + "…" : item.reason || "—") : hodReviewedDate;
+                  const serialNo = (currentPage - 1) * entriesPerPage + idx + 1;
                   
                   return (
                     <React.Fragment key={item.id}>
-                      <tr className={`hover:bg-surface-variant/10 transition-colors ${isExpanded ? 'bg-primary/5' : ''}`}>
-                        <td className={`${cellClass} text-center`}>
+                      <tr className={`border-t border-outline-variant hover:bg-surface-variant/20 transition-colors ${isExpanded ? 'bg-primary/5' : ''}`}>
+                        {/* 1. Checkbox */}
+                        <td className="px-3 py-3 text-center align-middle">
                           <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => toggleSelect(item.id)} className="w-4 h-4 rounded border-2 border-outline-variant accent-primary cursor-pointer" />
                         </td>
-                        <td className={cellClass}>
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-sm font-bold text-on-primary-container shrink-0">
+                        {/* 2. S.No */}
+                        <td className="px-3 py-3 text-sm text-outline font-mono align-middle">{serialNo}</td>
+                        {/* 3. Tracking ID */}
+                        <td className="px-3 py-3 align-middle">
+                          <span className="text-sm font-semibold text-primary font-mono">{trackId || "—"}</span>
+                        </td>
+                        {/* 4. Name */}
+                        <td className="px-3 py-3 align-middle">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-xs font-bold text-on-primary-container shrink-0">
                               {name?.[0]?.toUpperCase()}
                             </div>
-                            <div>
-                              <p className="font-bold text-foreground">{name}</p>
-                              <p className="text-xs text-outline">{email}</p>
-                            </div>
+                            <span className="text-sm font-semibold text-foreground whitespace-nowrap">{name}</span>
                           </div>
                         </td>
-                        <td className={cellClass}>
-                          <p className="font-semibold text-foreground">{trackId || (isReapply ? item.rollNumber : 'N/A')}</p>
-                          <p className="text-xs text-outline">{department}</p>
-                          {!isReapply && item.applicantDetails?.category && (
-                            <span className="inline-block px-2 py-0.5 mt-1 rounded bg-surface-variant text-[10px] font-medium text-outline uppercase tracking-wide">
-                              {item.applicantDetails.category.replace(/_/g, ' ')}
+                        {/* 5. Email */}
+                        <td className="px-3 py-3 align-middle">
+                          <span className="text-xs text-outline truncate block max-w-[180px]">{email || "—"}</span>
+                        </td>
+                        {/* 6. Department */}
+                        <td className="px-3 py-3 align-middle">
+                          <span className="text-xs text-foreground font-medium">{department || "—"}</span>
+                        </td>
+                        {/* 7. Category */}
+                        <td className="px-3 py-3 align-middle">
+                          {category !== "—" ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-surface-variant text-[10px] font-semibold text-outline uppercase tracking-wide whitespace-nowrap">
+                              {String(category).replace(/_/g, " ")}
                             </span>
+                          ) : (
+                            <span className="text-xs text-outline">—</span>
                           )}
                         </td>
-                        <td className={cellClass}>
-                          <p className="text-xs font-medium text-foreground mb-1">
-                            {new Date(item.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </p>
+                        {/* 8. Designation / Roll No */}
+                        <td className="px-3 py-3 align-middle">
+                          <span className="text-xs text-foreground">{String(designation)}</span>
+                        </td>
+                        {/* 9. Date Applied */}
+                        <td className="px-3 py-3 align-middle whitespace-nowrap">
+                          <span className="text-xs text-foreground font-medium">{dateApplied}</span>
+                        </td>
+                        {/* 10. HOD Reviewed / Reapply Reason */}
+                        <td className="px-3 py-3 align-middle">
+                          <span className="text-xs text-outline">{reapplyReason}</span>
+                        </td>
+                        {/* 11. Status */}
+                        <td className="px-3 py-3 align-middle">
                           <StatusBadge status={item.status} size="sm" />
                         </td>
-                        <td className={`${cellClass} text-right`}>
-                          <div className="flex items-center justify-end gap-2">
-                            <button onClick={() => toggleExpand(item.id)} className="p-2 rounded-lg bg-surface hover:bg-surface-variant text-outline border border-outline-variant transition-colors" title="View Details">
+                        {/* 12. Actions */}
+                        <td className="px-3 py-3 align-middle text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <button onClick={() => toggleExpand(item.id)} className="p-1.5 rounded-lg hover:bg-surface-variant text-outline transition-colors" title="View Details">
                               <span className="material-symbols-rounded text-[18px]">{isExpanded ? 'expand_less' : 'expand_more'}</span>
                             </button>
                             {!isReapply && (
-                              <button onClick={() => handleDownloadPdf(item)} className="p-2 rounded-lg bg-surface hover:bg-primary-container hover:text-primary text-outline border border-outline-variant transition-colors" title="Download PDF">
+                              <button onClick={() => handleDownloadPdf(item)} className="p-1.5 rounded-lg hover:bg-primary-container hover:text-primary text-outline transition-colors" title="Download PDF">
                                 <span className="material-symbols-rounded text-[18px]">download</span>
                               </button>
                             )}
@@ -579,7 +613,7 @@ export default function HodDashboard() {
                       {/* Expanded Row Content */}
                       {isExpanded && (
                         <tr className="bg-surface-variant/10">
-                          <td colSpan={5} className="p-0 border-b border-outline-variant">
+                          <td colSpan={12} className="p-0 border-b border-outline-variant">
                             <div className="p-6 border-l-4 border-primary m-2 bg-surface rounded-xl shadow-inner">
                               
                               {/* Reapply Specific View */}
