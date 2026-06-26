@@ -1,43 +1,30 @@
-# BHU Email Portal — Docker Compose
-# Spins up PostgreSQL 16 and PGAdmin for local development
+version: '3.8'
 
 services:
-  postgres:
-    image: postgres:16-alpine
+  db:
+    image: postgres:16
     container_name: bhu_postgres
-    restart: unless-stopped
+    restart: always
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-bhu_admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bhu_secure_password_2024}
       POSTGRES_DB: ${POSTGRES_DB:-bhu_email_portal}
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
-      - bhu_pg_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bhu_admin} -d ${POSTGRES_DB:-bhu_email_portal}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - bhu_postgres_data:/var/lib/postgresql/data
 
   pgadmin:
-    image: dpage/pgadmin4:latest
+    image: dpage/pgadmin4
     container_name: bhu_pgadmin
-    restart: unless-stopped
+    restart: always
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@bhu.ac.in}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
-      PGADMIN_CONFIG_SERVER_MODE: "False"
     ports:
       - "5050:80"
     depends_on:
-      postgres:
-        condition: service_healthy
-    volumes:
-      - bhu_pgadmin_data:/var/lib/pgadmin
+      - db
 
 volumes:
-  bhu_pg_data:
-    driver: local
-  bhu_pgadmin_data:
-    driver: local
+  bhu_postgres_data:

@@ -224,9 +224,10 @@ export default function Home() {
           © {new Date().getFullYear()} Banaras Hindu University — Computer
           Centre. All rights reserved.
           <br></br>
-          Developed by <b>Hari Prakash Sharma, Om Pandey, Avnish Srivastava under the guidance of Dr. Ramesh Singh Yadav</b>
+          Developed by <b>Hari Prakash Sharma, Om Pandey, Avnish Srivastava </b>under the guidance of<b> Dr. Ramesh Singh Yadav</b>
         </p>
       </footer>
     </div>
   );
 }
+1

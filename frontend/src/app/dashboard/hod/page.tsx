@@ -68,10 +68,10 @@ export default function HodDashboard() {
   const [reviewedApps, setReviewedApps] = useState<Application[]>([]);
   const [provisionedApps, setProvisionedApps] = useState<Application[]>([]);
   const [reapplyRequests, setReapplyRequests] = useState<ReapplyRequest[]>([]);
-  
+
   const [loading, setLoading] = useState(true);
   const [hasSignature, setHasSignature] = useState<boolean | null>(null);
-  
+
   // UI states
   const [activeTab, setActiveTab] = useState<"pending" | "reviewed" | "reapply" | "provisioned">("pending");
   const [searchQuery, setSearchQuery] = useState("");
@@ -322,14 +322,14 @@ export default function HodDashboard() {
     if (selectedIds.size === 0) return;
     setIsZipping(true);
     addToast({ message: `Preparing ZIP file for ${selectedIds.size} applications... Please wait.`, variant: "info" });
-    
+
     try {
       const zip = new JSZip();
       const appsToZip = activeData.filter(a => selectedIds.has(a.id));
 
       for (const app of appsToZip) {
         let pdfBlob: Blob | null = null;
-        
+
         if (app.status === "APPROVED_HOD" || app.status === "PROVISIONED") {
           try {
             const res = await api.get(`/applications/${app.id}/approved-pdf`, { responseType: "blob" });
@@ -367,7 +367,7 @@ export default function HodDashboard() {
 
   return (
     <div className="animate-fade-in p-6 max-w-[1600px] mx-auto space-y-6">
-      
+
       {/* ── Signature warning banner ── */}
       {hasSignature === false && (
         <div className="flex items-start gap-4 rounded-xl border-2 border-error bg-error-container p-6 animate-fade-in shadow-sm">
@@ -402,17 +402,15 @@ export default function HodDashboard() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`px-5 py-3 rounded-t-xl text-sm font-semibold transition-all whitespace-nowrap ${
-              activeTab === tab.id 
-                ? "bg-surface border-t border-x border-outline-variant text-primary shadow-[0_-4px_6px_-2px_rgba(0,0,0,0.05)]" 
+            className={`px-5 py-3 rounded-t-xl text-sm font-semibold transition-all whitespace-nowrap ${activeTab === tab.id
+                ? "bg-surface border-t border-x border-outline-variant text-primary shadow-[0_-4px_6px_-2px_rgba(0,0,0,0.05)]"
                 : "text-outline hover:bg-surface-variant hover:text-foreground border border-transparent"
-            }`}
+              }`}
           >
             {tab.label}
             {tab.count > 0 && (
-              <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
-                activeTab === tab.id ? "bg-primary-container text-primary" : "bg-surface-variant text-outline"
-              }`}>
+              <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${activeTab === tab.id ? "bg-primary-container text-primary" : "bg-surface-variant text-outline"
+                }`}>
                 {tab.count}
               </span>
             )}
@@ -609,13 +607,13 @@ export default function HodDashboard() {
                           </div>
                         </td>
                       </tr>
-                      
+
                       {/* Expanded Row Content */}
                       {isExpanded && (
                         <tr className="bg-surface-variant/10">
                           <td colSpan={12} className="p-0 border-b border-outline-variant">
                             <div className="p-6 border-l-4 border-primary m-2 bg-surface rounded-xl shadow-inner">
-                              
+
                               {/* Reapply Specific View */}
                               {isReapply ? (
                                 <div className="space-y-4">
@@ -631,7 +629,7 @@ export default function HodDashboard() {
                                       </div>
                                     )}
                                   </div>
-                                  
+
                                   {item.status === 'PENDING' && (
                                     <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant">
                                       <Button variant="outlined" onClick={() => handleReapplyAction(item.id, "reject")} loading={actionLoading === item.id} className="!border-error !text-error hover:!bg-error/10">Reject Request</Button>
@@ -659,7 +657,7 @@ export default function HodDashboard() {
                                       </div>
                                     )}
                                   </div>
-                                  
+
                                   <div className="space-y-4 border-l border-outline-variant pl-6">
                                     <h4 className="text-sm font-bold text-foreground border-b border-outline-variant pb-2">Documents</h4>
                                     <div className="flex gap-4">
@@ -680,14 +678,14 @@ export default function HodDashboard() {
                                         </div>
                                       )}
                                     </div>
-                                    
+
                                     {activeTab === "pending" && (
                                       <div className="pt-4 mt-4 border-t border-outline-variant">
                                         <h4 className="text-sm font-bold text-foreground mb-3">HOD Action</h4>
                                         <textarea
                                           placeholder="Add remarks (required for rejection)..."
                                           value={remarksInput[item.id] || ""}
-                                          onChange={(e) => setRemarksInput(prev => ({...prev, [item.id]: e.target.value}))}
+                                          onChange={(e) => setRemarksInput(prev => ({ ...prev, [item.id]: e.target.value }))}
                                           className="w-full text-sm p-3 border border-outline-variant rounded-xl bg-surface mb-3 focus:outline-none focus:border-primary resize-none"
                                           rows={2}
                                         />
@@ -722,7 +720,7 @@ export default function HodDashboard() {
               <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="p-1.5 rounded border border-outline-variant text-outline hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed">
                 <span className="material-symbols-rounded text-[18px]">chevron_left</span>
               </button>
-              
+
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                 <button
                   key={page}

@@ -209,47 +209,51 @@ export default function DashboardLayout({
               <span className="material-symbols-rounded text-[24px]">menu</span>
             </button>
           )}
-
+          <div className="flex-0">
+            <span className={`w-10 h-10 flex items-center justify-center text-[20px] px-3 py-1 rounded-full text-xs shadow-[0_0_9px_rgba(0,0,0,0.3)] font-semibold ${roleBg}`}>
+              {user.firstName[0]}
+              {user.lastName[0]}
+            </span>
+          </div>
           <div className="flex items-center ml-2">
             <Image
               src="/BHUlogo.png"
               alt="BHU Logo"
               width={160}
               height={50}
-              className="object-contain h-11 w-auto"
+              className="object-contain h-14 w-auto"
             />
           </div>
 
           <div className="flex-1" />
 
           {/* ── Applicant & HOD navbar actions: Settings + Logout ── */}
+
+
           {(isApplicant || user.role === "HOD") && (
-            <div className="flex items-center gap-1">
-              <a
-                href="/dashboard/settings"
-                className={`p-2 rounded-lg transition-colors cursor-pointer ${
-                  pathname === "/dashboard/settings"
-                    ? "bg-primary-container text-primary"
-                    : "hover:bg-surface-variant text-outline hover:text-foreground"
-                }`}
-                title="Settings"
-              >
-                <span className="material-symbols-rounded text-[22px]">settings</span>
-              </a>
+            <div className="flex items-center gap-3">
               <button
                 onClick={handleLogout}
-                className="p-2 rounded-lg hover:bg-error-container text-outline hover:text-error transition-colors cursor-pointer"
+                className="p-1 rounded-lg hover:bg-error-container text-outline hover:text-error transition-colors cursor-pointer"
                 title="Logout"
               >
                 <span className="material-symbols-rounded text-[22px]">logout</span>
+                <h2>Logout</h2>
               </button>
             </div>
           )}
 
-          <span className={`w-10 h-10 flex items-center justify-center text-[20px] px-3 py-1 rounded-full text-xs shadow-[0_0_9px_rgba(0,0,0,0.3)] font-semibold ${roleBg}`}>
-            {user.firstName[0]}
-            {user.lastName[0]}
-          </span>
+          <a
+            href="/dashboard/settings"
+            className={`p-2 rounded-lg transition-colors cursor-pointer ${pathname === "/dashboard/settings"
+              ? "bg-primary-container text-primary"
+              : "hover:bg-surface-variant text-outline hover:text-foreground"
+              }`}
+            title="Settings"
+          >
+            <span className="material-symbols-rounded text-[22px]">settings</span>
+          </a>
+
         </header>
 
         {/* ── 6. PAGE INJECTION POINT ── */}
