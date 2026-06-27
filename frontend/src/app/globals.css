@@ -85,11 +85,13 @@ body {
 
 /* ── Scrollbar styling ── */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
   background: var(--surface-variant);
+  border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -97,6 +99,9 @@ body {
   border-radius: var(--radius-full);
 }
 
+::-webkit-scrollbar-thumb:hover {
+  background: var(--outline-variant);
+}
 /* ── Utility animations ── */
 @keyframes fadeIn {
   from {

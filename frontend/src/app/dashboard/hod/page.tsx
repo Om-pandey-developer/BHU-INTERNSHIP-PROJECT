@@ -84,6 +84,7 @@ export default function HodDashboard() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [remarksInput, setRemarksInput] = useState<Record<string, string>>({});
   const [isZipping, setIsZipping] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   // Role guard
   useEffect(() => {
@@ -255,6 +256,35 @@ export default function HodDashboard() {
     fetchAllData();
   }
 
+  async function handleBulkReject() {
+    if (selectedIds.size === 0) return;
+
+    setActionLoading("bulk_reject");
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const id of selectedIds) {
+      try {
+        await api.patch(`/applications/${id}/hod-status`, {
+          status: "REJECTED_HOD",
+          remarks: "Bulk rejected by HOD",
+        });
+        successCount++;
+      } catch {
+        failCount++;
+      }
+    }
+
+    addToast({
+      message: `Bulk action: ${successCount} rejected${failCount > 0 ? `, ${failCount} failed` : ""}.`,
+      variant: failCount > 0 ? "warning" : "success",
+    });
+
+    setSelectedIds(new Set());
+    setActionLoading(null);
+    fetchAllData();
+  }
+
   async function handleReapplyAction(requestId: string, action: "approve" | "reject") {
     setActionLoading(requestId);
     try {
@@ -366,8 +396,7 @@ export default function HodDashboard() {
 
 
   return (
-    <div className="animate-fade-in p-6 max-w-[1600px] mx-auto space-y-6">
-
+    <main className="animate-fade-in p-6 max-w-[1600px] mx-auto min-h-screen space-y-6">
       {/* ── Signature warning banner ── */}
       {hasSignature === false && (
         <div className="flex items-start gap-4 rounded-xl border-2 border-error bg-error-container p-6 animate-fade-in shadow-sm">
@@ -474,9 +503,14 @@ export default function HodDashboard() {
           </div>
 
           {selectedIds.size > 0 && activeTab === "pending" && (
-            <Button icon="done_all" onClick={handleBulkApprove} loading={actionLoading === "bulk"} disabled={!hasSignature} size="sm">
-              Bulk Approve ({selectedIds.size})
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button icon="cancel" variant="outlined" onClick={handleBulkReject} loading={actionLoading === "bulk_reject"} size="sm" className="!border-error !text-error hover:!bg-error/10">
+                Bulk Reject ({selectedIds.size})
+              </Button>
+              <Button icon="done_all" onClick={handleBulkApprove} loading={actionLoading === "bulk"} disabled={!hasSignature} size="sm">
+                Bulk Approve ({selectedIds.size})
+              </Button>
+            </div>
           )}
 
           {selectedIds.size > 0 && activeTab !== "reapply" && (
@@ -488,6 +522,11 @@ export default function HodDashboard() {
       </div>
 
       {/* Table Area */}
+      <div className="bg-primary/5 border border-primary/20 text-primary text-sm px-4 py-3 rounded-xl mb-4 flex items-center gap-3">
+        <span className="material-symbols-rounded text-[20px]">info</span>
+        <span><strong>Tip:</strong> Click anywhere on an applicant's row to view their full details, documents, and take actions.</span>
+      </div>
+
       <div className="bg-surface border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
         {loading ? (
           <div className="p-8"><SkeletonLoader variant="table-row" count={5} /></div>
@@ -501,7 +540,10 @@ export default function HodDashboard() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[1400px]">
+            <table className={`w-full text-left border-collapse min-w-[2400px] ${
+              zoomLevel === 'sm' ? '[&_span:not(.material-symbols-rounded)]:text-[11px] [&_th]:text-[10px] [&_td]:text-[11px]' :
+              zoomLevel === 'lg' ? '[&_span:not(.material-symbols-rounded)]:text-[14px] [&_th]:text-[13px] [&_td]:text-[14px]' : ''
+            }`}>
               <thead>
                 <tr className="bg-surface-variant/50 text-outline text-left">
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider w-10 text-center">
@@ -511,9 +553,13 @@ export default function HodDashboard() {
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Tracking ID</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Applicant Name</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Email</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Mobile No</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Faculty/Institute</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Department</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Category</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Type/Program</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">{activeTab === "reapply" ? "Roll No." : "Designation"}</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Requested Email</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Date Applied</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">{activeTab === "reapply" ? "Reapply Reason" : "HOD Reviewed"}</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Status</th>
@@ -530,6 +576,10 @@ export default function HodDashboard() {
                   const department = isReapply ? item.application?.department?.name : item.department?.name;
                   const category = !isReapply ? (item.applicantDetails?.category || "—") : "—";
                   const designation = !isReapply ? (item.applicantDetails?.designation || item.applicantDetails?.post || "—") : item.rollNumber || "—";
+                  const mobileNo = !isReapply ? (item.applicantDetails?.mobileNo || "—") : "—";
+                  const faculty = !isReapply ? (item.applicantDetails?.facultyInstituteCentre || "—") : "—";
+                  const typeProgram = !isReapply ? (item.applicantDetails?.typeOfEmployment || item.applicantDetails?.programEnrolled || "—") : "—";
+                  const requestedEmail = !isReapply ? (item.applicantDetails?.emailChoice || "—") : "—";
                   const dateApplied = new Date(item.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
                   const hodReviewedDate = item.hodApprovedAt
                     ? new Date(item.hodApprovedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
@@ -539,9 +589,9 @@ export default function HodDashboard() {
                   
                   return (
                     <React.Fragment key={item.id}>
-                      <tr className={`border-t border-outline-variant hover:bg-surface-variant/20 transition-colors ${isExpanded ? 'bg-primary/5' : ''}`}>
+                      <tr onClick={() => toggleExpand(item.id)} className={`border-t border-outline-variant hover:bg-surface-variant/20 transition-colors cursor-pointer ${isExpanded ? 'bg-primary/5' : ''}`}>
                         {/* 1. Checkbox */}
-                        <td className="px-3 py-3 text-center align-middle">
+                        <td className="px-3 py-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
                           <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => toggleSelect(item.id)} className="w-4 h-4 rounded border-2 border-outline-variant accent-primary cursor-pointer" />
                         </td>
                         {/* 2. S.No */}
@@ -563,6 +613,14 @@ export default function HodDashboard() {
                         <td className="px-3 py-3 align-middle">
                           <span className="text-xs text-outline truncate block max-w-[180px]">{email || "—"}</span>
                         </td>
+                        {/* Mobile No */}
+                        <td className="px-3 py-3 align-middle">
+                          <span className="text-xs text-outline whitespace-nowrap">{mobileNo}</span>
+                        </td>
+                        {/* Faculty/Institute */}
+                        <td className="px-3 py-3 align-middle">
+                          <span className="text-xs text-outline truncate block max-w-[150px]">{faculty}</span>
+                        </td>
                         {/* 6. Department */}
                         <td className="px-3 py-3 align-middle">
                           <span className="text-xs text-foreground font-medium">{department || "—"}</span>
@@ -577,9 +635,17 @@ export default function HodDashboard() {
                             <span className="text-xs text-outline">—</span>
                           )}
                         </td>
+                        {/* Type/Program */}
+                        <td className="px-3 py-3 align-middle">
+                          <span className="text-xs text-outline whitespace-nowrap">{typeProgram}</span>
+                        </td>
                         {/* 8. Designation / Roll No */}
                         <td className="px-3 py-3 align-middle">
                           <span className="text-xs text-foreground">{String(designation)}</span>
+                        </td>
+                        {/* Requested Email */}
+                        <td className="px-3 py-3 align-middle">
+                          <span className="text-xs text-primary font-medium whitespace-nowrap">{requestedEmail}</span>
                         </td>
                         {/* 9. Date Applied */}
                         <td className="px-3 py-3 align-middle whitespace-nowrap">
@@ -594,13 +660,36 @@ export default function HodDashboard() {
                           <StatusBadge status={item.status} size="sm" />
                         </td>
                         {/* 12. Actions */}
-                        <td className="px-3 py-3 align-middle text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <button onClick={() => toggleExpand(item.id)} className="p-1.5 rounded-lg hover:bg-surface-variant text-outline transition-colors" title="View Details">
-                              <span className="material-symbols-rounded text-[18px]">{isExpanded ? 'expand_less' : 'expand_more'}</span>
-                            </button>
+                        <td className="px-3 py-3 align-middle text-center" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-center gap-2">
+                            {activeTab === "pending" && (
+                              <Button 
+                                onClick={(e) => { e.stopPropagation(); handleApproveReject(item.id, "approve"); }} 
+                                loading={actionLoading === item.id} 
+                                disabled={!hasSignature} 
+                                size="sm"
+                                className="!py-1 !px-3 !text-xs whitespace-nowrap"
+                              >
+                                Approve
+                              </Button>
+                            )}
+                            {activeTab === "reapply" && item.status === "PENDING" && (
+                              <Button 
+                                onClick={(e) => { e.stopPropagation(); handleReapplyAction(item.id, "approve"); }} 
+                                loading={actionLoading === item.id} 
+                                size="sm"
+                                className="!py-1 !px-3 !text-xs whitespace-nowrap"
+                              >
+                                Approve
+                              </Button>
+                            )}
+                            {activeTab !== "pending" && activeTab !== "reapply" && (
+                              <button onClick={(e) => { e.stopPropagation(); toggleExpand(item.id); }} className="p-1.5 rounded-lg hover:bg-surface-variant text-outline transition-colors" title="View Details">
+                                <span className="material-symbols-rounded text-[18px]">{isExpanded ? 'expand_less' : 'expand_more'}</span>
+                              </button>
+                            )}
                             {!isReapply && (
-                              <button onClick={() => handleDownloadPdf(item)} className="p-1.5 rounded-lg hover:bg-primary-container hover:text-primary text-outline transition-colors" title="Download PDF">
+                              <button onClick={(e) => { e.stopPropagation(); handleDownloadPdf(item); }} className="p-1.5 rounded-lg hover:bg-primary-container hover:text-primary text-outline transition-colors" title="Download PDF">
                                 <span className="material-symbols-rounded text-[18px]">download</span>
                               </button>
                             )}
@@ -611,7 +700,7 @@ export default function HodDashboard() {
                       {/* Expanded Row Content */}
                       {isExpanded && (
                         <tr className="bg-surface-variant/10">
-                          <td colSpan={12} className="p-0 border-b border-outline-variant">
+                          <td colSpan={16} className="p-0 border-b border-outline-variant">
                             <div className="p-6 border-l-4 border-primary m-2 bg-surface rounded-xl shadow-inner">
 
                               {/* Reapply Specific View */}
@@ -641,60 +730,72 @@ export default function HodDashboard() {
                                 /* Normal Application View */
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                   <div className="lg:col-span-2 space-y-4">
-                                    <h4 className="text-sm font-bold text-foreground border-b border-outline-variant pb-2">Application Details</h4>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                    <h4 className="text-base font-bold text-foreground border-b border-outline-variant pb-2">Application Details</h4>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
                                       {Object.entries(item.applicantDetails || {}).map(([k, v]) => (
                                         <div key={k}>
-                                          <p className="text-[10px] uppercase tracking-wider text-outline font-bold mb-0.5">{k.replace(/([A-Z])/g, ' $1').trim()}</p>
-                                          <p className="text-sm text-foreground font-medium">{String(v || '-')}</p>
+                                          <p className="text-xs uppercase tracking-wider text-outline font-bold mb-1">{k.replace(/([A-Z])/g, ' $1').trim()}</p>
+                                          <p className="text-base text-foreground font-semibold">{String(v || '-')}</p>
                                         </div>
                                       ))}
                                     </div>
                                     {item.hodRemarks && (
-                                      <div className="mt-4 bg-primary-container/20 border border-primary/20 p-3 rounded-xl">
-                                        <p className="text-xs text-primary font-bold uppercase mb-1">HOD Remarks</p>
-                                        <p className="text-sm text-foreground">{item.hodRemarks}</p>
+                                      <div className="mt-6 bg-primary-container/20 border border-primary/20 p-4 rounded-xl">
+                                        <p className="text-sm text-primary font-bold uppercase mb-1">HOD Remarks</p>
+                                        <p className="text-base text-foreground">{item.hodRemarks}</p>
+                                      </div>
+                                    )}
+
+                                    {/* HOD Action moved to left side */}
+                                    {activeTab === "pending" && (
+                                      <div className="pt-6 mt-6 border-t border-outline-variant">
+                                        <h4 className="text-base font-bold text-foreground mb-3">HOD Action</h4>
+                                        <textarea
+                                          placeholder="Add remarks (required for rejection)..."
+                                          value={remarksInput[item.id] || ""}
+                                          onChange={(e) => setRemarksInput(prev => ({...prev, [item.id]: e.target.value}))}
+                                          className="w-full text-base p-4 border border-outline-variant rounded-xl bg-surface mb-4 focus:outline-none focus:border-primary resize-none"
+                                          rows={2}
+                                        />
+                                        <div className="flex gap-4 justify-start">
+                                          <Button variant="outlined" onClick={() => handleApproveReject(item.id, "reject")} loading={actionLoading === item.id} className="w-32 !border-error !text-error hover:!bg-error/10">Reject</Button>
+                                          <Button onClick={() => handleApproveReject(item.id, "approve")} loading={actionLoading === item.id} disabled={!hasSignature} className="w-40">Approve</Button>
+                                        </div>
                                       </div>
                                     )}
                                   </div>
 
                                   <div className="space-y-4 border-l border-outline-variant pl-6">
-                                    <h4 className="text-sm font-bold text-foreground border-b border-outline-variant pb-2">Documents</h4>
-                                    <div className="flex gap-4">
+                                    <h4 className="text-base font-bold text-foreground border-b border-outline-variant pb-2">Documents</h4>
+                                    <div className="flex flex-row flex-wrap xl:flex-nowrap gap-6 items-start">
                                       {item.photoStoragePath && (
-                                        <div className="text-center">
-                                          <div className="w-24 h-24 bg-surface-variant rounded-lg border border-outline-variant overflow-hidden mb-2">
-                                            <img src={`/applications/${item.id}/photo`} alt="Photo" className="w-full h-full object-cover hover:scale-110 transition-transform cursor-pointer" onClick={() => window.open(`/applications/${item.id}/photo`, '_blank')} />
+                                        <div className="text-left">
+                                          <p className="text-sm font-bold text-outline mb-2">PHOTO</p>
+                                          <div className="w-48 h-48 bg-surface-variant rounded-lg border border-outline-variant overflow-hidden mb-2 shadow-sm">
+                                            <img 
+                                              src={item.photoStoragePath.startsWith('/dummy') ? 'https://ui-avatars.com/api/?name=Photo&background=random&size=200' : `http://localhost:4000/api/v1/applications/${item.id}/photo`} 
+                                              alt="Photo" 
+                                              className="w-full h-full object-cover hover:scale-110 transition-transform cursor-pointer" 
+                                              onClick={() => setPreviewImage(item.photoStoragePath.startsWith('/dummy') ? 'https://ui-avatars.com/api/?name=Photo&background=random&size=200' : `http://localhost:4000/api/v1/applications/${item.id}/photo`)} 
+                                            />
                                           </div>
-                                          <p className="text-[10px] font-bold text-outline">PHOTO</p>
                                         </div>
                                       )}
                                       {item.signatureStoragePath && (
-                                        <div className="text-center">
-                                          <div className="w-24 h-24 bg-surface-variant rounded-lg border border-outline-variant overflow-hidden mb-2 flex items-center justify-center p-2">
-                                            <img src={`/applications/${item.id}/signature`} alt="Signature" className="max-w-full max-h-full object-contain cursor-pointer" onClick={() => window.open(`/applications/${item.id}/signature`, '_blank')} />
+                                        <div className="text-left">
+                                          <p className="text-sm font-bold text-outline mb-2">SIGNATURE</p>
+                                          <div className="w-56 h-28 bg-surface-variant rounded-lg border border-outline-variant overflow-hidden mb-2 flex items-center justify-center p-2 shadow-sm">
+                                            <img 
+                                              src={item.signatureStoragePath.startsWith('/dummy') ? 'https://ui-avatars.com/api/?name=Sign&background=random&size=200' : `http://localhost:4000/api/v1/applications/${item.id}/signature`} 
+                                              alt="Signature" 
+                                              className="max-w-full max-h-full object-contain cursor-pointer hover:scale-105 transition-transform" 
+                                              onClick={() => setPreviewImage(item.signatureStoragePath.startsWith('/dummy') ? 'https://ui-avatars.com/api/?name=Sign&background=random&size=200' : `http://localhost:4000/api/v1/applications/${item.id}/signature`)} 
+                                            />
                                           </div>
-                                          <p className="text-[10px] font-bold text-outline">SIGNATURE</p>
                                         </div>
                                       )}
                                     </div>
 
-                                    {activeTab === "pending" && (
-                                      <div className="pt-4 mt-4 border-t border-outline-variant">
-                                        <h4 className="text-sm font-bold text-foreground mb-3">HOD Action</h4>
-                                        <textarea
-                                          placeholder="Add remarks (required for rejection)..."
-                                          value={remarksInput[item.id] || ""}
-                                          onChange={(e) => setRemarksInput(prev => ({ ...prev, [item.id]: e.target.value }))}
-                                          className="w-full text-sm p-3 border border-outline-variant rounded-xl bg-surface mb-3 focus:outline-none focus:border-primary resize-none"
-                                          rows={2}
-                                        />
-                                        <div className="flex gap-2">
-                                          <Button variant="outlined" onClick={() => handleApproveReject(item.id, "reject")} loading={actionLoading === item.id} className="flex-1 !border-error !text-error hover:!bg-error/10" size="sm">Reject</Button>
-                                          <Button onClick={() => handleApproveReject(item.id, "approve")} loading={actionLoading === item.id} disabled={!hasSignature} className="flex-1" size="sm">Approve</Button>
-                                        </div>
-                                      </div>
-                                    )}
                                   </div>
                                 </div>
                               )}
@@ -738,6 +839,29 @@ export default function HodDashboard() {
           </div>
         )}
       </div>
-    </div>
+      
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative max-w-[90vw] max-h-[90vh] w-auto h-auto rounded-2xl overflow-hidden shadow-2xl bg-surface">
+            <button 
+              className="absolute top-4 right-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors z-10"
+              onClick={(e) => { e.stopPropagation(); setPreviewImage(null); }}
+            >
+              <span className="material-symbols-rounded">close</span>
+            </button>
+            <img 
+              src={previewImage || ''} 
+              alt="Preview" 
+              className="max-w-[90vw] max-h-[90vh] object-contain block"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
+    </main>
   );
 }

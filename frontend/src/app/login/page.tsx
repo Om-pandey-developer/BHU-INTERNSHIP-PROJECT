@@ -531,6 +531,34 @@ export default function LoginPage() {
                 </Button>
               </form>
 
+              {/* Quick Login for Testing */}
+              <div className="mt-6 p-4 bg-primary/5 rounded-xl border border-primary/20 animate-fade-in">
+                <p className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Test Accounts (Click to auto-fill)</p>
+                <div className="flex flex-wrap gap-2">
+                  <button 
+                    type="button"
+                    onClick={() => { setEmail("student@bhu.ac.in"); setPassword("password123"); }}
+                    className="flex-1 min-w-[80px] px-3 py-2 text-xs font-semibold bg-surface border border-outline-variant rounded-lg hover:border-primary hover:text-primary transition-colors shadow-sm"
+                  >
+                    Applicant
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => { setEmail("hod@bhu.ac.in"); setPassword("password123"); }}
+                    className="flex-1 min-w-[80px] px-3 py-2 text-xs font-semibold bg-surface border border-outline-variant rounded-lg hover:border-primary hover:text-primary transition-colors shadow-sm"
+                  >
+                    HOD
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => { setEmail("admin@bhu.ac.in"); setPassword("password123"); }}
+                    className="flex-1 min-w-[80px] px-3 py-2 text-xs font-semibold bg-surface border border-outline-variant rounded-lg hover:border-primary hover:text-primary transition-colors shadow-sm"
+                  >
+                    Admin
+                  </button>
+                </div>
+              </div>
+
               {/* Forgot Password link */}
               <div className="mt-4 text-center">
                 <button

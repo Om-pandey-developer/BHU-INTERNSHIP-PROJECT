@@ -49,6 +49,91 @@ async function main() {
     },
   });
   console.log(`✅ Created Test CC Admin: ${admin.alternateEmail} / password123`);
+  // Create dummy applications for HOD dashboard
+  console.log('🌱 Seeding 40 dummy applications...');
+  const categories = [
+    { cat: 'GROUP_A_OFFICER', prefix: 'GA' },
+    { cat: 'TEACHING_STAFF', prefix: 'TS' },
+    { cat: 'NON_TEACHING_STAFF', prefix: 'NTS' },
+    { cat: 'RESEARCH_SCHOLAR', prefix: 'RS' },
+  ];
+
+  const statuses: any[] = [
+    'PENDING_HOD', 'PENDING_HOD', 'PENDING_HOD',
+    'APPROVED_HOD', 'APPROVED_HOD', 'APPROVED_HOD',
+    'REJECTED_HOD', 'REJECTED_HOD',
+    'PROVISIONED', 'PROVISIONED'
+  ];
+
+  for (const category of categories) {
+    for (let i = 0; i < 10; i++) {
+      const status = statuses[i];
+      const email = `dummy_${category.prefix.toLowerCase()}_${i}@bhu.ac.in`;
+      
+      const user = await prisma.user.upsert({
+        where: { alternateEmail: email },
+        update: {},
+        create: {
+          alternateEmail: email,
+          passwordHash,
+          firstName: 'Dummy',
+          lastName: `${category.prefix} User ${i}`,
+          role: 'APPLICANT',
+          departmentId: 'dept-cs',
+        }
+      });
+
+      // Check if application exists
+      const existingApp = await prisma.application.findFirst({
+        where: { applicantId: user.id }
+      });
+
+      if (!existingApp) {
+        const applicantDetails: any = {
+          category: category.cat,
+          mobileNo: `98765${Math.floor(10000 + Math.random() * 90000)}`,
+          facultyInstituteCentre: 'Computer Science',
+          emailChoice: email,
+          dateOfBirth: '1990-01-01',
+        };
+        
+        if (category.cat === 'RESEARCH_SCHOLAR' || category.cat === 'POST_GRADUATE_STUDENT') {
+          applicantDetails.programEnrolled = category.cat === 'RESEARCH_SCHOLAR' ? 'Ph.D.' : 'M.Sc.';
+          applicantDetails.enrollmentNo = `EN${1000 + i}`;
+        } else {
+          applicantDetails.typeOfEmployment = 'Permanent';
+          applicantDetails.designation = category.cat === 'TEACHING_STAFF' ? 'Assistant Professor' : 'Officer';
+          applicantDetails.employeeId = `EMP${1000 + i}`;
+        }
+
+        const app = await prisma.application.create({
+          data: {
+            applicantId: user.id,
+            departmentId: 'dept-cs',
+            status,
+            applicantDetails,
+            photoStoragePath: '/dummy/photo.jpg',
+            signatureStoragePath: '/dummy/signature.jpg',
+            createdAt: new Date(Date.now() - Math.random() * 10000000000), // Random past date
+          }
+        });
+
+        if (status === 'REJECTED_HOD') {
+          await prisma.reapplyRequest.create({
+            data: {
+              applicationId: app.id,
+              applicantId: user.id,
+              reason: 'Mistake in form, please allow reapply.',
+              rollNumber: applicantDetails.employeeId || applicantDetails.enrollmentNo || 'N/A',
+              studentName: `${user.firstName} ${user.lastName}`,
+              status: i % 2 === 0 ? 'PENDING' : 'APPROVED',
+            }
+          });
+        }
+      }
+    }
+  }
+  console.log('✅ Created 40 Dummy Applications!');
 }
 
 main()
