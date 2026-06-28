@@ -432,8 +432,8 @@ export default function HodDashboard() {
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
             className={`px-5 py-3 rounded-t-xl text-sm font-semibold transition-all whitespace-nowrap ${activeTab === tab.id
-                ? "bg-surface border-t border-x border-outline-variant text-primary shadow-[0_-4px_6px_-2px_rgba(0,0,0,0.05)]"
-                : "text-outline hover:bg-surface-variant hover:text-foreground border border-transparent"
+              ? "bg-surface border-t border-x border-outline-variant text-primary shadow-[0_-4px_6px_-2px_rgba(0,0,0,0.05)]"
+              : "text-outline hover:bg-surface-variant hover:text-foreground border border-transparent"
               }`}
           >
             {tab.label}
@@ -540,10 +540,9 @@ export default function HodDashboard() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className={`w-full text-left border-collapse min-w-[2400px] ${
-              zoomLevel === 'sm' ? '[&_span:not(.material-symbols-rounded)]:text-[11px] [&_th]:text-[10px] [&_td]:text-[11px]' :
-              zoomLevel === 'lg' ? '[&_span:not(.material-symbols-rounded)]:text-[14px] [&_th]:text-[13px] [&_td]:text-[14px]' : ''
-            }`}>
+            <table className={`w-full text-left border-collapse min-w-[2400px] ${zoomLevel === 'sm' ? '[&_span:not(.material-symbols-rounded)]:text-[11px] [&_th]:text-[10px] [&_td]:text-[11px]' :
+                zoomLevel === 'lg' ? '[&_span:not(.material-symbols-rounded)]:text-[14px] [&_th]:text-[13px] [&_td]:text-[14px]' : ''
+              }`}>
               <thead>
                 <tr className="bg-surface-variant/50 text-outline text-left">
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider w-10 text-center">
@@ -586,7 +585,7 @@ export default function HodDashboard() {
                     : "—";
                   const reapplyReason = isReapply ? (item.reason?.length > 30 ? item.reason.substring(0, 30) + "…" : item.reason || "—") : hodReviewedDate;
                   const serialNo = (currentPage - 1) * entriesPerPage + idx + 1;
-                  
+
                   return (
                     <React.Fragment key={item.id}>
                       <tr onClick={() => toggleExpand(item.id)} className={`border-t border-outline-variant hover:bg-surface-variant/20 transition-colors cursor-pointer ${isExpanded ? 'bg-primary/5' : ''}`}>
@@ -663,10 +662,10 @@ export default function HodDashboard() {
                         <td className="px-3 py-3 align-middle text-center" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-center gap-2">
                             {activeTab === "pending" && (
-                              <Button 
-                                onClick={(e) => { e.stopPropagation(); handleApproveReject(item.id, "approve"); }} 
-                                loading={actionLoading === item.id} 
-                                disabled={!hasSignature} 
+                              <Button
+                                onClick={(e) => { e.stopPropagation(); handleApproveReject(item.id, "approve"); }}
+                                loading={actionLoading === item.id}
+                                disabled={!hasSignature}
                                 size="sm"
                                 className="!py-1 !px-3 !text-xs whitespace-nowrap"
                               >
@@ -674,9 +673,9 @@ export default function HodDashboard() {
                               </Button>
                             )}
                             {activeTab === "reapply" && item.status === "PENDING" && (
-                              <Button 
-                                onClick={(e) => { e.stopPropagation(); handleReapplyAction(item.id, "approve"); }} 
-                                loading={actionLoading === item.id} 
+                              <Button
+                                onClick={(e) => { e.stopPropagation(); handleReapplyAction(item.id, "approve"); }}
+                                loading={actionLoading === item.id}
                                 size="sm"
                                 className="!py-1 !px-3 !text-xs whitespace-nowrap"
                               >
@@ -753,7 +752,7 @@ export default function HodDashboard() {
                                         <textarea
                                           placeholder="Add remarks (required for rejection)..."
                                           value={remarksInput[item.id] || ""}
-                                          onChange={(e) => setRemarksInput(prev => ({...prev, [item.id]: e.target.value}))}
+                                          onChange={(e) => setRemarksInput(prev => ({ ...prev, [item.id]: e.target.value }))}
                                           className="w-full text-base p-4 border border-outline-variant rounded-xl bg-surface mb-4 focus:outline-none focus:border-primary resize-none"
                                           rows={2}
                                         />
@@ -772,11 +771,11 @@ export default function HodDashboard() {
                                         <div className="text-left">
                                           <p className="text-sm font-bold text-outline mb-2">PHOTO</p>
                                           <div className="w-48 h-48 bg-surface-variant rounded-lg border border-outline-variant overflow-hidden mb-2 shadow-sm">
-                                            <img 
-                                              src={item.photoStoragePath.startsWith('/dummy') ? 'https://ui-avatars.com/api/?name=Photo&background=random&size=200' : `http://localhost:4000/api/v1/applications/${item.id}/photo`} 
-                                              alt="Photo" 
-                                              className="w-full h-full object-cover hover:scale-110 transition-transform cursor-pointer" 
-                                              onClick={() => setPreviewImage(item.photoStoragePath.startsWith('/dummy') ? 'https://ui-avatars.com/api/?name=Photo&background=random&size=200' : `http://localhost:4000/api/v1/applications/${item.id}/photo`)} 
+                                            <img
+                                              src={item.photoStoragePath.startsWith('/dummy') ? 'https://ui-avatars.com/api/?name=Photo&background=random&size=200' : `http://localhost:4000/api/v1/applications/${item.id}/photo`}
+                                              alt="Photo"
+                                              className="w-full h-full object-cover hover:scale-110 transition-transform cursor-pointer"
+                                              onClick={() => setPreviewImage(item.photoStoragePath.startsWith('/dummy') ? 'https://ui-avatars.com/api/?name=Photo&background=random&size=200' : `http://localhost:4000/api/v1/applications/${item.id}/photo`)}
                                             />
                                           </div>
                                         </div>
@@ -785,11 +784,11 @@ export default function HodDashboard() {
                                         <div className="text-left">
                                           <p className="text-sm font-bold text-outline mb-2">SIGNATURE</p>
                                           <div className="w-56 h-28 bg-surface-variant rounded-lg border border-outline-variant overflow-hidden mb-2 flex items-center justify-center p-2 shadow-sm">
-                                            <img 
-                                              src={item.signatureStoragePath.startsWith('/dummy') ? 'https://ui-avatars.com/api/?name=Sign&background=random&size=200' : `http://localhost:4000/api/v1/applications/${item.id}/signature`} 
-                                              alt="Signature" 
-                                              className="max-w-full max-h-full object-contain cursor-pointer hover:scale-105 transition-transform" 
-                                              onClick={() => setPreviewImage(item.signatureStoragePath.startsWith('/dummy') ? 'https://ui-avatars.com/api/?name=Sign&background=random&size=200' : `http://localhost:4000/api/v1/applications/${item.id}/signature`)} 
+                                            <img
+                                              src={item.signatureStoragePath.startsWith('/dummy') ? 'https://ui-avatars.com/api/?name=Sign&background=random&size=200' : `http://localhost:4000/api/v1/applications/${item.id}/signature`}
+                                              alt="Signature"
+                                              className="max-w-full max-h-full object-contain cursor-pointer hover:scale-105 transition-transform"
+                                              onClick={() => setPreviewImage(item.signatureStoragePath.startsWith('/dummy') ? 'https://ui-avatars.com/api/?name=Sign&background=random&size=200' : `http://localhost:4000/api/v1/applications/${item.id}/signature`)}
                                             />
                                           </div>
                                         </div>
@@ -811,7 +810,7 @@ export default function HodDashboard() {
           </div>
         )}
 
-        {/* Pagination Footer */}
+        {/* Pagination Footer */}rtthbsrhs
         {totalPages > 0 && (
           <div className="p-4 border-t border-outline-variant flex flex-wrap items-center justify-between gap-4 bg-surface-variant/10">
             <p className="text-sm text-outline">
@@ -839,23 +838,23 @@ export default function HodDashboard() {
           </div>
         )}
       </div>
-      
+
       {/* Image Preview Modal */}
       {previewImage && (
-        <div 
+        <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
           onClick={() => setPreviewImage(null)}
         >
           <div className="relative max-w-[90vw] max-h-[90vh] w-auto h-auto rounded-2xl overflow-hidden shadow-2xl bg-surface">
-            <button 
+            <button
               className="absolute top-4 right-4 w-10 h-10 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition-colors z-10"
               onClick={(e) => { e.stopPropagation(); setPreviewImage(null); }}
             >
               <span className="material-symbols-rounded">close</span>
             </button>
-            <img 
-              src={previewImage || ''} 
-              alt="Preview" 
+            <img
+              src={previewImage || ''}
+              alt="Preview"
               className="max-w-[90vw] max-h-[90vh] object-contain block"
               onClick={(e) => e.stopPropagation()}
             />

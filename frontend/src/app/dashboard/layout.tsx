@@ -96,119 +96,15 @@ export default function DashboardLayout({
     // ── 1. PAGE CONTAINER ──
     <div className="page-dashboard min-h-screen flex bg-olive-200">
 
-      {/* ── 2. SIDEBAR (Admin only) ── */}
-      {user.role === "CC_ADMIN" && (
-        <>
-          {/* Mobile overlay */}
-          {sidebarOpen && (
-            <div
-              className="fixed inset-0 z-40 bg-black/30"
-              onClick={() => setSidebarOpen(false)}
-            />
-          )}
-
-          <aside
-            className={`
-              fixed top-0 left-0 z-50 h-screen w-72 bg-surface border-r border-outline-variant
-              flex flex-col transition-transform duration-300 ease-in-out
-              ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-            `}
-          >
-            {/* Sidebar header */}
-            <div className="p-5 border-b border-outline-variant">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0">
-                  <img
-                    src="/favicon.ico"
-                    alt="BHU Logo"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <h2 className="font-bold text-sm text-foreground truncate text-[15.5px]">
-                    Banaras Hindu University
-                  </h2>
-                  <p className="text-xs text-outline text-[13px]">Email Ragistration Portal</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Navigation */}
-            <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-              {navItems.map((item) => {
-                const active = pathname === item.href;
-                return (
-                  <a
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setSidebarOpen(false)}
-                    className={`
-                      flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium
-                      transition-all duration-200
-                      ${active
-                        ? "bg-primary-container text-on-primary-container"
-                        : "text-foreground/70 hover:bg-surface-variant hover:text-foreground"
-                      }
-                    `}
-                  >
-                    <span
-                      className={`material-symbols-rounded text-[20px] ${active ? "text-primary" : ""
-                        }`}
-                    >
-                      {item.icon}
-                    </span>
-                    {item.label}
-                    {active && (
-                      <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
-                    )}
-                  </a>
-                );
-              })}
-            </nav>
-
-            {/* User card */}
-            <div className="p-4 border-t border-outline-variant">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center text-lg font-bold text-on-primary-container shrink-0">
-                  {user.firstName[0]}
-                  {user.lastName[0]}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {user.firstName} {user.lastName}
-                  </p>
-                  <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold ${roleBg}`}>
-                    {roleLabel}
-                  </span>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="p-3 rounded-lg hover:bg-error-container text-outline hover:text-error transition-colors cursor-pointer"
-                  title="Logout"
-                >
-                  <span className="material-symbols-rounded text-[20px]">logout</span>
-                </button>
-              </div>
-            </div>
-          </aside>
-        </>
-      )}
+      {/* ── 2. SIDEBAR (Removed as per CC Admin redesign) ── */}
 
       {/* ── 4. MAIN CONTENT AREA ── */}
-      <main className="flex-1 flex flex-col min-h-screen">
+      <main className="flex-1 flex flex-col min-h-screen min-w-0">
 
         {/* ── 5. TOP NAVIGATION BAR ── */}
         <header className="site-header sticky top-0 z-30 bg-white backdrop-blur-md border-b border-black/30 px-6 py-3 flex items-center gap-4 shadow-[0_0_9px_rgba(0,0,0,0.3)]">
 
-          {/* Hamburger menu — only for Admin */}
-          {user.role === "CC_ADMIN" && (
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-1.5 rounded-lg hover:bg-surface-variant transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-rounded text-[24px]">menu</span>
-            </button>
-          )}
+
           <div className="flex-0">
             <span className={`w-10 h-10 flex items-center justify-center text-[20px] px-3 py-1 rounded-full text-xs shadow-[0_0_9px_rgba(0,0,0,0.3)] font-semibold ${roleBg}`}>
               {user.firstName[0]}
@@ -230,18 +126,16 @@ export default function DashboardLayout({
           {/* ── Applicant & HOD navbar actions: Settings + Logout ── */}
 
 
-          {(isApplicant || user.role === "HOD") && (
-            <div className="flex items-center gap-3">
-              <button
-                onClick={handleLogout}
-                className="p-1 rounded-lg hover:bg-error-container text-outline hover:text-error transition-colors cursor-pointer"
-                title="Logout"
-              >
-                <span className="material-symbols-rounded text-[22px]">logout</span>
-                <h2>Logout</h2>
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleLogout}
+              className="p-1 rounded-lg hover:bg-error-container text-outline hover:text-error transition-colors cursor-pointer flex items-center gap-1"
+              title="Logout"
+            >
+              <span className="material-symbols-rounded text-[22px]">logout</span>
+              <h2 className="text-sm font-medium hidden sm:block">Logout</h2>
+            </button>
+          </div>
 
           <a
             href="/dashboard/settings"

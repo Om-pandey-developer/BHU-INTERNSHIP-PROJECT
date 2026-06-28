@@ -51,6 +51,7 @@ const statusLabels: Record<string, { label: string; color: string }> = {
 export default function AdminAnalyticsPage() {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [zoomLevel, setZoomLevel] = useState<"sm" | "md" | "lg">("md");
 
   useEffect(() => {
     fetchMetrics();
@@ -279,8 +280,19 @@ export default function AdminAnalyticsPage() {
         <p className="text-xs text-outline mb-5">Last 10 submissions</p>
 
         {metrics.recentApplications.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto border border-outline-variant rounded-xl p-2 bg-surface">
+            <div className="flex justify-start items-center p-2 mb-2 border-b border-outline-variant/50">
+              <div className="flex items-center gap-2 bg-surface-variant/30 p-1.5 rounded-xl border border-outline-variant shadow-sm">
+                <span className="text-xs font-bold text-outline uppercase tracking-wider ml-2 mr-1">Zoom:</span>
+                <button onClick={() => setZoomLevel("sm")} className={`p-1.5 rounded-lg ${zoomLevel === 'sm' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Small text"><span className="material-symbols-rounded text-[18px]">format_size</span></button>
+                <button onClick={() => setZoomLevel("md")} className={`p-1.5 rounded-lg ${zoomLevel === 'md' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Medium text"><span className="material-symbols-rounded text-[20px]">format_size</span></button>
+                <button onClick={() => setZoomLevel("lg")} className={`p-1.5 rounded-lg ${zoomLevel === 'lg' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Large text"><span className="material-symbols-rounded text-[24px]">format_size</span></button>
+              </div>
+            </div>
+            <table className={`w-full text-left border-collapse min-w-[600px] ${
+              zoomLevel === 'sm' ? '[&_span:not(.material-symbols-rounded)]:text-[11px] [&_th]:text-[10px] [&_td]:text-[11px]' :
+              zoomLevel === 'lg' ? '[&_span:not(.material-symbols-rounded)]:text-[14px] [&_th]:text-[13px] [&_td]:text-[14px]' : 'text-sm'
+            }`}>
               <thead>
                 <tr className="border-b border-outline-variant">
                   <th className="text-left text-[11px] uppercase tracking-wider font-semibold text-outline py-2 px-3">

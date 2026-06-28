@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import AdminAnalyticsPage from "./analytics/page";
+import DatabaseExplorerPage from "./database/page";
+
 import api from "@/lib/axios";
 import StatusBadge from "@/components/StatusBadge";
 import StatsCard from "@/components/StatsCard";
@@ -68,13 +71,15 @@ const quotaMap: Record<string, number> = {
   NON_TEACHING_STAFF: 5,
 };
 
-type TabId = "pending" | "active" | "suspended" | "archived" | "quota" | "audit";
+type TabId = "pending" | "active" | "suspended" | "archived" | "quota" | "audit" | "analytics" | "database";
 
 const tabs: { id: TabId; label: string; icon: string }[] = [
   { id: "pending", label: "Pending Queue", icon: "queue" },
   { id: "active", label: "Active Users", icon: "verified_user" },
   { id: "suspended", label: "Suspended", icon: "pause_circle" },
   { id: "archived", label: "Archived", icon: "inventory_2" },
+  { id: "analytics", label: "Analytics", icon: "analytics" },
+  { id: "database", label: "Database", icon: "database" },
   { id: "quota", label: "Quota & Usage", icon: "storage" },
   { id: "audit", label: "Audit Logs", icon: "history" },
 ];
@@ -130,6 +135,8 @@ export default function AdminDashboard() {
   const [remarks, setRemarks] = useState("");
   const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [zoomLevel, setZoomLevel] = useState<"sm" | "md" | "lg">("md");
 
   // ── Data Fetching ──
   const fetchTabData = useCallback(async (tab: TabId) => {
@@ -189,6 +196,48 @@ export default function AdminDashboard() {
   }, [activeTab, fetchTabData]);
 
   // ── Action Handlers ──
+
+  async function handleBulkPdfDownload() {
+    setActionLoading("bulk_pdf");
+    try {
+      const ids = Array.from(selectedIds);
+      for (const id of ids) {
+        const app = pendingApps.find(a => a.id === id) || activeApps.find(a => a.id === id) || suspendedApps.find(a => a.id === id) || archivedApps.find(a => a.id === id);
+        if (app) {
+          await handleDownloadSignedPdf(app);
+          await new Promise(r => setTimeout(r, 500));
+        }
+      }
+      addToast({ message: `✅ Downloaded ${ids.length} PDFs.`, variant: "success" });
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleBulkProvision() {
+    setActionLoading("bulk_provision");
+    let successCount = 0;
+    const ids = Array.from(selectedIds);
+    for (const id of ids) {
+      try {
+        await api.post(`/workspace/provision/${id}`);
+        successCount++;
+      } catch (err) {
+        console.error("Failed to provision", id, err);
+      }
+    }
+    
+    if (successCount === ids.length) {
+      addToast({ message: `✅ Bulk Provision completed for ${successCount} accounts.`, variant: "success", duration: 6000 });
+    } else {
+      addToast({ message: `⚠️ Provisioned ${successCount} out of ${ids.length} accounts.`, variant: "warning", duration: 6000 });
+    }
+    
+    setSelectedIds(new Set());
+    fetchTabData("pending");
+    setActionLoading(null);
+  }
+
   async function handleProvision(app: Application) {
     setProvisioning(app.id);
     try {
@@ -314,71 +363,196 @@ export default function AdminDashboard() {
 
 
 
-  // ── Application Row (reusable) ──
-  function AppRow({ app, actions }: { app: Application; actions: React.ReactNode }) {
-    const allocatedGB = app.quotaAssignedGB || getExpectedQuota(app);
-    const usedGB = getMockUsage(app.id, allocatedGB);
-    const remainingGB = Math.round((allocatedGB - usedGB) * 10) / 10;
-    const usagePct = allocatedGB > 0 ? Math.min((usedGB / allocatedGB) * 100, 100) : 0;
+  // ── Application Table (reusable) ──
+  function ApplicationTable({ apps, renderActions }: { apps: Application[]; renderActions: (app: Application) => React.ReactNode }) {
+    const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+    
+    function toggleExpand(id: string) {
+      setExpandedRows(prev => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+    }
+
+    if (apps.length === 0) {
+      return (
+        <div className="bg-surface border border-outline-variant rounded-2xl p-16 text-center shadow-sm">
+          <div className="w-16 h-16 rounded-full bg-surface-variant flex items-center justify-center mx-auto mb-4">
+            <span className="material-symbols-rounded text-[32px] text-outline">search_off</span>
+          </div>
+          <h3 className="text-lg font-bold text-foreground">No records found</h3>
+        </div>
+      );
+    }
 
     return (
-      <div className="bg-surface rounded-xl border border-outline-variant hover:shadow-md hover:border-primary/20 transition-all duration-200">
-        <div className="flex flex-col sm:flex-row sm:items-center p-3 sm:p-4 gap-2 sm:gap-3">
-          {/* Top row: checkbox + avatar + info */}
-          <div className="flex items-center gap-3 min-w-0">
-            {/* Checkbox for bulk */}
-            {(activeTab === "active" || activeTab === "suspended") && (
-              <input
-                type="checkbox"
-                checked={selectedIds.has(app.id)}
-                onChange={() => toggleSelect(app.id)}
-                className="w-4 h-4 accent-primary cursor-pointer shrink-0"
-              />
-            )}
-            {/* Avatar */}
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-primary-container flex items-center justify-center text-xs sm:text-sm font-bold text-on-primary-container shrink-0">
-              {app.applicant?.firstName?.[0]}
-              {app.applicant?.lastName?.[0]}
+      <div className="bg-surface border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
+        <div className="flex flex-wrap justify-between items-center p-2 border-b border-outline-variant/50 bg-surface gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 bg-surface-variant/30 p-1.5 rounded-xl border border-outline-variant shadow-sm ml-2">
+              <span className="text-xs font-bold text-outline uppercase tracking-wider ml-2 mr-1">Zoom:</span>
+              <button onClick={(e) => { e.stopPropagation(); setZoomLevel("sm"); }} className={`p-1.5 rounded-lg ${zoomLevel === 'sm' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Small text"><span className="material-symbols-rounded text-[18px]">format_size</span></button>
+              <button onClick={(e) => { e.stopPropagation(); setZoomLevel("md"); }} className={`p-1.5 rounded-lg ${zoomLevel === 'md' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Medium text"><span className="material-symbols-rounded text-[20px]">format_size</span></button>
+              <button onClick={(e) => { e.stopPropagation(); setZoomLevel("lg"); }} className={`p-1.5 rounded-lg ${zoomLevel === 'lg' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Large text"><span className="material-symbols-rounded text-[24px]">format_size</span></button>
             </div>
-            {/* Info */}
-            <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setSelectedApp(app)}>
-              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                <p className="font-semibold text-foreground text-xs sm:text-sm">
-                  {app.applicant?.firstName} {app.applicant?.lastName}
-                </p>
-                <StatusBadge status={app.status} size="sm" />
-              </div>
-              <p className="text-[11px] sm:text-xs text-outline truncate">
-                {app.trackingId} · {app.department?.name}
-                {app.applicant?.bhuEmail && ` · ${app.applicant.bhuEmail}`}
-              </p>
+            
+            <div className="relative shadow-sm rounded-xl">
+              <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="pl-3 pr-8 py-2 bg-white border border-outline-variant rounded-xl text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all appearance-none cursor-pointer"
+              >
+                <option value="ALL">All Categories</option>
+                <option value="TEACHING_STAFF">Teaching Staff</option>
+                <option value="NON_TEACHING_STAFF">Non-Teaching Staff</option>
+                <option value="GROUP_A_OFFICER">Group A Officer</option>
+                <option value="RESEARCH_SCHOLAR">Research Scholar</option>
+                <option value="POST_GRADUATE_STUDENT">PG Student</option>
+              </select>
+              <span className="material-symbols-rounded absolute right-2 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
             </div>
           </div>
 
-          {/* Per-user storage + Actions — right aligned */}
-          <div className="flex items-center gap-3 ml-auto shrink-0 pl-12 sm:pl-0">
-            {/* Per-user storage indicator */}
-            {activeTab === "active" && app.status === "PROVISIONED" && (
-              <div className="flex items-center gap-3 shrink-0 sm:min-w-[220px]">
-                <div className="flex-1 min-w-[120px]">
-                  <div className="flex justify-between text-[10px] text-outline mb-1">
-                    <span>{usedGB} / {allocatedGB} GB</span>
-                    <span className={usagePct > 80 ? "text-error font-semibold" : "text-success font-semibold"}>{remainingGB} GB free</span>
-                  </div>
-                  <div className="w-full bg-surface-variant rounded-full h-2 overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${usagePct > 80 ? "bg-error" : usagePct > 50 ? "bg-warning" : "bg-success"
-                        }`}
-                      style={{ width: `${Math.max(usagePct, 3)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex items-center gap-2 shrink-0">{actions}</div>
-          </div>
+          {selectedIds.size > 0 && (activeTab === "active" || activeTab === "suspended" || activeTab === "pending") && (
+            <div className="flex items-center gap-2 bg-primary-container/20 border border-primary/20 rounded-xl px-3 py-1.5 shadow-sm mr-2 animate-fade-in">
+              <span className="text-sm font-semibold text-primary mr-2 bg-primary-container px-2 py-0.5 rounded-md">{selectedIds.size} selected</span>
+              
+              {activeTab === "pending" && (
+                <>
+                  <Button icon="download" variant="outlined" size="sm" loading={actionLoading === "bulk_pdf"} onClick={handleBulkPdfDownload}>Bulk PDF</Button>
+                  <Button icon="cancel" variant="outlined" size="sm" className="!border-error !text-error hover:!bg-error/10" onClick={() => setRemarksModal({ action: "reject", ids: Array.from(selectedIds) })}>Bulk Reject</Button>
+                  <Button icon="rocket_launch" variant="filled" size="sm" loading={actionLoading === "bulk_provision"} onClick={handleBulkProvision}>Bulk Provision</Button>
+                </>
+              )}
+              {activeTab === "active" && (
+                <Button icon="pause_circle" variant="outlined" size="sm" onClick={() => setRemarksModal({ action: "suspend", ids: Array.from(selectedIds) })}>Bulk Suspend</Button>
+              )}
+              {activeTab === "suspended" && (
+                <>
+                  <Button icon="play_circle" variant="outlined" size="sm" onClick={() => handleAction("reactivate", Array.from(selectedIds), "Bulk reactivated")}>Bulk Reactivate</Button>
+                  <Button icon="inventory_2" variant="outlined" size="sm" onClick={() => setRemarksModal({ action: "archive", ids: Array.from(selectedIds) })}>Bulk Archive</Button>
+                </>
+              )}
+              
+              <Button variant="text" size="sm" onClick={() => setSelectedIds(new Set())} className="ml-1 !text-outline hover:!text-foreground">Clear</Button>
+            </div>
+          )}
+        </div>
+        <div className="overflow-x-auto">
+          <table className={`w-full text-left border-collapse min-w-[2400px] ${
+            zoomLevel === 'sm' ? '[&_span:not(.material-symbols-rounded)]:text-[11px] [&_th]:text-[10px] [&_td]:text-[11px]' :
+            zoomLevel === 'lg' ? '[&_span:not(.material-symbols-rounded)]:text-[14px] [&_th]:text-[13px] [&_td]:text-[14px]' : 'text-sm'
+          }`}>
+            <thead>
+              <tr className="bg-surface-variant/50 text-outline text-left">
+                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider w-10 text-center">
+                  {(activeTab === "active" || activeTab === "suspended" || activeTab === "pending") && (
+                  <input 
+                    type="checkbox" 
+                    checked={selectedIds.size > 0 && selectedIds.size === apps.length} 
+                    onChange={(e) => {
+                      if (e.target.checked) setSelectedIds(new Set(apps.map(a => a.id)));
+                      else setSelectedIds(new Set());
+                    }} 
+                    className="w-4 h-4 rounded border-2 border-outline-variant accent-primary cursor-pointer" 
+                  />
+                  )}
+                </th>
+                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider w-12">S.No</th>
+                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Tracking ID</th>
+                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Applicant Name</th>
+                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Email</th>
+                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Mobile No</th>
+                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Faculty/Institute</th>
+                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Department</th>
+                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Category</th>
+                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Type/Program</th>
+                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Designation</th>
+                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {apps.map((item, idx) => {
+                const isExpanded = expandedRows.has(item.id);
+                const name = `${item.applicant?.firstName || ''} ${item.applicant?.lastName || ''}`;
+                const email = item.applicant?.alternateEmail || String(item.applicantDetails?.alternateEmail || "") || "—";
+                const trackId = item.trackingId;
+                const department = item.department?.name || "—";
+                const category = String(item.applicantDetails?.category || "—");
+                const designation = String(item.applicantDetails?.designation || item.applicantDetails?.post || "—");
+                const mobileNo = String(item.applicantDetails?.mobileNo || "—");
+                const faculty = String(item.applicantDetails?.facultyInstituteCentre || "—");
+                const typeProgram = String(item.applicantDetails?.typeOfEmployment || item.applicantDetails?.programEnrolled || "—");
+                const serialNo = idx + 1;
+                
+                // Storage info
+                const allocatedGB = item.quotaAssignedGB || getExpectedQuota(item);
+                const usedGB = getMockUsage(item.id, allocatedGB);
+                const remainingGB = Math.round((allocatedGB - usedGB) * 10) / 10;
+                const usagePct = allocatedGB > 0 ? Math.min((usedGB / allocatedGB) * 100, 100) : 0;
+                
+                return (
+                  <React.Fragment key={item.id}>
+                    <tr onClick={() => toggleExpand(item.id)} className={`border-t border-outline-variant hover:bg-surface-variant/20 transition-colors cursor-pointer ${isExpanded ? 'bg-primary/5' : ''}`}>
+                      <td className="px-3 py-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                        {(activeTab === "active" || activeTab === "suspended" || activeTab === "pending") && (
+                        <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => toggleSelect(item.id)} className="w-4 h-4 rounded border-2 border-outline-variant accent-primary cursor-pointer" />
+                        )}
+                      </td>
+                      <td className="px-3 py-3 text-sm text-outline font-mono align-middle">{serialNo}</td>
+                      <td className="px-3 py-3 align-middle"><span className="text-primary font-medium tracking-wide">{trackId}</span></td>
+                      <td className="px-3 py-3 font-semibold text-foreground align-middle"><div className="flex items-center gap-2"><div className="w-7 h-7 rounded-full bg-primary-container text-primary flex items-center justify-center text-xs font-bold shrink-0">{name.charAt(0)}</div><span className="truncate">{name}</span></div></td>
+                      <td className="px-3 py-3 text-outline align-middle">{email}</td>
+                      <td className="px-3 py-3 text-outline align-middle">{mobileNo}</td>
+                      <td className="px-3 py-3 text-outline align-middle truncate max-w-[150px]">{faculty}</td>
+                      <td className="px-3 py-3 text-outline align-middle truncate max-w-[150px]">{department}</td>
+                      <td className="px-3 py-3 text-outline align-middle"><span className="px-2 py-0.5 bg-surface-variant rounded-full text-[10px] font-semibold whitespace-nowrap">{category.replace(/_/g, " ")}</span></td>
+                      <td className="px-3 py-3 text-outline align-middle whitespace-nowrap">{typeProgram.replace(/_/g, " ")}</td>
+                      <td className="px-3 py-3 text-outline align-middle whitespace-nowrap">{designation}</td>
+                      <td className="px-3 py-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-center gap-2">
+                          {renderActions(item)}
+                        </div>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className="bg-primary/5 border-t-0">
+                        <td colSpan={12} className="px-4 py-4">
+                          <div className="bg-surface rounded-xl p-4 border border-primary/10 shadow-inner max-w-4xl">
+                            <h4 className="text-sm font-bold text-foreground mb-3 border-b border-outline-variant pb-2">Expanded Details</h4>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                              <div><span className="text-outline text-xs block mb-0.5">Applied On</span><span className="font-medium">{new Date(item.createdAt).toLocaleDateString()}</span></div>
+                              <div><span className="text-outline text-xs block mb-0.5">Current Status</span><StatusBadge status={item.status} size="sm" /></div>
+                              <div><span className="text-outline text-xs block mb-0.5">BHU Email</span><span className="font-medium">{item.applicant?.bhuEmail || "—"}</span></div>
+                              <div><span className="text-outline text-xs block mb-0.5">Employee ID</span><span className="font-medium">{String(item.applicantDetails?.employeeId || "—")}</span></div>
+                            </div>
+                            
+                            {activeTab === "active" && item.status === "PROVISIONED" && (
+                              <div className="mt-4 p-3 bg-surface-variant/30 rounded-lg max-w-sm">
+                                <h5 className="text-xs font-bold text-outline uppercase mb-2">Storage Quota</h5>
+                                <div className="flex justify-between text-[10px] text-outline mb-1">
+                                  <span>{usedGB} / {allocatedGB} GB Used</span>
+                                  <span className={usagePct > 80 ? "text-error font-semibold" : "text-success font-semibold"}>{remainingGB} GB free</span>
+                                </div>
+                                <div className="w-full bg-surface-variant rounded-full h-2 overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all duration-500 ${usagePct > 80 ? "bg-error" : usagePct > 50 ? "bg-warning" : "bg-success"}`}
+                                    style={{ width: `${Math.max(usagePct, 3)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       </div>
     );
@@ -440,50 +614,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Bulk Actions Bar */}
-      {selectedIds.size > 0 && (activeTab === "active" || activeTab === "suspended") && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 bg-primary-container/30 border border-primary/20 rounded-xl px-3 sm:px-5 py-3 mb-4">
-          <span className="text-sm font-semibold text-primary">{selectedIds.size} selected</span>
-          <div className="hidden sm:block flex-1" />
-          <div className="flex flex-wrap items-center gap-2">
-            {activeTab === "active" && (
-              <Button
-                icon="pause_circle"
-                variant="outlined"
-                size="sm"
-                onClick={() => setRemarksModal({ action: "suspend", ids: Array.from(selectedIds) })}
-              >
-                Bulk Suspend
-              </Button>
-            )}
-            {activeTab === "suspended" && (
-              <>
-                <Button
-                  icon="play_circle"
-                  variant="outlined"
-                  size="sm"
-                  onClick={() => {
-                    handleAction("reactivate", Array.from(selectedIds), "Bulk reactivated");
-                  }}
-                >
-                  Bulk Reactivate
-                </Button>
-                <Button
-                  icon="inventory_2"
-                  variant="outlined"
-                  size="sm"
-                  onClick={() => setRemarksModal({ action: "archive", ids: Array.from(selectedIds) })}
-                >
-                  Bulk Archive
-                </Button>
-              </>
-            )}
-            <Button variant="text" size="sm" onClick={() => setSelectedIds(new Set())}>
-              Clear
-            </Button>
-          </div>
-        </div>
-      )}
+
 
       {/* ═══════════════════ TAB: PENDING QUEUE ═══════════════════ */}
       {activeTab === "pending" && (
@@ -508,24 +639,14 @@ export default function AdminDashboard() {
               <p className="text-sm text-outline max-w-md mx-auto">All approved applications have been provisioned.</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {filterApps(pendingApps).map((app) => (
-                <AppRow
-                  key={app.id}
-                  app={app}
-                  actions={
-                    <>
+            <ApplicationTable apps={filterApps(pendingApps)} renderActions={(app) => (<><>
                       <Button icon="download" variant="text" size="sm" loading={downloadingPdf === app.id} onClick={() => handleDownloadSignedPdf(app)}>
                         PDF
                       </Button>
                       <Button icon="rocket_launch" variant="filled" size="sm" loading={provisioning === app.id} onClick={() => handleProvision(app)}>
                         Provision
                       </Button>
-                    </>
-                  }
-                />
-              ))}
-            </div>
+                    </></>)} />
           )}
         </>
       )}
@@ -558,13 +679,7 @@ export default function AdminDashboard() {
                 />
                 <span className="text-xs text-outline">Select All</span>
               </div>
-              <div className="space-y-3">
-                {filterApps(activeApps).map((app) => (
-                  <AppRow
-                    key={app.id}
-                    app={app}
-                    actions={
-                      <>
+              <ApplicationTable apps={filterApps(activeApps)} renderActions={(app) => (<><>
                         <Button icon="download" variant="text" size="sm" loading={downloadingPdf === app.id} onClick={() => handleDownloadSignedPdf(app)}>
                           PDF
                         </Button>
@@ -579,11 +694,7 @@ export default function AdminDashboard() {
                         >
                           Suspend
                         </Button>
-                      </>
-                    }
-                  />
-                ))}
-              </div>
+                      </></>)} />
             </>
           )}
         </>
@@ -614,13 +725,7 @@ export default function AdminDashboard() {
                 />
                 <span className="text-xs text-outline">Select All</span>
               </div>
-              <div className="space-y-3">
-                {filterApps(suspendedApps).map((app) => (
-                  <AppRow
-                    key={app.id}
-                    app={app}
-                    actions={
-                      <>
+              <ApplicationTable apps={filterApps(suspendedApps)} renderActions={(app) => (<><>
                         <Button icon="play_circle" variant="filled" size="sm" loading={actionLoading === "reactivate"} onClick={() => handleAction("reactivate", [app.id], "Reactivated by admin")}>
                           Reactivate
                         </Button>
@@ -632,11 +737,7 @@ export default function AdminDashboard() {
                         >
                           Archive
                         </Button>
-                      </>
-                    }
-                  />
-                ))}
-              </div>
+                      </></>)} />
             </>
           )}
         </>
@@ -657,19 +758,9 @@ export default function AdminDashboard() {
               <h3 className="text-lg font-bold text-foreground mb-2">No archived accounts</h3>
             </div>
           ) : (
-            <div className="space-y-3">
-              {filterApps(archivedApps).map((app) => (
-                <AppRow
-                  key={app.id}
-                  app={app}
-                  actions={
-                    <Button icon="download" variant="text" size="sm" loading={downloadingPdf === app.id} onClick={() => handleDownloadSignedPdf(app)}>
+            <ApplicationTable apps={filterApps(archivedApps)} renderActions={(app) => (<><Button icon="download" variant="text" size="sm" loading={downloadingPdf === app.id} onClick={() => handleDownloadSignedPdf(app)}>
                       PDF
-                    </Button>
-                  }
-                />
-              ))}
-            </div>
+                    </Button></>)} />
           )}
         </>
       )}
@@ -844,12 +935,37 @@ export default function AdminDashboard() {
         </div>
       )}
 
+
+      {/* ═══════════════════ TAB: ANALYTICS ═══════════════════ */}
+      {activeTab === "analytics" && (
+        <div className="bg-surface rounded-2xl overflow-hidden min-h-[500px]">
+          <AdminAnalyticsPage />
+        </div>
+      )}
+
+      {/* ═══════════════════ TAB: DATABASE ═══════════════════ */}
+      {activeTab === "database" && (
+        <div className="bg-surface rounded-2xl overflow-hidden min-h-[500px]">
+          <DatabaseExplorerPage />
+        </div>
+      )}
       {/* ═══════════════════ TAB: AUDIT LOGS ═══════════════════ */}
       {activeTab === "audit" && (
         <div className="bg-surface rounded-2xl border border-amber-900 overflow-hidden">
+          <div className="flex justify-start items-center p-4 border-b border-amber-700/50">
+            <div className="flex items-center gap-2 bg-surface-variant/30 p-1.5 rounded-xl border border-outline-variant shadow-sm">
+              <span className="text-xs font-bold text-outline uppercase tracking-wider ml-2 mr-1">Zoom:</span>
+              <button onClick={() => setZoomLevel("sm")} className={`p-1.5 rounded-lg ${zoomLevel === 'sm' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Small text"><span className="material-symbols-rounded text-[18px]">format_size</span></button>
+              <button onClick={() => setZoomLevel("md")} className={`p-1.5 rounded-lg ${zoomLevel === 'md' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Medium text"><span className="material-symbols-rounded text-[20px]">format_size</span></button>
+              <button onClick={() => setZoomLevel("lg")} className={`p-1.5 rounded-lg ${zoomLevel === 'lg' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Large text"><span className="material-symbols-rounded text-[24px]">format_size</span></button>
+            </div>
+          </div>
           {/* Desktop table view */}
           <div className="hidden sm:block overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className={`w-full text-left border-collapse min-w-[800px] ${
+              zoomLevel === 'sm' ? '[&_span:not(.material-symbols-rounded)]:text-[11px] [&_th]:text-[10px] [&_td]:text-[11px]' :
+              zoomLevel === 'lg' ? '[&_span:not(.material-symbols-rounded)]:text-[14px] [&_th]:text-[13px] [&_td]:text-[14px]' : 'text-sm'
+            }`}>
               <thead>
                 <tr className="bg-surface-variant/50 text-amber-800 text-left">
                   <th className="px-4 py-3 font-medium">Time</th>
