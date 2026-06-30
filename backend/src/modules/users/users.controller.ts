@@ -46,7 +46,7 @@ export class UsersController {
    */
   @Post('me/signature')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.HOD)
+  @Roles(Role.HOD, Role.DEAN)
   @ApiBearerAuth('JWT-auth')
   @UseInterceptors(
     FileInterceptor('signature', {
@@ -88,7 +88,7 @@ export class UsersController {
    */
   @Get('me/signature')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.HOD)
+  @Roles(Role.HOD, Role.DEAN)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Check HOD signature upload status' })
   async getSignatureStatus(
@@ -103,7 +103,7 @@ export class UsersController {
    */
   @Get('me/signature/image')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.HOD)
+  @Roles(Role.HOD, Role.DEAN)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Get HOD signature image' })
   async getSignatureImage(
