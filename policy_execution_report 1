@@ -1,0 +1,97 @@
+# BHU Email Policy Implementation Report
+
+This document outlines which rules and guidelines from the **University Email Usage and Management Policy-2025** have been implemented (executed) in the current codebase, and which are pending or not executed.
+
+## 1. Mailbox Size Limits
+> [!NOTE] 
+> **Status: EXECUTED**
+
+The policy specifies different storage quotas based on user categories:
+* Faculty Members, Permanent Officers and Staff: **20 GB**
+* Research Scholars: **10 GB**
+* Temporary/Contractual/Research Staff: **5 GB**
+* Post Graduate Students: **5 GB**
+
+**Codebase verification:**
+This is correctly executed in `google-workspace.service.ts` and `pdf.service.ts`. The codebase maps quotas accurately to the `ApplicantCategory`:
+* `GROUP_A_OFFICER` & `TEACHING_STAFF` -> **20 GB**
+* `RESEARCH_SCHOLAR` -> **10 GB**
+* `POST_GRADUATE_STUDENT` & `NON_TEACHING_STAFF` -> **5 GB**
+
+---
+
+## 2. Email Format / Creation Process
+> [!WARNING] 
+> **Status: NOT EXECUTED (Hardcoded)**
+
+The policy mandates specific email formats based on the user category:
+* Faculty: `username.department@bhu.ac.in`
+* Admin/Staff: `username.admin@bhu.ac.in`
+* Temporary Staff: `username.temp/cont/ra/srf/jrf@bhu.ac.in`
+* Scholars/PG: `username.department.yyyy@bhu.ac.in`
+
+**Codebase verification:**
+Currently, `google-workspace.service.ts` hardcodes a single generic email format for everyone:
+```typescript
+const bhuEmail = `${firstName}.${lastName}@${domain}`;
+```
+The logic to append department names, years, or suffixes like `.admin` or `.temp` is missing.
+
+---
+
+## 3. Account Deactivation and Retention Rules
+> [!CAUTION] 
+> **Status: PARTIALLY EXECUTED / LACKS AUTOMATION**
+
+The policy states strict retention timelines:
+* Faculty: Retained for 5 years after superannuation, then deleted.
+* Staff/Scholars/PG Students: Retained for 1 year after superannuation/completion, then deleted.
+
+**Codebase verification:**
+The database (`schema.prisma`) includes `SUSPENDED` and `ARCHIVED` statuses, and there are API endpoints (`/api/v1/applications/:id/archive` and `/bulk-archive`) allowing admins to manually archive accounts. However, there are no automated Cron jobs or time-based background tasks to automatically suspend or delete accounts after the specified 1-year or 5-year periods.
+
+---
+
+## 4. Group Mailing Lists
+> [!WARNING] 
+> **Status: NOT EXECUTED**
+
+The policy provides a comprehensive list of Group Mailing lists (e.g., `deans@bhu.ac.in`, `director@bhu.ac.in`, `allhead.fos@bhu.ac.in`).
+
+**Codebase verification:**
+There is no logic or configuration in the backend to manage these lists, create them during Google Workspace provisioning, or automatically assign users to these groups based on their department or role.
+
+---
+
+## 5. Security & Usage Guidelines
+> [!NOTE] 
+> **Status: PARTIALLY EXECUTED**
+
+The policy lists multiple security guidelines, including strong password requirements, multi-factor authentication (MFA), avoiding sharing sensitive data, and reporting phishing.
+
+**Codebase verification:**
+1. **Password Protection (EXECUTED):** The system generates a strong, 16-character cryptographically secure password for new Google Workspace accounts via `google-workspace.service.ts` before emailing it to the user.
+2. **IT Policy Acceptance (EXECUTED):** During the application process, the frontend (`page.tsx`) explicitly requires users to check an "IT Policy Agreement" box, legally consenting to the policy rules (prohibiting sharing credentials, ensuring responsible use).
+3. **Password Policies for the Portal (PARTIALLY EXECUTED):** The portal requires a minimum 8-character password (`CreateUserDto`), but does not enforce complex regex rules (like requiring uppercase/numbers/symbols) as typically recommended for "strong" passwords.
+4. **Multi-Factor Authentication & Content Filtering (NOT EXECUTED):** There is no programmatic enforcement of MFA, email encryption, or phishing protection configured from the portal itself. These must be manually configured in the Google Workspace Admin Console by the CC Admin.
+
+---
+
+## 6. Missing Categories & Data Fields
+> [!WARNING] 
+> **Status: NOT EXECUTED**
+
+Line-by-line reading reveals some specific account types and data requirements are completely missing from the system design:
+
+1. **Alumni Accounts:** Section 1 explicitly mentions "alumni", but the `ApplicantCategory` enum (`create-application.dto.ts`) has no ALUMNI category.
+2. **Designation-Based Accounts (Ex-Officio):** Sections 3(a) and 6(j) specify rules for accounts tied to a role (e.g., `head.physics@bhu.ac.in`). These require a handover process instead of deletion. The codebase lacks a "Designation Based" category and any "Account Handover" feature.
+3. **Missing Lifecycle Dates:** To execute the 1-year or 5-year retention/deactivation rules, the system needs to know when the user is leaving. Currently, the application forms do not collect "Expected Superannuation Date", "Course Completion Date", or "Contract Expiry Date", making automated retention impossible.
+
+---
+
+## Summary of Action Items Required
+1. **Email Formatting:** Update `google-workspace.service.ts` to dynamically generate the `bhuEmail` string based on the user's category, department, and joining year.
+2. **Data Collection:** Update frontend forms and backend schemas to collect "Expected Superannuation/Expiry/Completion Date" for all applicants.
+3. **Retention Automation:** Implement a background task (e.g., using `@nestjs/schedule`) to automatically suspend/archive accounts based on the collected expiry dates.
+4. **Group Mailing Lists:** Integrate Google Workspace Directory API group management to auto-subscribe users to the respective mailing lists (like `allhead`, `deans`) upon creation.
+5. **New Account Types:** Add support for "Alumni" and "Designation-Based" email accounts, including a handover workflow for ex-officio roles.

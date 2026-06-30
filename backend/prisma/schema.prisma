@@ -19,6 +19,7 @@ datasource db {
 enum Role {
   APPLICANT
   HOD
+  DEAN
   CC_ADMIN
 }
 
@@ -27,11 +28,15 @@ enum ApplicationStatus {
   PENDING_HOD
   APPROVED_HOD
   REJECTED_HOD
+  PENDING_DEAN
+  APPROVED_DEAN
+  REJECTED_DEAN
   PENDING_CC
   PROVISIONED
   FAILED_PROVISIONING
-  SUSPENDED           /// Account temporarily blocked by CC Admin
-  ARCHIVED            /// Account archived (retired/left) — data retained per IT policy
+  REJECTED_CC            /// Rejected by CC Admin
+  SUSPENDED              /// Account temporarily blocked by CC Admin
+  ARCHIVED               /// Account archived (retired/left) — data retained per IT policy
 }
 
 // ─────────────────────────────────────────────
@@ -68,12 +73,13 @@ model User {
   @@index([role])
 }
 
-/// University departments with an assigned HOD.
+/// University departments with an assigned HOD and optional Dean.
 model Department {
   id           String        @id @default(uuid())
   code         String        @unique /// e.g., "COMP_SCI", "PHYSICS"
   name         String        /// Full department name
   hodId        String?       @unique /// One HOD per department (User.id)
+  deanId       String?       /// Dean who approves UG students for this department (User.id)
 
   users        User[]
   applications Application[]
@@ -122,6 +128,9 @@ model Application {
 
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+
+  /// Date when the application expires (e.g. course completion or superannuation)
+  expectedExpiryDate DateTime?
 
   // Reapply requests linked to this application
   reapplyRequests ReapplyRequest[]

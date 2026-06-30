@@ -1,0 +1,69 @@
+# Security, Architecture & Vulnerability Audit Report
+**Target System:** BHU Email Registration & Auto-Provisioning Portal
+**Prepared For:** Special Security, Penetration Testing & Audit Task Force (Google SecOps)
+**Classification:** HIGHLY CONFIDENTIAL
+
+## 1. Scope of Audit
+This document outlines the architectural boundaries, defensive layers, and known threat models of the BHU Email Portal. It is designed to guide Red Teams (Hackers) and Compliance Auditors through the application's infrastructure.
+
+## 2. Architectural Overview
+The system relies on a decoupled monolith architecture:
+- **Frontend Layer:** Next.js (React) operating at `http://localhost:3000`. Handles client-side routing, local state (Zustand), and presentation.
+- **Backend Layer:** NestJS operating at `http://localhost:4000` (API Prefix: `/api/v1`). Handles business logic, JWT authentication, and file processing (PDFs/Images).
+- **Database Layer:** PostgreSQL managed via Prisma ORM (`@prisma/client`).
+- **External Integrations:** Google Workspace Admin API (mocked/planned), Nodemailer for SMTP communications, Puppeteer for PDF generation.
+
+## 3. Security Posture & Hardening (Static Analysis)
+
+### 3.1 HTTP Headers & Web Security
+> [!TIP]
+> The backend employs `helmet` middleware (`main.ts:25`) which automatically sets hardened HTTP headers. 
+- **X-Powered-By:** Disabled to prevent technology stack fingerprinting.
+- **X-Frame-Options:** Set to `SAMEORIGIN` to prevent Clickjacking attacks.
+- **X-XSS-Protection:** Enabled to force browsers to sanitize detected reflected XSS.
+- **CORS:** Strictly configured (`main.ts:28`) to only accept cross-origin requests from the defined `FRONTEND_URL`, dropping arbitrary unauthorized origin requests.
+
+### 3.2 Data Validation & Injection Prevention
+- **ValidationPipe:** The application utilizes a global `ValidationPipe` (`main.ts:40`).
+  - `whitelist: true`: Automatically strips any fields sent by a client that are not explicitly defined in the DTO (Data Transfer Object).
+  - `forbidNonWhitelisted: true`: Automatically throws a `400 Bad Request` if a hacker attempts to inject arbitrary payload keys.
+- **SQL Injection:** Raw SQL queries (`$queryRaw`) were **NOT DETECTED** anywhere in the codebase. Prisma ORM handles all query building, inherently escaping user inputs and mitigating standard SQLi attacks.
+
+### 3.3 Application Logic & Business Rules
+- **Anti-Spam / Abuse:** The `ApplicationsService` implements hard logic limiters:
+  - Blocks any duplicate application submissions if a user has an active/pending/provisioned state (`ApplicationsService:60`).
+  - Hard limit of 5 rejected applications resulting in a permanent block (`ApplicationsService:70`).
+- **Audit Logging:** Every critical state transition (Submit, Approve, Reject, Suspend) writes a permanent ledger entry to the `AuditLog` table. This log includes `ipAddress`, `performedBy`, and the JSON payload of the action for non-repudiation.
+
+## 4. Known Vulnerability Vectors for Penetration Testing
+Red Teams should focus their penetration efforts on the following high-risk surface areas:
+
+> [!WARNING]
+> **Vector 1: File Upload Manipulation (PDF/Image)**
+> The application accepts file uploads (Photos, Signatures).
+> - **Test Objective:** Attempt to bypass MIME-type checking (if any) to upload executable scripts (`.php`, `.sh`, `.exe`) masquerading as `.jpg` or `.png`.
+> - **Test Objective:** Attempt Path Traversal (`../../etc/passwd`) within the filename or `photoPath` variables to overwrite core system files.
+
+> [!WARNING]
+> **Vector 2: PDF Generation Exploitation (Puppeteer)**
+> The backend uses `puppeteer` to generate PDFs.
+> - **Test Objective:** If applicant JSON data is directly injected into the PDF HTML template, attempt Server-Side Request Forgery (SSRF) or Local File Read (LFI) by injecting malicious HTML payloads (e.g., `<iframe src="file:///etc/passwd">`) into the application form fields.
+
+> [!WARNING]
+> **Vector 3: JWT Token Forgery & Expiration**
+> - **Test Objective:** Intercept the JWT Access Token and attempt to manipulate the payload (e.g., changing role from `APPLICANT` to `CC_ADMIN`), then re-sign with a "None" algorithm or guessable secret.
+> - **Test Objective:** Check if tokens are blacklisted upon user logout or if they remain valid until absolute expiration (Replay Attacks).
+
+> [!WARNING]
+> **Vector 4: JSONB Payload Tampering**
+> The application stores applicant details as Prisma `JSONB`.
+> - **Test Objective:** Inject deeply nested JSON objects or extremely large strings to trigger a Denial of Service (DoS) via memory exhaustion when `JSON.parse()` is called (`ApplicationsService:96`).
+
+## 5. Auditor Compliance Checklist
+1. **[PASS] No hardcoded secrets:** `.env` is used for all sensitive configuration.
+2. **[PASS] Rate Limiting:** Configured at the global application level to prevent brute forcing.
+3. **[PASS] Input Sanitization:** Handled natively by NestJS DTOs and Prisma.
+4. **[PENDING] Turnstile / CAPTCHA Integration:** Ensure Cloudflare Turnstile is actively verifying requests on the frontend before allowing `POST` requests to the authentication layer.
+
+## 6. Conclusion
+The BHU Email Portal exhibits a strong baseline security posture characteristic of modern NestJS implementations. The primary attack surfaces reside in complex logic areas involving File Uploads and HTML-to-PDF rendering pipelines. The specialized testing task force is authorized to proceed with rigorous dynamic testing against the aforementioned vectors.

@@ -34,6 +34,9 @@ export default function DashboardIndexPage() {
       case "HOD":
         router.replace("/dashboard/hod");
         break;
+      case "DEAN":
+        router.replace("/dashboard/dean");
+        break;
       default:
         router.replace("/dashboard/applicant");
     }

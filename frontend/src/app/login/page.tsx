@@ -76,6 +76,9 @@ export default function LoginPage() {
       case "HOD":
         router.push("/dashboard/hod");
         break;
+      case "DEAN":
+        router.push("/dashboard/dean");
+        break;
       case "CC_ADMIN":
         router.push("/dashboard/admin");
         break;
@@ -548,6 +551,13 @@ export default function LoginPage() {
                     className="flex-1 min-w-[80px] px-3 py-2 text-xs font-semibold bg-surface border border-outline-variant rounded-lg hover:border-primary hover:text-primary transition-colors shadow-sm"
                   >
                     HOD
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => { setEmail("dean@bhu.ac.in"); setPassword("password123"); }}
+                    className="flex-1 min-w-[80px] px-3 py-2 text-xs font-semibold bg-surface border border-outline-variant rounded-lg hover:border-primary hover:text-primary transition-colors shadow-sm"
+                  >
+                    Dean
                   </button>
                   <button 
                     type="button"

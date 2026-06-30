@@ -67,13 +67,16 @@ export class GoogleWorkspaceService {
       throw new BadRequestException('Application not found');
     }
 
-    if (application.status !== ApplicationStatus.APPROVED_HOD) {
+    if (
+      application.status !== ApplicationStatus.APPROVED_HOD &&
+      application.status !== ApplicationStatus.APPROVED_DEAN
+    ) {
       throw new BadRequestException(
-        `Application must be in APPROVED_HOD status. Current: ${application.status}`,
+        `Application must be in APPROVED_HOD or APPROVED_DEAN status. Current: ${application.status}`,
       );
     }
 
-    // ── Step 2: Generate BHU email username ──
+    // ── Step 2: Generate BHU email username (Policy-Compliant Format) ──
     const firstName = application.applicant.firstName
       .toLowerCase()
       .replace(/[^a-z]/g, '');
@@ -81,14 +84,40 @@ export class GoogleWorkspaceService {
       .toLowerCase()
       .replace(/[^a-z]/g, '');
     const domain = process.env.GOOGLE_DOMAIN || 'bhu.ac.in';
-    const bhuEmail = `${firstName}.${lastName}@${domain}`;
+    const details = application.applicantDetails as Record<string, unknown>;
+    const category = details.category as string;
+    const deptCode = (application.department?.code || 'dept').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const year = new Date().getFullYear();
+
+    // Generate email based on category per BHU IT Policy Section 3(c)
+    let bhuEmail: string;
+    switch (category) {
+      case ApplicantCategory.TEACHING_STAFF:
+        bhuEmail = `${firstName}.${deptCode}@${domain}`;
+        break;
+      case ApplicantCategory.GROUP_A_OFFICER:
+        bhuEmail = `${firstName}.admin@${domain}`;
+        break;
+      case ApplicantCategory.NON_TEACHING_STAFF:
+        bhuEmail = `${firstName}.admin@${domain}`;
+        break;
+      case ApplicantCategory.RESEARCH_SCHOLAR:
+        bhuEmail = `${firstName}.${deptCode}.${year}@${domain}`;
+        break;
+      case ApplicantCategory.POST_GRADUATE_STUDENT:
+        bhuEmail = `${firstName}.${deptCode}.${year}@${domain}`;
+        break;
+      case ApplicantCategory.UNDER_GRADUATE_STUDENT:
+        bhuEmail = `${firstName}.${deptCode}.${year}@${domain}`;
+        break;
+      default:
+        bhuEmail = `${firstName}.${lastName}@${domain}`;
+    }
 
     // ── Step 3: Generate secure temporary password ──
     const tempPassword = this.generateSecurePassword();
 
     // ── Step 4: Determine storage quota ──
-    const details = application.applicantDetails as Record<string, unknown>;
-    const category = details.category as string;
     const quotaGB = this.getQuotaForCategory(category);
 
     // ── Step 5: Call Google API (or mock) ──
@@ -194,6 +223,7 @@ export class GoogleWorkspaceService {
       [ApplicantCategory.RESEARCH_SCHOLAR]: 10,
       [ApplicantCategory.POST_GRADUATE_STUDENT]: 5,
       [ApplicantCategory.NON_TEACHING_STAFF]: 5,
+      [ApplicantCategory.UNDER_GRADUATE_STUDENT]: 5,
     };
 
     return quotaMap[category] || 5; // Default to 5GB

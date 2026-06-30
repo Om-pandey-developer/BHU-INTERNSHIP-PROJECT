@@ -17,6 +17,12 @@ const hodNav: NavItem[] = [
   { label: "Settings", icon: "settings", href: "/dashboard/settings" },
 ];
 
+const deanNav: NavItem[] = [
+  { label: "Pending Reviews", icon: "pending_actions", href: "/dashboard/dean" },
+  { label: "Reviewed", icon: "task_alt", href: "/dashboard/dean/reviewed" },
+  { label: "Settings", icon: "settings", href: "/dashboard/settings" },
+];
+
 const adminNav: NavItem[] = [
   { label: "Dashboard", icon: "dashboard", href: "/dashboard/admin" },
   { label: "History", icon: "history", href: "/dashboard/admin/history" },
@@ -71,21 +77,27 @@ export default function DashboardLayout({
       ? adminNav
       : user.role === "HOD"
         ? hodNav
-        : []; // Applicant has no sidebar nav
+        : user.role === "DEAN"
+          ? deanNav
+          : []; // Applicant has no sidebar nav
 
   const roleLabel =
     user.role === "CC_ADMIN"
       ? "CC Admin"
       : user.role === "HOD"
         ? "Head of Dept"
-        : "Applicant";
+        : user.role === "DEAN"
+          ? "Dean"
+          : "Applicant";
 
   const roleBg =
     user.role === "CC_ADMIN"
       ? "bg-tertiary-container text-tertiary"
       : user.role === "HOD"
         ? "bg-secondary-container text-secondary"
-        : "bg-primary-container text-on-primary-container";
+        : user.role === "DEAN"
+          ? "bg-amber-100 text-amber-800"
+          : "bg-primary-container text-on-primary-container";
 
   function handleLogout() {
     logout();

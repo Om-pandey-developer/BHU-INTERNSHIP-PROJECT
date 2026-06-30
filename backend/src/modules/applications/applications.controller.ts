@@ -14,6 +14,7 @@ import {
   MaxFileSizeValidator,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -202,9 +203,83 @@ export class ApplicationsController {
     );
   }
 
+  // ═══════════════════════════════════════════════════════
+  // Dean — UG Student Application Endpoints
+  // ═══════════════════════════════════════════════════════
+
+  /**
+   * GET /api/v1/applications/dean-queue
+   * Get pending UG applications for the Dean.
+   * Accessible by: DEAN
+   */
+  @Get('dean-queue')
+  @Roles(Role.DEAN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: "Get pending UG applications for Dean" })
+  async findDeanQueue(
+    @Req() req: Request & { user: { userId: string } },
+  ) {
+    return this.applicationsService.findForDean(req.user.userId);
+  }
+
+  /**
+   * GET /api/v1/applications/dean-reviewed
+   * Get reviewed UG applications for the Dean.
+   * Accessible by: DEAN
+   */
+  @Get('dean-reviewed')
+  @Roles(Role.DEAN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: "Get reviewed UG applications for Dean" })
+  async findDeanReviewed(
+    @Req() req: Request & { user: { userId: string } },
+  ) {
+    return this.applicationsService.findReviewedForDean(req.user.userId);
+  }
+
+  /**
+   * GET /api/v1/applications/dean-provisioned
+   * Get provisioned UG applications for the Dean's departments.
+   * Accessible by: DEAN
+   */
+  @Get('dean-provisioned')
+  @Roles(Role.DEAN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: "Get provisioned UG applications for Dean" })
+  async findDeanProvisioned(
+    @Req() req: Request & { user: { userId: string } },
+  ) {
+    return this.applicationsService.findProvisionedForDean(req.user.userId);
+  }
+
+  /**
+   * PATCH /api/v1/applications/:id/dean-status
+   * Dean approves or rejects a UG application.
+   * Accessible by: DEAN
+   */
+  @Patch(':id/dean-status')
+  @Roles(Role.DEAN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Dean approve or reject a UG application' })
+  async updateDeanStatus(
+    @Param('id') id: string,
+    @Req() req: Request & { user: { userId: string } },
+    @Body() dto: UpdateStatusDto,
+  ) {
+    const ipAddress =
+      (req.headers['x-forwarded-for'] as string) || req.ip || 'unknown';
+
+    return this.applicationsService.updateDeanStatus(
+      id,
+      req.user.userId,
+      dto,
+      ipAddress,
+    );
+  }
+
   /**
    * GET /api/v1/applications/admin-queue
-   * Get HOD-approved applications ready for provisioning.
+   * Get HOD/Dean-approved applications ready for provisioning.
    * Accessible by: CC_ADMIN
    */
   @Get('admin-queue')
@@ -268,6 +343,45 @@ export class ApplicationsController {
   @ApiOperation({ summary: 'Get quota allocation statistics' })
   async getQuotaStats() {
     return this.applicationsService.getQuotaStats();
+  }
+
+  /**
+   * PATCH /api/v1/applications/:id/cc-reject
+   * CC Admin rejects an application before provisioning.
+   * Accessible by: CC_ADMIN
+   */
+  @Patch(':id/cc-reject')
+  @Roles(Role.CC_ADMIN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'CC Admin reject an application' })
+  async rejectByCcAdmin(
+    @Param('id') id: string,
+    @Req() req: Request & { user: { userId: string } },
+    @Body() dto: { remarks: string },
+  ) {
+    const ipAddress = (req.headers['x-forwarded-for'] as string) || req.ip || 'unknown';
+    if (!dto.remarks?.trim()) {
+      throw new BadRequestException('Remarks are mandatory for rejection');
+    }
+    return this.applicationsService.rejectByCcAdmin(id, req.user.userId, dto.remarks, ipAddress);
+  }
+
+  /**
+   * PATCH /api/v1/applications/:id/cc-edit
+   * CC Admin edits an application details before provisioning.
+   * Accessible by: CC_ADMIN
+   */
+  @Patch(':id/cc-edit')
+  @Roles(Role.CC_ADMIN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'CC Admin edit application details' })
+  async editByCcAdmin(
+    @Param('id') id: string,
+    @Req() req: Request & { user: { userId: string } },
+    @Body() dto: { applicantDetails: any },
+  ) {
+    const ipAddress = (req.headers['x-forwarded-for'] as string) || req.ip || 'unknown';
+    return this.applicationsService.editByCcAdmin(id, req.user.userId, dto.applicantDetails, ipAddress);
   }
 
   /**
@@ -365,7 +479,7 @@ export class ApplicationsController {
     if (req.user.role === 'APPLICANT' && app.applicantId !== req.user.userId) {
       throw new ForbiddenException('You can only view your own applications');
     }
-    if (req.user.role === 'HOD' && app.departmentId !== req.user.departmentId) {
+    if ((req.user.role === 'HOD' || req.user.role === 'DEAN') && app.departmentId !== req.user.departmentId) {
       throw new ForbiddenException('You can only view applications from your department');
     }
 
@@ -395,7 +509,7 @@ export class ApplicationsController {
     if (req.user.role === 'APPLICANT' && app.applicantId !== req.user.userId) {
       throw new ForbiddenException('You can only view your own applications');
     }
-    if (req.user.role === 'HOD' && app.departmentId !== req.user.departmentId) {
+    if ((req.user.role === 'HOD' || req.user.role === 'DEAN') && app.departmentId !== req.user.departmentId) {
       throw new ForbiddenException('You can only view applications from your department');
     }
 
@@ -430,7 +544,7 @@ export class ApplicationsController {
     if (req.user.role === 'APPLICANT' && app.applicantId !== req.user.userId) {
       throw new ForbiddenException('You can only download your own application PDFs');
     }
-    if (req.user.role === 'HOD' && app.departmentId !== req.user.departmentId) {
+    if ((req.user.role === 'HOD' || req.user.role === 'DEAN') && app.departmentId !== req.user.departmentId) {
       throw new ForbiddenException('You can only download PDFs from your department');
     }
 

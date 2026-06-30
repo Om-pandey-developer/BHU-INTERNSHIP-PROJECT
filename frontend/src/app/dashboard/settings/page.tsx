@@ -39,9 +39,9 @@ export default function SettingsPage() {
     setPasswordValid(isValid);
   }, []);
 
-  // ── Fetch HOD signature status on mount ──
+  // ── Fetch HOD/DEAN signature status on mount ──
   useEffect(() => {
-    if (user?.role === "HOD") {
+    if (user?.role === "HOD" || user?.role === "DEAN") {
       fetchSignatureStatus();
     }
   }, [user?.role]);
@@ -195,11 +195,11 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      <div className={`grid grid-cols-1 ${user?.role === "HOD" ? "md:grid-cols-2" : ""} gap-8 items-start`}>
+      <div className={`grid grid-cols-1 ${user?.role === "HOD" || user?.role === "DEAN" ? "md:grid-cols-2" : ""} gap-8 items-start`}>
       {/* ══════════════════════════════════════
           HOD SIGNATURE UPLOAD CARD
          ══════════════════════════════════════ */}
-      {user?.role === "HOD" && (
+      {(user?.role === "HOD" || user?.role === "DEAN") && (
         <div className="bg-surface border border-outline-variant rounded-2xl overflow-hidden shadow-sm animate-fade-in">
           <div className="p-6 border-b border-outline-variant bg-surface-variant/30 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-secondary-container flex items-center justify-center shrink-0">

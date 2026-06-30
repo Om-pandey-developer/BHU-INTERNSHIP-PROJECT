@@ -117,6 +117,18 @@ const categories = [
       "nationality", "mobileNo", "emailChoice",
     ],
   },
+  {
+    value: "UNDER_GRADUATE_STUDENT",
+    label: "Under Graduate Student",
+    icon: "local_library",
+    desc: "BA, BSc, BCom, BTech and other UG students",
+    quota: "5 GB",
+    fields: [
+      "programEnrolled", "admissionAcademicYear", "facultyInstituteCentre",
+      "enrollmentNo", "dateOfBirth", "courseCompletionYear",
+      "nationality", "mobileNo", "emailChoice",
+    ],
+  },
 ];
 
 const fieldLabels: Record<string, { label: string; icon: string; type?: string }> = {

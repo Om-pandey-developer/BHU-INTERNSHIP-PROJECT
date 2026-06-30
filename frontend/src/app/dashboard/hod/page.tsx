@@ -810,7 +810,7 @@ export default function HodDashboard() {
           </div>
         )}
 
-        {/* Pagination Footer */}rtthbsrhs
+        {/* Pagination Footer */}
         {totalPages > 0 && (
           <div className="p-4 border-t border-outline-variant flex flex-wrap items-center justify-between gap-4 bg-surface-variant/10">
             <p className="text-sm text-outline">

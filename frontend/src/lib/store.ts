@@ -6,7 +6,7 @@ export interface User {
   bhuEmail?: string | null;
   firstName: string;
   lastName: string;
-  role: "APPLICANT" | "HOD" | "CC_ADMIN";
+  role: "APPLICANT" | "HOD" | "CC_ADMIN" | "DEAN";
   departmentId?: string;
 }
 

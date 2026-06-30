@@ -11,6 +11,7 @@ import { GoogleWorkspaceModule } from './modules/google-workspace/google-workspa
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ReapplyModule } from './modules/reapply/reapply.module';
 import { DatabaseExplorerModule } from './modules/database-explorer/database-explorer.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 /**
  * AppModule — Root module of the BHU Email Portal backend.
@@ -47,6 +48,7 @@ import { DatabaseExplorerModule } from './modules/database-explorer/database-exp
     AnalyticsModule,
     ReapplyModule,
     DatabaseExplorerModule,
+    ScheduleModule.forRoot(),
   ],
   providers: [
     // Apply ThrottlerGuard globally to all routes

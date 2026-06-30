@@ -102,6 +102,12 @@ export class ApplicationsService {
     // Attach the category to the JSONB details
     parsedDetails.category = dto.category;
 
+    // Determine initial status based on category:
+    // UG students go to Dean for approval, all others go to HOD
+    const initialStatus = dto.category === 'UNDER_GRADUATE_STUDENT'
+      ? ApplicationStatus.PENDING_DEAN
+      : ApplicationStatus.PENDING_HOD;
+
     const application = await this.prisma.application.create({
       data: {
         applicantId,
@@ -109,7 +115,7 @@ export class ApplicationsService {
         applicantDetails: parsedDetails as Prisma.InputJsonValue,
         photoStoragePath: photoPath,
         signatureStoragePath: signaturePath,
-        status: ApplicationStatus.PENDING_HOD,
+        status: initialStatus,
       },
       include: {
         department: true,
@@ -124,17 +130,17 @@ export class ApplicationsService {
         action: 'APPLICATION_SUBMITTED',
         performedBy: applicantId,
         ipAddress,
-        payload: { status: ApplicationStatus.PENDING_HOD },
+        payload: { status: initialStatus },
       },
     });
 
     this.logger.log(
-      `Application ${application.trackingId} submitted by ${applicantId}`,
+      `Application ${application.trackingId} submitted by ${applicantId} → ${initialStatus}`,
     );
 
-    // ── Send email notification to HOD (non-blocking) ──
+    // ── Send email notification to HOD/Dean (non-blocking) ──
     this.notifyHodOfNewApplication(application.departmentId, applicantId, application.trackingId, application.department?.name || 'Unknown')
-      .catch(err => this.logger.error('HOD notification failed', err));
+      .catch(err => this.logger.error('HOD/Dean notification failed', err));
 
     return {
       id: application.id,
@@ -240,6 +246,239 @@ export class ApplicationsService {
       },
       orderBy: { updatedAt: 'desc' },
     });
+  }
+  // ═══════════════════════════════════════════════════════
+  // Dean — UG Student Application Review (mirrors HOD)
+  // ═══════════════════════════════════════════════════════
+
+  /**
+   * Get applications pending Dean review for departments the Dean oversees.
+   */
+  async findForDean(deanId: string) {
+    // Find all departments where this user is the Dean
+    const departments = await this.prisma.department.findMany({
+      where: { deanId },
+      select: { id: true },
+    });
+    const deptIds = departments.map(d => d.id);
+
+    return this.prisma.application.findMany({
+      where: {
+        departmentId: { in: deptIds },
+        status: ApplicationStatus.PENDING_DEAN,
+      },
+      include: {
+        applicant: {
+          select: {
+            id: true,
+            alternateEmail: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        department: true,
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  /**
+   * Get applications reviewed by Dean (approved or rejected).
+   */
+  async findReviewedForDean(deanId: string) {
+    const departments = await this.prisma.department.findMany({
+      where: { deanId },
+      select: { id: true },
+    });
+    const deptIds = departments.map(d => d.id);
+
+    return this.prisma.application.findMany({
+      where: {
+        departmentId: { in: deptIds },
+        status: {
+          in: [ApplicationStatus.APPROVED_DEAN, ApplicationStatus.REJECTED_DEAN],
+        },
+      },
+      include: {
+        applicant: {
+          select: {
+            id: true,
+            alternateEmail: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        department: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
+
+  /**
+   * Get provisioned applications for departments the Dean oversees.
+   */
+  async findProvisionedForDean(deanId: string) {
+    const departments = await this.prisma.department.findMany({
+      where: { deanId },
+      select: { id: true },
+    });
+    const deptIds = departments.map(d => d.id);
+
+    return this.prisma.application.findMany({
+      where: {
+        departmentId: { in: deptIds },
+        status: ApplicationStatus.PROVISIONED,
+      },
+      include: {
+        applicant: {
+          select: {
+            id: true,
+            alternateEmail: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        department: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
+
+  /**
+   * Dean approves or rejects a UG student application.
+   * Mirrors HOD workflow — requires uploaded signature for approval.
+   */
+  async updateDeanStatus(
+    applicationId: string,
+    deanId: string,
+    dto: UpdateStatusDto,
+    ipAddress: string,
+  ) {
+    const application = await this.prisma.application.findUnique({
+      where: { id: applicationId },
+    });
+
+    if (!application) {
+      throw new NotFoundException('Application not found');
+    }
+
+    // Verify this Dean has authority over the application's department
+    const dept = await this.prisma.department.findUnique({
+      where: { id: application.departmentId },
+    });
+    if (!dept || dept.deanId !== deanId) {
+      throw new ForbiddenException(
+        'You can only review applications from departments you oversee',
+      );
+    }
+
+    if (application.status !== ApplicationStatus.PENDING_DEAN) {
+      throw new BadRequestException(
+        `Application is in "${application.status}" state and cannot be reviewed by Dean`,
+      );
+    }
+
+    // Map the dto status to Dean-specific statuses
+    const newStatus = dto.status === ApplicationStatus.APPROVED_HOD
+      ? ApplicationStatus.APPROVED_DEAN
+      : dto.status === ApplicationStatus.REJECTED_HOD
+        ? ApplicationStatus.REJECTED_DEAN
+        : dto.status;
+
+    // Require remarks for rejection
+    if (
+      newStatus === ApplicationStatus.REJECTED_DEAN &&
+      (!dto.remarks || dto.remarks.trim().length === 0)
+    ) {
+      throw new BadRequestException('Remarks are mandatory for rejection');
+    }
+
+    // ── If approving, verify Dean has uploaded a signature ──
+    let digitalSignatureHash: string | null = null;
+    let approvedPdfPath: string | null = null;
+    const approvalTimestamp = new Date();
+
+    if (newStatus === ApplicationStatus.APPROVED_DEAN) {
+      const dean = (await this.prisma.user.findUnique({
+        where: { id: deanId },
+        select: {
+          signatureStoragePath: true,
+          firstName: true,
+          lastName: true,
+        } as unknown as Prisma.UserSelect,
+      })) as unknown as {
+        signatureStoragePath: string | null;
+        firstName: string;
+        lastName: string;
+      } | null;
+
+      if (!dean?.signatureStoragePath) {
+        throw new BadRequestException(
+          'Please upload your signature in Settings before approving applications.',
+        );
+      }
+
+      // Generate SHA-256 cryptographic hash
+      const hashInput = `${applicationId}|${deanId}|${application.applicantId}|${approvalTimestamp.toISOString()}`;
+      digitalSignatureHash = createHash('sha256').update(hashInput).digest('hex');
+
+      // Generate the approved PDF with both signatures and hologram
+      const deanName = `${dean.firstName} ${dean.lastName}`.trim();
+      try {
+        approvedPdfPath = await this.pdfService.generateApprovedPdf(
+          applicationId,
+          dean.signatureStoragePath,
+          deanName,
+          digitalSignatureHash,
+          approvalTimestamp,
+        );
+      } catch (err) {
+        this.logger.error(`PDF generation failed for ${applicationId}`, err);
+        throw new BadRequestException(
+          'Approval succeeded but PDF generation failed. Please try again.',
+        );
+      }
+    }
+
+    const updated = await this.prisma.application.update({
+      where: { id: applicationId },
+      data: {
+        status: newStatus,
+        hodId: deanId,
+        hodRemarks: dto.remarks || null,
+        hodApprovedAt:
+          newStatus === ApplicationStatus.APPROVED_DEAN ? approvalTimestamp : null,
+        digitalSignatureHash,
+        approvedPdfPath,
+      } as unknown as Prisma.ApplicationUpdateInput,
+    });
+
+    // Create audit log entry
+    await this.prisma.auditLog.create({
+      data: {
+        entityType: 'APPLICATION',
+        entityId: applicationId,
+        action: `STATUS_CHANGED_TO_${newStatus}`,
+        performedBy: deanId,
+        ipAddress,
+        payload: {
+          previousStatus: application.status,
+          newStatus,
+          remarks: dto.remarks,
+          digitalSignatureHash,
+        },
+      },
+    });
+
+    this.logger.log(
+      `Application ${application.trackingId} ${newStatus} by Dean ${deanId}`,
+    );
+
+    // ── Send email notification to applicant (non-blocking) ──
+    this.notifyApplicantOfStatusChange(application.applicantId, application.trackingId, newStatus, dto.remarks)
+      .catch(err => this.logger.error('Applicant notification failed', err));
+
+    return updated;
   }
 
   /**
@@ -370,11 +609,15 @@ export class ApplicationsService {
   }
 
   /**
-   * Get applications approved by HOD, ready for CC Admin provisioning.
+   * Get applications approved by HOD or Dean, ready for CC Admin provisioning.
    */
   async findForCcAdmin() {
     return this.prisma.application.findMany({
-      where: { status: ApplicationStatus.APPROVED_HOD },
+      where: {
+        status: {
+          in: [ApplicationStatus.APPROVED_HOD, ApplicationStatus.APPROVED_DEAN],
+        },
+      },
       include: {
         applicant: {
           select: {
@@ -426,6 +669,101 @@ export class ApplicationsService {
     }
 
     return application;
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // CC Admin — Queue Actions
+  // ═══════════════════════════════════════════════════════
+
+  /**
+   * CC Admin rejects an application before provisioning.
+   */
+  async rejectByCcAdmin(applicationId: string, adminId: string, remarks: string, ipAddress: string) {
+    const application = await this.prisma.application.findUnique({
+      where: { id: applicationId },
+    });
+
+    if (!application) {
+      throw new NotFoundException('Application not found');
+    }
+
+    if (
+      application.status !== ApplicationStatus.APPROVED_HOD &&
+      application.status !== ApplicationStatus.APPROVED_DEAN
+    ) {
+      throw new BadRequestException('Application must be approved by HOD/Dean before CC Admin can reject it.');
+    }
+
+    const updated = await this.prisma.application.update({
+      where: { id: applicationId },
+      data: {
+        status: ApplicationStatus.REJECTED_CC,
+        ccAdminRemarks: remarks,
+      },
+    });
+
+    // Create audit log entry
+    await this.prisma.auditLog.create({
+      data: {
+        entityType: 'APPLICATION',
+        entityId: applicationId,
+        action: 'STATUS_CHANGED_TO_REJECTED_CC',
+        performedBy: adminId,
+        ipAddress,
+        payload: {
+          previousStatus: application.status,
+          newStatus: ApplicationStatus.REJECTED_CC,
+          remarks,
+        },
+      },
+    });
+
+    this.logger.log(`Application ${application.trackingId} rejected by CC Admin ${adminId}`);
+
+    // Notify applicant
+    this.notifyApplicantOfStatusChange(application.applicantId, application.trackingId, ApplicationStatus.REJECTED_CC, remarks)
+      .catch(err => this.logger.error('Applicant notification failed', err));
+
+    return updated;
+  }
+
+  /**
+   * CC Admin edits application details.
+   */
+  async editByCcAdmin(applicationId: string, adminId: string, applicantDetails: any, ipAddress: string) {
+    const application = await this.prisma.application.findUnique({
+      where: { id: applicationId },
+    });
+
+    if (!application) {
+      throw new NotFoundException('Application not found');
+    }
+
+    const updated = await this.prisma.application.update({
+      where: { id: applicationId },
+      data: {
+        applicantDetails,
+      },
+    });
+
+    // Create audit log entry
+    await this.prisma.auditLog.create({
+      data: {
+        entityType: 'APPLICATION',
+        entityId: applicationId,
+        action: 'DETAILS_UPDATED_BY_CC_ADMIN',
+        performedBy: adminId,
+        ipAddress,
+        payload: {
+          previousDetails: application.applicantDetails,
+          newDetails: applicantDetails,
+        },
+      },
+    });
+
+    this.logger.log(`Application ${application.trackingId} details updated by CC Admin ${adminId}`);
+
+    return updated;
   }
 
   // ═══════════════════════════════════════════════════════

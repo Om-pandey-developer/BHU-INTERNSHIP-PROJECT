@@ -49,6 +49,26 @@ async function main() {
     },
   });
   console.log(`✅ Created Test CC Admin: ${admin.alternateEmail} / password123`);
+
+  // Create a test Dean
+  const dean = await prisma.user.upsert({
+    where: { alternateEmail: 'dean@bhu.ac.in' },
+    update: {},
+    create: {
+      alternateEmail: 'dean@bhu.ac.in',
+      passwordHash,
+      firstName: 'Test',
+      lastName: 'Dean',
+      role: 'DEAN',
+    },
+  });
+  console.log(`✅ Created Test Dean: ${dean.alternateEmail} / password123`);
+
+  await prisma.department.updateMany({
+    where: { id: 'dept-cs' },
+    data: { deanId: dean.id },
+  });
+
   // Create dummy applications for HOD dashboard
   console.log('🌱 Seeding 40 dummy applications...');
   const categories = [
@@ -134,6 +154,73 @@ async function main() {
     }
   }
   console.log('✅ Created 40 Dummy Applications!');
+
+  // Create dummy applications for DEAN dashboard
+  console.log('🌱 Seeding 40 dummy applications for DEAN...');
+  const deanStatuses: any[] = [
+    'PENDING_DEAN', 'PENDING_DEAN', 'PENDING_DEAN', 'PENDING_DEAN',
+    'APPROVED_DEAN', 'APPROVED_DEAN', 'APPROVED_DEAN',
+    'REJECTED_DEAN', 'REJECTED_DEAN', 'REJECTED_DEAN'
+  ];
+
+  for (const category of categories) {
+    for (let i = 0; i < 10; i++) {
+      const status = deanStatuses[i];
+      const email = `dummy_dean_${category.prefix.toLowerCase()}_${i}@bhu.ac.in`;
+      
+      const user = await prisma.user.upsert({
+        where: { alternateEmail: email },
+        update: {},
+        create: {
+          alternateEmail: email,
+          passwordHash,
+          firstName: 'DummyDean',
+          lastName: `${category.prefix} User ${i}`,
+          role: 'APPLICANT',
+          departmentId: 'dept-cs',
+        }
+      });
+
+      // Check if application exists
+      const existingApp = await prisma.application.findFirst({
+        where: { applicantId: user.id }
+      });
+
+      if (!existingApp) {
+        const applicantDetails: any = {
+          category: category.cat,
+          mobileNo: `98765${Math.floor(10000 + Math.random() * 90000)}`,
+          facultyInstituteCentre: 'Computer Science',
+          emailChoice: email,
+          dateOfBirth: '1990-01-01',
+        };
+        
+        if (category.cat === 'RESEARCH_SCHOLAR' || category.cat === 'POST_GRADUATE_STUDENT') {
+          applicantDetails.programEnrolled = category.cat === 'RESEARCH_SCHOLAR' ? 'Ph.D.' : 'M.Sc.';
+          applicantDetails.enrollmentNo = `EN_DEAN${1000 + i}`;
+        } else {
+          applicantDetails.typeOfEmployment = 'Permanent';
+          applicantDetails.designation = category.cat === 'TEACHING_STAFF' ? 'Assistant Professor' : 'Officer';
+          applicantDetails.employeeId = `EMP_DEAN${1000 + i}`;
+        }
+
+        await prisma.application.create({
+          data: {
+            applicantId: user.id,
+            departmentId: 'dept-cs',
+            status,
+            applicantDetails,
+            photoStoragePath: '/dummy/photo.jpg',
+            signatureStoragePath: '/dummy/signature.jpg',
+            hodId: hod.id,
+            hodApprovedAt: new Date(Date.now() - 5000000000), // simulate HOD approval in the past
+            createdAt: new Date(Date.now() - Math.random() * 10000000000), 
+          }
+        });
+      }
+    }
+  }
+  console.log('✅ Created 40 Dummy Applications for DEAN!');
 }
 
 main()

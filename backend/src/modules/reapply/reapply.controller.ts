@@ -61,13 +61,13 @@ export class ReapplyController {
 
   /**
    * GET /api/v1/reapply/hod
-   * Get pending reapply requests for the HOD's department.
-   * Accessible by: HOD
+   * Get pending reapply requests for the HOD's/Dean's department.
+   * Accessible by: HOD, DEAN
    */
   @Get('hod')
-  @Roles(Role.HOD)
+  @Roles(Role.HOD, Role.DEAN)
   @UseGuards(RolesGuard)
-  @ApiOperation({ summary: "Get pending reapply requests for HOD's department" })
+  @ApiOperation({ summary: "Get pending reapply requests for HOD's/Dean's department" })
   async findForHod(
     @Req() req: Request & { user: { userId: string; departmentId?: string } },
   ) {
@@ -77,11 +77,11 @@ export class ReapplyController {
 
   /**
    * PATCH /api/v1/reapply/:id/approve
-   * HOD approves a reapply request.
-   * Accessible by: HOD
+   * HOD/Dean approves a reapply request.
+   * Accessible by: HOD, DEAN
    */
   @Patch(':id/approve')
-  @Roles(Role.HOD)
+  @Roles(Role.HOD, Role.DEAN)
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Approve a reapply request' })
   async approveRequest(
@@ -95,11 +95,11 @@ export class ReapplyController {
 
   /**
    * PATCH /api/v1/reapply/:id/reject
-   * HOD rejects a reapply request.
-   * Accessible by: HOD
+   * HOD/Dean rejects a reapply request.
+   * Accessible by: HOD, DEAN
    */
   @Patch(':id/reject')
-  @Roles(Role.HOD)
+  @Roles(Role.HOD, Role.DEAN)
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: 'Reject a reapply request' })
   async rejectRequest(

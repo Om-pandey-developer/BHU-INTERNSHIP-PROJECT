@@ -138,6 +138,9 @@ export default function AdminDashboard() {
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [zoomLevel, setZoomLevel] = useState<"sm" | "md" | "lg">("md");
 
+  const [editModal, setEditModal] = useState<{ id: string; details: any } | null>(null);
+  const [editJsonStr, setEditJsonStr] = useState("");
+
   // ── Data Fetching ──
   const fetchTabData = useCallback(async (tab: TabId) => {
     setLoading(true);
@@ -196,6 +199,28 @@ export default function AdminDashboard() {
   }, [activeTab, fetchTabData]);
 
   // ── Action Handlers ──
+
+  async function handleEditSubmit() {
+    if (!editModal) return;
+    setActionLoading("edit-" + editModal.id);
+    try {
+      const parsedDetails = JSON.parse(editJsonStr);
+      await api.patch(`/applications/${editModal.id}/cc-edit`, { applicantDetails: parsedDetails });
+      addToast({ message: `✅ Application details updated successfully.`, variant: "success" });
+      setEditModal(null);
+      setEditJsonStr("");
+      fetchTabData(activeTab);
+    } catch (err: unknown) {
+      if (err instanceof SyntaxError) {
+        addToast({ message: "Invalid JSON format.", variant: "error" });
+      } else {
+        const error = err as { response?: { data?: { message?: string } } };
+        addToast({ message: error.response?.data?.message || "Failed to edit application.", variant: "error" });
+      }
+    } finally {
+      setActionLoading(null);
+    }
+  }
 
   async function handleBulkPdfDownload() {
     setActionLoading("bulk_pdf");
@@ -342,15 +367,28 @@ export default function AdminDashboard() {
     }
   }
 
+  const [departmentFilter, setDepartmentFilter] = useState("ALL");
+
   function filterApps(apps: Application[]): Application[] {
-    if (!searchQuery.trim()) return apps;
+    let result = apps;
+
+    if (categoryFilter !== "ALL") {
+      result = result.filter(a => (a.applicantDetails as Record<string, unknown>)?.category === categoryFilter);
+    }
+
+    if (departmentFilter !== "ALL") {
+      result = result.filter(a => a.department?.id === departmentFilter);
+    }
+
+    if (!searchQuery.trim()) return result;
+    
     const q = searchQuery.toLowerCase();
-    return apps.filter(
+    return result.filter(
       (a) =>
         a.trackingId.toLowerCase().includes(q) ||
         a.applicant?.firstName.toLowerCase().includes(q) ||
         a.applicant?.lastName.toLowerCase().includes(q) ||
-        a.applicant?.bhuEmail?.toLowerCase().includes(q) ||
+        (a.applicant as any)?.bhuEmail?.toLowerCase().includes(q) ||
         a.applicant?.alternateEmail.toLowerCase().includes(q) ||
         a.department?.name.toLowerCase().includes(q)
     );
@@ -410,6 +448,25 @@ export default function AdminDashboard() {
                 <option value="GROUP_A_OFFICER">Group A Officer</option>
                 <option value="RESEARCH_SCHOLAR">Research Scholar</option>
                 <option value="POST_GRADUATE_STUDENT">PG Student</option>
+                <option value="UNDER_GRADUATE_STUDENT">UG Student</option>
+              </select>
+              <span className="material-symbols-rounded absolute right-2 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
+            </div>
+
+            <div className="relative shadow-sm rounded-xl">
+              <select
+                value={departmentFilter}
+                onChange={(e) => setDepartmentFilter(e.target.value)}
+                className="pl-3 pr-8 py-2 bg-white border border-outline-variant rounded-xl text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all appearance-none cursor-pointer max-w-[200px] truncate"
+              >
+                <option value="ALL">All Departments</option>
+                {Array.from(new Map(
+                  [...pendingApps, ...activeApps, ...suspendedApps, ...archivedApps]
+                    .filter(a => a.department?.id)
+                    .map(a => [a.department?.id, a.department?.name])
+                ).entries()).map(([id, name]) => (
+                  <option key={id} value={id as string}>{name as string}</option>
+                ))}
               </select>
               <span className="material-symbols-rounded absolute right-2 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
             </div>
@@ -640,6 +697,12 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <ApplicationTable apps={filterApps(pendingApps)} renderActions={(app) => (<><>
+                      <Button icon="edit" variant="outlined" size="sm" onClick={() => { setEditModal({ id: app.id, details: app.applicantDetails }); setEditJsonStr(JSON.stringify(app.applicantDetails, null, 2)); }}>
+                        Edit
+                      </Button>
+                      <Button icon="cancel" variant="outlined" size="sm" onClick={() => setRemarksModal({ action: "cc-reject", ids: [app.id] })}>
+                        Reject
+                      </Button>
                       <Button icon="download" variant="text" size="sm" loading={downloadingPdf === app.id} onClick={() => handleDownloadSignedPdf(app)}>
                         PDF
                       </Button>
@@ -1132,7 +1195,7 @@ export default function AdminDashboard() {
       <Modal
         isOpen={!!remarksModal}
         onClose={() => { setRemarksModal(null); setRemarks(""); }}
-        title={`Confirm ${remarksModal?.action === "suspend" ? "Suspension" : "Archive"}`}
+        title={`Confirm ${remarksModal?.action === "suspend" ? "Suspension" : remarksModal?.action === "archive" ? "Archive" : "Rejection"}`}
         size="sm"
         footer={
           <>
@@ -1140,12 +1203,13 @@ export default function AdminDashboard() {
               Cancel
             </Button>
             <Button
-              icon={remarksModal?.action === "suspend" ? "pause_circle" : "inventory_2"}
+              icon={remarksModal?.action === "suspend" ? "pause_circle" : remarksModal?.action === "archive" ? "inventory_2" : "cancel"}
               variant="filled"
+              className={remarksModal?.action?.includes("reject") ? "!bg-error hover:!bg-error/90" : ""}
               loading={!!actionLoading}
               onClick={() => remarksModal && handleAction(remarksModal.action, remarksModal.ids, remarks)}
             >
-              {remarksModal?.action === "suspend" ? "Suspend" : "Archive"} ({remarksModal?.ids.length})
+              {remarksModal?.action === "suspend" ? "Suspend" : remarksModal?.action === "archive" ? "Archive" : "Reject"} ({remarksModal?.ids.length})
             </Button>
           </>
         }
@@ -1154,11 +1218,13 @@ export default function AdminDashboard() {
           <p className="text-sm text-outline">
             {remarksModal?.action === "suspend"
               ? "Suspended accounts will be temporarily blocked. Data will be retained per IT policy."
-              : "Archived accounts are for retired/left users. Data is retained — no deletion until tenure is complete."}
+              : remarksModal?.action === "archive" 
+              ? "Archived accounts are for retired/left users. Data is retained — no deletion until tenure is complete." 
+              : "Rejected applications will be returned to the applicant with your remarks."}
           </p>
           <div>
             <label className="block text-xs font-medium text-foreground mb-1">
-              Remarks (optional)
+              Remarks (mandatory for rejection)
             </label>
             <textarea
               value={remarks}
@@ -1168,6 +1234,32 @@ export default function AdminDashboard() {
               className="w-full bg-surface border border-outline-variant rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-outline/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors resize-none"
             />
           </div>
+        </div>
+      </Modal>
+
+      {/* ═══════════════════ EDIT MODAL ═══════════════════ */}
+      <Modal
+        isOpen={!!editModal}
+        onClose={() => { setEditModal(null); setEditJsonStr(""); }}
+        title="Edit Application Details"
+        size="md"
+        footer={
+          <>
+            <Button variant="outlined" onClick={() => { setEditModal(null); setEditJsonStr(""); }}>Cancel</Button>
+            <Button variant="filled" loading={!!actionLoading} onClick={handleEditSubmit}>Save Changes</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-outline">
+            Modify the applicant details JSON directly. Be careful with field names and values.
+          </p>
+          <textarea
+            value={editJsonStr}
+            onChange={(e) => setEditJsonStr(e.target.value)}
+            rows={15}
+            className="w-full bg-surface-variant/30 font-mono text-xs border border-outline-variant rounded-xl px-4 py-2.5 text-foreground placeholder:text-outline/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors resize-y"
+          />
         </div>
       </Modal>
     </div>
