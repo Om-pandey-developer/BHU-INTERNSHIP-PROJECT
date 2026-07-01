@@ -180,6 +180,10 @@ export class ApplicationsService {
       where: {
         departmentId,
         status: ApplicationStatus.PENDING_HOD,
+        applicantDetails: {
+          path: ['category'],
+          not: 'UNDER_GRADUATE_STUDENT',
+        },
       },
       include: {
         applicant: {
@@ -207,6 +211,10 @@ export class ApplicationsService {
         status: {
           in: [ApplicationStatus.APPROVED_HOD, ApplicationStatus.REJECTED_HOD],
         },
+        applicantDetails: {
+          path: ['category'],
+          not: 'UNDER_GRADUATE_STUDENT',
+        },
       },
       include: {
         applicant: {
@@ -232,6 +240,10 @@ export class ApplicationsService {
       where: {
         departmentId,
         status: ApplicationStatus.PROVISIONED,
+        applicantDetails: {
+          path: ['category'],
+          not: 'UNDER_GRADUATE_STUDENT',
+        },
       },
       include: {
         applicant: {
