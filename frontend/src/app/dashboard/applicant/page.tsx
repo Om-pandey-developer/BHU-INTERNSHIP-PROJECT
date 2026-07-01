@@ -267,7 +267,7 @@ export default function ApplicantDashboard() {
   const maxLimitReached = rejectedCount >= 5;
 
   // Show form section when canApply and not in step 4 (just submitted)
-  const showFormSection = canApply && formStep !== 4;
+  const showFormSection = canApply || formStep === 4;
 
   /* ── Data fetching ── */
   useEffect(() => { fetchData(); }, []);
@@ -1159,13 +1159,15 @@ export default function ApplicantDashboard() {
                         <div key={field} className="col-span-2 bg-surface-variant/40 rounded-lg px-3 py-2">
                           <p className="text-[10px] uppercase tracking-wider text-outline font-medium mb-1">Choice of Email Id</p>
                           <div className="space-y-0.5">
-                            {[1, 2, 3].map((n) => (
-                              details[`emailChoice${n}`] && (
+                            {[1, 2, 3].map((n) => {
+                              const choiceVal = details[`emailChoice${n}`];
+                              const displayVal = choiceVal && !choiceVal.includes('@') ? `${choiceVal}@bhu.ac.in` : choiceVal;
+                              return displayVal && (
                                 <p key={n} className="text-sm text-foreground font-medium">
-                                  {n === 1 ? "1st" : n === 2 ? "2nd" : "3rd"}: {details[`emailChoice${n}`]}
+                                  {n === 1 ? "1st" : n === 2 ? "2nd" : "3rd"}: {displayVal}
                                 </p>
-                              )
-                            ))}
+                              );
+                            })}
                           </div>
                         </div>
                       );
@@ -1179,15 +1181,28 @@ export default function ApplicantDashboard() {
                   })}
                 </div>
 
-                {photoPreview && (
-                  <div className="px-5 pb-5 flex items-center gap-3">
-                    <img src={photoPreview} alt="Photo" className="w-14 h-14 rounded-xl object-cover border border-outline-variant" />
-                    <div>
-                      <p className="text-xs font-medium text-foreground">{photo?.name}</p>
-                      <p className="text-[11px] text-outline">{((photo?.size || 0) / 1024).toFixed(0)} KB</p>
+                <div className="px-5 pb-5 flex flex-wrap items-center gap-6">
+                  {photoPreview && (
+                    <div className="flex items-center gap-3">
+                      <img src={photoPreview} alt="Photo" className="w-14 h-14 rounded-xl object-cover border border-outline-variant" />
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-outline font-medium mb-0.5">Photo</p>
+                        <p className="text-xs font-medium text-foreground">{photo?.name || "Uploaded"}</p>
+                        <p className="text-[11px] text-outline">{((photo?.size || 0) / 1024).toFixed(0)} KB</p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                  {signaturePreview && (
+                    <div className="flex items-center gap-3">
+                      <img src={signaturePreview} alt="Signature" className="w-20 h-10 rounded-lg object-contain border border-outline-variant bg-white" />
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-outline font-medium mb-0.5">Signature</p>
+                        <p className="text-xs font-medium text-foreground">{signature?.name || "Captured"}</p>
+                        <p className="text-[11px] text-outline">{((signature?.size || 0) / 1024).toFixed(0)} KB</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* IT Policy Agreement */}

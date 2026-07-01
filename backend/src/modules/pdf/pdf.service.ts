@@ -109,10 +109,11 @@ export class PdfService {
       'PhD/PG Student': { quotaLabel: 'Research Scholar/PG Student', quotaValue: '10GB' },
       'RESEARCH_SCHOLAR': { quotaLabel: 'Research Scholar', quotaValue: '10GB' },
       'POST_GRADUATE_STUDENT': { quotaLabel: 'PG Student', quotaValue: '5GB' },
+      'UNDER_GRADUATE_STUDENT': { quotaLabel: 'UG Student', quotaValue: '5GB' },
     };
     const config = categoryConfig[categoryRaw] || { quotaLabel: 'Faculty', quotaValue: '20GB' };
 
-    const isStudent = categoryRaw === 'RESEARCH_SCHOLAR' || categoryRaw === 'POST_GRADUATE_STUDENT';
+    const isStudent = categoryRaw === 'RESEARCH_SCHOLAR' || categoryRaw === 'POST_GRADUATE_STUDENT' || categoryRaw === 'UNDER_GRADUATE_STUDENT';
     const label2 = isStudent ? '2. Program Enrolled' : '2. Designation';
     const value2 = isStudent ? (details.programEnrolled || '') : (designation || '');
     const label4 = isStudent ? '4. Admission Academic Year' : '4. Date of Appointment';
@@ -374,16 +375,16 @@ export class PdfService {
       <div style="height: 40px; margin-bottom: 5px; display: flex; justify-content: flex-end;">
         ${hodSigDataUrl ? `<img src="${hodSigDataUrl}" style="max-height: 40px; max-width: 150px; object-fit: contain;">` : ''}
       </div>
-      <p><b>(Signature & Seal of HOD / Coordinator / PI / Supervisor)</b></p>
+      <p><b>${categoryRaw === 'UNDER_GRADUATE_STUDENT' ? '(Signature & Seal of Dean)' : '(Signature & Seal of HOD / Coordinator / PI / Supervisor)'}</b></p>
       <p><b>${hodName}</b></p>
-      <p><b>(Head of the Department)</b></p>
+      <p><b>${categoryRaw === 'UNDER_GRADUATE_STUDENT' ? '(Dean)' : '(Head of the Department)'}</b></p>
     </div>
   </div>
 
   <!-- HOLOGRAM STAMP -->
   <div class="hologram-stamp">
     <div class="hologram-title">✦ Digitally Signed & Approved ✦</div>
-    <div class="hologram-check">✓ Verified by Head of Department</div>
+    <div class="hologram-check">✓ Verified by ${categoryRaw === 'UNDER_GRADUATE_STUDENT' ? 'Dean' : 'Head of Department'}</div>
     <div class="hologram-hod">Approved by: ${hodName}</div>
     <div class="hologram-hash">Hash: ${hashDisplay}…</div>
     <div class="hologram-date">Signed on: ${approvalDate} | Ref: ${application.trackingId}</div>

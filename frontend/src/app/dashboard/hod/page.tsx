@@ -578,7 +578,8 @@ export default function HodDashboard() {
                   const mobileNo = !isReapply ? (item.applicantDetails?.mobileNo || "—") : "—";
                   const faculty = !isReapply ? (item.applicantDetails?.facultyInstituteCentre || "—") : "—";
                   const typeProgram = !isReapply ? (item.applicantDetails?.typeOfEmployment || item.applicantDetails?.programEnrolled || "—") : "—";
-                  const requestedEmail = !isReapply ? (item.applicantDetails?.emailChoice || "—") : "—";
+                  const rawEmailChoice = !isReapply ? (item.applicantDetails?.emailChoice1 || item.applicantDetails?.emailChoice || "—") : "—";
+                  const requestedEmail = rawEmailChoice !== "—" && !rawEmailChoice.includes("@") ? `${rawEmailChoice}@bhu.ac.in` : rawEmailChoice;
                   const dateApplied = new Date(item.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
                   const hodReviewedDate = item.hodApprovedAt
                     ? new Date(item.hodApprovedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })

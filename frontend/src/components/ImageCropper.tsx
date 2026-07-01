@@ -1,4 +1,7 @@
-import React, { useState, useCallback } from 'react';
+"use client";
+
+import React, { useState, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Cropper from 'react-easy-crop';
 import Button from './Button';
 
@@ -54,7 +57,19 @@ export default function ImageCropper({
     }
   };
 
-  return (
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-surface w-full max-w-lg rounded-2xl shadow-xl overflow-hidden animate-slide-up mx-4">
         <div className="p-4 border-b border-outline-variant flex justify-between items-center">
@@ -108,6 +123,7 @@ export default function ImageCropper({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
