@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import api from "@/lib/axios";
 import StatusBadge from "@/components/StatusBadge";
 import Button from "@/components/Button";
@@ -58,6 +58,57 @@ interface ReapplyRequest {
   };
 }
 
+/* Authenticated image loader component */
+function AuthImage({ itemId, type, storagePath, imageCache, loadAuthImage, setPreviewImage }: {
+  itemId: string;
+  type: "photo" | "signature";
+  storagePath: string;
+  imageCache: Record<string, string>;
+  loadAuthImage: (key: string, apiPath: string) => void;
+  setPreviewImage: (url: string) => void;
+}) {
+  const cacheKey = `${itemId}-${type}`;
+  const isDummy = storagePath.startsWith('/dummy');
+  const dummyUrl = type === "photo"
+    ? 'https://ui-avatars.com/api/?name=Photo&background=random&size=200'
+    : 'https://ui-avatars.com/api/?name=Sign&background=random&size=200';
+  const imgSrc = isDummy ? dummyUrl : imageCache[cacheKey] || '';
+
+  useEffect(() => {
+    if (!isDummy && !imageCache[cacheKey]) {
+      loadAuthImage(cacheKey, `/applications/${itemId}/${type}`);
+    }
+  }, [isDummy, cacheKey, itemId, type, imageCache, loadAuthImage]);
+
+  if (type === "photo") {
+    return (
+      <div className="text-left">
+        <p className="text-sm font-bold text-outline mb-2">PHOTO</p>
+        <div className="w-48 h-48 bg-surface-variant rounded-lg border border-outline-variant overflow-hidden mb-2 shadow-sm">
+          {imgSrc ? (
+            <img src={imgSrc} alt="Photo" className="w-full h-full object-cover hover:scale-110 transition-transform cursor-pointer" onClick={() => setPreviewImage(imgSrc)} />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-outline text-xs">Loading...</div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="text-left">
+      <p className="text-sm font-bold text-outline mb-2">SIGNATURE</p>
+      <div className="w-56 h-28 bg-surface-variant rounded-lg border border-outline-variant overflow-hidden mb-2 flex items-center justify-center p-2 shadow-sm">
+        {imgSrc ? (
+          <img src={imgSrc} alt="Signature" className="max-w-full max-h-full object-contain cursor-pointer hover:scale-105 transition-transform" onClick={() => setPreviewImage(imgSrc)} />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-outline text-xs">Loading...</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function DeanDashboard() {
   const { addToast } = useToastStore();
   const router = useRouter();
@@ -85,6 +136,19 @@ export default function DeanDashboard() {
   const [remarksInput, setRemarksInput] = useState<Record<string, string>>({});
   const [isZipping, setIsZipping] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [imageCache, setImageCache] = useState<Record<string, string>>({});
+
+  // Helper to load authenticated images as blob URLs
+  const loadAuthImage = useCallback(async (key: string, apiPath: string) => {
+    if (imageCache[key]) return;
+    try {
+      const response = await api.get(apiPath, { responseType: 'blob' });
+      const blobUrl = URL.createObjectURL(response.data);
+      setImageCache(prev => ({ ...prev, [key]: blobUrl }));
+    } catch {
+      // Image not available
+    }
+  }, [imageCache]);
 
   // Role guard
   useEffect(() => {
@@ -157,7 +221,7 @@ export default function DeanDashboard() {
     }
 
     if (categoryFilter !== "ALL" && activeTab !== "reapply") {
-      data = data.filter(item => item.applicantDetails?.category === categoryFilter);
+      data = data.filter(item => item.applicantDetails?.programEnrolled === categoryFilter);
     }
 
     return data;
@@ -769,30 +833,24 @@ export default function DeanDashboard() {
                                     <h4 className="text-base font-bold text-foreground border-b border-outline-variant pb-2">Documents</h4>
                                     <div className="flex flex-row flex-wrap xl:flex-nowrap gap-6 items-start">
                                       {item.photoStoragePath && (
-                                        <div className="text-left">
-                                          <p className="text-sm font-bold text-outline mb-2">PHOTO</p>
-                                          <div className="w-48 h-48 bg-surface-variant rounded-lg border border-outline-variant overflow-hidden mb-2 shadow-sm">
-                                            <img
-                                              src={item.photoStoragePath.startsWith('/dummy') ? 'https://ui-avatars.com/api/?name=Photo&background=random&size=200' : `http://localhost:4000/api/v1/applications/${item.id}/photo`}
-                                              alt="Photo"
-                                              className="w-full h-full object-cover hover:scale-110 transition-transform cursor-pointer"
-                                              onClick={() => setPreviewImage(item.photoStoragePath.startsWith('/dummy') ? 'https://ui-avatars.com/api/?name=Photo&background=random&size=200' : `http://localhost:4000/api/v1/applications/${item.id}/photo`)}
-                                            />
-                                          </div>
-                                        </div>
+                                        <AuthImage
+                                          itemId={item.id}
+                                          type="photo"
+                                          storagePath={item.photoStoragePath}
+                                          imageCache={imageCache}
+                                          loadAuthImage={loadAuthImage}
+                                          setPreviewImage={setPreviewImage}
+                                        />
                                       )}
                                       {item.signatureStoragePath && (
-                                        <div className="text-left">
-                                          <p className="text-sm font-bold text-outline mb-2">SIGNATURE</p>
-                                          <div className="w-56 h-28 bg-surface-variant rounded-lg border border-outline-variant overflow-hidden mb-2 flex items-center justify-center p-2 shadow-sm">
-                                            <img
-                                              src={item.signatureStoragePath.startsWith('/dummy') ? 'https://ui-avatars.com/api/?name=Sign&background=random&size=200' : `http://localhost:4000/api/v1/applications/${item.id}/signature`}
-                                              alt="Signature"
-                                              className="max-w-full max-h-full object-contain cursor-pointer hover:scale-105 transition-transform"
-                                              onClick={() => setPreviewImage(item.signatureStoragePath.startsWith('/dummy') ? 'https://ui-avatars.com/api/?name=Sign&background=random&size=200' : `http://localhost:4000/api/v1/applications/${item.id}/signature`)}
-                                            />
-                                          </div>
-                                        </div>
+                                        <AuthImage
+                                          itemId={item.id}
+                                          type="signature"
+                                          storagePath={item.signatureStoragePath}
+                                          imageCache={imageCache}
+                                          loadAuthImage={loadAuthImage}
+                                          setPreviewImage={setPreviewImage}
+                                        />
                                       )}
                                     </div>
 

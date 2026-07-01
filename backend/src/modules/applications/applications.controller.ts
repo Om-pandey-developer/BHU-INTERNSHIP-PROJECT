@@ -479,7 +479,7 @@ export class ApplicationsController {
     if (req.user.role === 'APPLICANT' && app.applicantId !== req.user.userId) {
       throw new ForbiddenException('You can only view your own applications');
     }
-    if ((req.user.role === 'HOD' || req.user.role === 'DEAN') && app.departmentId !== req.user.departmentId) {
+    if (req.user.role === 'HOD' && app.departmentId !== req.user.departmentId) {
       throw new ForbiddenException('You can only view applications from your department');
     }
 
@@ -509,7 +509,7 @@ export class ApplicationsController {
     if (req.user.role === 'APPLICANT' && app.applicantId !== req.user.userId) {
       throw new ForbiddenException('You can only view your own applications');
     }
-    if ((req.user.role === 'HOD' || req.user.role === 'DEAN') && app.departmentId !== req.user.departmentId) {
+    if (req.user.role === 'HOD' && app.departmentId !== req.user.departmentId) {
       throw new ForbiddenException('You can only view applications from your department');
     }
 
@@ -544,7 +544,7 @@ export class ApplicationsController {
     if (req.user.role === 'APPLICANT' && app.applicantId !== req.user.userId) {
       throw new ForbiddenException('You can only download your own application PDFs');
     }
-    if ((req.user.role === 'HOD' || req.user.role === 'DEAN') && app.departmentId !== req.user.departmentId) {
+    if (req.user.role === 'HOD' && app.departmentId !== req.user.departmentId) {
       throw new ForbiddenException('You can only download PDFs from your department');
     }
 

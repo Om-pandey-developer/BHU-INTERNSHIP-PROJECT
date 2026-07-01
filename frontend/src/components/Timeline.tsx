@@ -100,25 +100,31 @@ export function buildTimelineSteps(
     createdAt?: string;
     hodApprovedAt?: string;
     provisionedAt?: string;
-  }
+  },
+  category?: string
 ): TimelineStep[] {
-  const statusOrder = [
-    "PENDING_HOD",
-    "APPROVED_HOD",
-    "PENDING_CC",
-    "PROVISIONED",
-  ];
+  const isUG = category === "UNDER_GRADUATE_STUDENT";
+
+  // For UG students, the approval authority is Dean, not HOD
+  const approvalLabel = isUG ? "Dean Review" : "HOD Review";
+  const rejectedStatus = isUG ? "REJECTED_DEAN" : "REJECTED_HOD";
+  const approvedStatus = isUG ? "APPROVED_DEAN" : "APPROVED_HOD";
+  const pendingStatus = isUG ? "PENDING_DEAN" : "PENDING_HOD";
+
+  const allStatuses = isUG
+    ? ["PENDING_DEAN", "APPROVED_DEAN", "REJECTED_DEAN", "PENDING_CC", "PROVISIONED", "FAILED_PROVISIONING"]
+    : ["PENDING_HOD", "APPROVED_HOD", "REJECTED_HOD", "PENDING_CC", "PROVISIONED", "FAILED_PROVISIONING"];
 
   const stepDefs = [
     {
       label: "Application Submitted",
       icon: "description",
-      matchStatuses: ["PENDING_HOD", "APPROVED_HOD", "REJECTED_HOD", "PENDING_CC", "PROVISIONED", "FAILED_PROVISIONING"],
+      matchStatuses: allStatuses,
     },
     {
-      label: "HOD Review",
+      label: approvalLabel,
       icon: "rate_review",
-      matchStatuses: ["APPROVED_HOD", "REJECTED_HOD", "PENDING_CC", "PROVISIONED", "FAILED_PROVISIONING"],
+      matchStatuses: [approvedStatus, rejectedStatus, "PENDING_CC", "PROVISIONED", "FAILED_PROVISIONING"],
     },
     {
       label: "CC Admin Processing",
@@ -132,7 +138,7 @@ export function buildTimelineSteps(
     },
   ];
 
-  const isRejected = status === "REJECTED_HOD";
+  const isRejected = status === rejectedStatus;
   const isFailed = status === "FAILED_PROVISIONING";
 
   return stepDefs.map((def, i) => {
@@ -159,8 +165,8 @@ export function buildTimelineSteps(
     }
 
     // Handle active state for current step
-    if (status === "PENDING_HOD" && i === 1) stepStatus = "active";
-    if ((status === "APPROVED_HOD" || status === "PENDING_CC") && i === 2)
+    if (status === pendingStatus && i === 1) stepStatus = "active";
+    if ((status === approvedStatus || status === "PENDING_CC") && i === 2)
       stepStatus = "active";
 
     let date: string | undefined;
@@ -198,10 +204,11 @@ export function buildTimelineSteps(
       date,
       description:
         i === 1 && isRejected
-          ? "Application rejected by HOD"
+          ? `Application rejected by ${isUG ? "Dean" : "HOD"}`
           : i === 2 && isFailed
           ? "Provisioning failed"
           : undefined,
     };
   });
 }
+

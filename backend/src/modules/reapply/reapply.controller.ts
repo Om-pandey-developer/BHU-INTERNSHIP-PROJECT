@@ -69,9 +69,12 @@ export class ReapplyController {
   @UseGuards(RolesGuard)
   @ApiOperation({ summary: "Get pending reapply requests for HOD's/Dean's department" })
   async findForHod(
-    @Req() req: Request & { user: { userId: string; departmentId?: string } },
+    @Req() req: Request & { user: { userId: string; departmentId?: string; role: string } },
   ) {
-    const user = req.user as { userId: string; departmentId: string };
+    const user = req.user as { userId: string; departmentId: string; role: string };
+    if (user.role === 'DEAN') {
+      return this.reapplyService.findForDean(user.userId);
+    }
     return this.reapplyService.findForHod(user.departmentId);
   }
 
@@ -86,10 +89,13 @@ export class ReapplyController {
   @ApiOperation({ summary: 'Approve a reapply request' })
   async approveRequest(
     @Param('id') id: string,
-    @Req() req: Request & { user: { userId: string; departmentId?: string } },
+    @Req() req: Request & { user: { userId: string; departmentId?: string; role: string } },
     @Body() body: { remarks?: string },
   ) {
-    const user = req.user as { userId: string; departmentId: string };
+    const user = req.user as { userId: string; departmentId: string; role: string };
+    if (user.role === 'DEAN') {
+      return this.reapplyService.approveRequestDean(id, user.userId, body.remarks);
+    }
     return this.reapplyService.approveRequest(id, user.departmentId, body.remarks);
   }
 
@@ -104,10 +110,13 @@ export class ReapplyController {
   @ApiOperation({ summary: 'Reject a reapply request' })
   async rejectRequest(
     @Param('id') id: string,
-    @Req() req: Request & { user: { userId: string; departmentId?: string } },
+    @Req() req: Request & { user: { userId: string; departmentId?: string; role: string } },
     @Body() body: { remarks?: string },
   ) {
-    const user = req.user as { userId: string; departmentId: string };
+    const user = req.user as { userId: string; departmentId: string; role: string };
+    if (user.role === 'DEAN') {
+      return this.reapplyService.rejectRequestDean(id, user.userId, body.remarks);
+    }
     return this.reapplyService.rejectRequest(id, user.departmentId, body.remarks);
   }
 }

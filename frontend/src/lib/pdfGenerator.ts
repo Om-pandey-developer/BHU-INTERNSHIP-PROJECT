@@ -21,6 +21,7 @@ const categoryConfig: Record<string, { quotaLabel: string; quotaValue: string }>
     'PhD/PG Student': { quotaLabel: 'Research Scholar/PG Student', quotaValue: '10GB' },
     'RESEARCH_SCHOLAR': { quotaLabel: 'Research Scholar', quotaValue: '10GB' },
     'POST_GRADUATE_STUDENT': { quotaLabel: 'PG Student', quotaValue: '5GB' },
+    'UNDER_GRADUATE_STUDENT': { quotaLabel: 'UG Student', quotaValue: '5GB' },
 };
 
 function formatDate(dateStr: string) {
@@ -128,7 +129,8 @@ export async function generateApplicationPdf(
   const mobile = details.mobileNo || "";
   const alternateEmail = details.alternateEmail || app.applicant?.alternateEmail || app.applicant?.email || userName?.email || "";
 
-  const isStudent = categoryRaw === "RESEARCH_SCHOLAR" || categoryRaw === "POST_GRADUATE_STUDENT";
+  const isStudent = categoryRaw === "RESEARCH_SCHOLAR" || categoryRaw === "POST_GRADUATE_STUDENT" || categoryRaw === "UNDER_GRADUATE_STUDENT";
+  const isUG = categoryRaw === "UNDER_GRADUATE_STUDENT";
 
   // Dynamic Label mapping
   const label2 = isStudent ? "2. Program Enrolled" : "2. Designation";
@@ -308,22 +310,22 @@ export async function generateApplicationPdf(
             </div>
         </div>
 
-        <!-- DECLARATION BY HOD -->
+        <!-- DECLARATION BY HOD/DEAN -->
         <div class="pdf-declaration">
-            <p class="pdf-declaration-title"><b>Declaration by the Head of the Department</b></p>
+            <p class="pdf-declaration-title"><b>Declaration by the ${isUG ? 'Dean of the Faculty' : 'Head of the Department'}</b></p>
             <p class="pdf-declaration-text">
-                This is to certify that Prof./Dr./Mr. <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 200px; text-align: center;">${applicantName || '&nbsp;'}</span> is working in our Department/ Faculty/Institute/ Centre/Section <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 200px; text-align: center;">${department || '&nbsp;'}</span> as <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 150px; text-align: center;">${designation || '&nbsp;'}</span>. Please issue him/her Email ID for his/her work.
+                This is to certify that ${isStudent ? 'Mr./Ms.' : 'Prof./Dr./Mr.'} <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 200px; text-align: center;">${applicantName || '&nbsp;'}</span> is ${isStudent ? 'a student of' : 'working in our'} Department/ Faculty/Institute/ Centre/Section <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 200px; text-align: center;">${department || '&nbsp;'}</span> ${isStudent ? `enrolled in <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 150px; text-align: center;">${value2 || '&nbsp;'}</span>` : `as <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 150px; text-align: center;">${designation || '&nbsp;'}</span>`}. Please issue him/her Email ID for his/her work.
             </p>
         </div>
 
-        <!-- HOD DATE / PLACE / SIGNATURE -->
+        <!-- HOD/DEAN DATE / PLACE / SIGNATURE -->
         <div class="pdf-signature-block" style="margin-top: 20px;">
             <div class="pdf-sig-left">
                 <p><b>Date:</b>______________________</p>
                 <p><b>Place:</b>______________________</p>
             </div>
             <div class="pdf-sig-right">
-                <p><b>(Signature of the Head of the Department with Seal)</b></p>
+                <p><b>(Signature of the ${isUG ? 'Dean of the Faculty' : 'Head of the Department'} with Seal)</b></p>
             </div>
         </div>
 

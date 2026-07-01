@@ -152,8 +152,8 @@ const fieldLabels: Record<string, { label: string; icon: string; type?: string }
    HORIZONTAL PROGRESS BAR COMPONENT
    ═══════════════════════════════════════════════════════════════════ */
 
-function HorizontalProgressBar({ status }: { status: string }) {
-  const steps = buildTimelineSteps(status);
+function HorizontalProgressBar({ status, category }: { status: string; category?: string }) {
+  const steps = buildTimelineSteps(status, undefined, category);
   return (
     <div className="flex items-center gap-0 w-full">
       {steps.map((step, i) => {
@@ -254,12 +254,12 @@ export default function ApplicantDashboard() {
 
   // ── Derived state ──
   const latestApp = applications[0];
-  const rejectedApps = applications.filter((a) => a.status === "REJECTED_HOD");
+  const rejectedApps = applications.filter((a) => a.status === "REJECTED_HOD" || a.status === "REJECTED_DEAN");
   const rejectedCount = rejectedApps.length;
   const hasActiveOrPending = applications.some((a) =>
-    ["PENDING_HOD", "APPROVED_HOD", "PENDING_CC", "PROVISIONED"].includes(a.status)
+    ["PENDING_HOD", "APPROVED_HOD", "PENDING_DEAN", "APPROVED_DEAN", "PENDING_CC", "PROVISIONED"].includes(a.status)
   );
-  const latestIsRejected = latestApp?.status === "REJECTED_HOD";
+  const latestIsRejected = latestApp?.status === "REJECTED_HOD" || latestApp?.status === "REJECTED_DEAN";
   const latestReapplyForRejected = latestIsRejected
     ? reapplyRequests.find((r) => r.applicationId === latestApp.id)
     : null;
@@ -673,8 +673,8 @@ export default function ApplicantDashboard() {
               <span className="material-symbols-rounded text-[22px] text-error mt-0.5">error</span>
               <div>
                 <p className="text-sm font-bold text-error">Application Rejected</p>
-                <p className="text-xs text-foreground/70 mt-1 mb-3">Your last application was rejected by HOD{latestApp?.hodRemarks ? `: "${latestApp.hodRemarks}"` : "."} To re-apply, you must submit a request to your HOD for permission.</p>
-                <Button icon="send" size="sm" onClick={() => setShowReapplyModal(true)}>Request Re-apply Permission</Button>
+                <p className="text-xs text-foreground/70 mt-1 mb-3">Your last application was rejected by {(latestApp.applicantDetails as any)?.category === "UNDER_GRADUATE_STUDENT" ? "Dean" : "HOD"}{latestApp?.hodRemarks ? `: "${latestApp.hodRemarks}"` : "."} To re-apply, you must submit a request to your {(latestApp.applicantDetails as any)?.category === "UNDER_GRADUATE_STUDENT" ? "Dean" : "HOD"} for permission.</p>
+                <Button icon="send" size="sm" onClick={() => { setSelectedRejectedAppId(latestApp.id); setShowReapplyModal(true); }}>Request Re-apply Permission</Button>
               </div>
             </div>
           )}
@@ -1298,12 +1298,6 @@ export default function ApplicantDashboard() {
         </div>
       )}
 
-      {/* Show "New Application" button when canApply and form is not active and applications exist */}
-      {canApply && formStep === 0 && applications.length > 0 && (
-        <div className="mb-4">
-          <Button icon="add_circle" size="md" onClick={() => setFormStep(1)}>Submit New Application</Button>
-        </div>
-      )}
 
       {/* ════════════════════════════════════════════════════════
           APPLICATIONS LIST — INLINE ACCORDION
@@ -1350,15 +1344,15 @@ export default function ApplicantDashboard() {
                         <span className="material-symbols-rounded text-[18px] text-primary">timeline</span>
                         Application Progress
                       </h4>
-                      <HorizontalProgressBar status={app.status} />
+                      <HorizontalProgressBar status={app.status} category={(app.applicantDetails as any)?.category} />
                     </div>
 
                     {/* Digitally Signed Card */}
-                    {(app.status === "APPROVED_HOD" || app.status === "PENDING_CC" || app.status === "PROVISIONED") && app.digitalSignatureHash && (
+                    {(app.status === "APPROVED_HOD" || app.status === "APPROVED_DEAN" || app.status === "PENDING_CC" || app.status === "PROVISIONED") && app.digitalSignatureHash && (
                       <div className="bg-gradient-to-r from-success-container/40 to-primary-container/30 rounded-xl px-5 py-4 border border-success/25">
                         <div className="flex items-center gap-2 mb-3">
                           <span className="material-symbols-rounded text-[22px] text-success">verified</span>
-                          <p className="text-sm font-bold text-success">Digitally Signed & Approved by HOD</p>
+                          <p className="text-sm font-bold text-success">Digitally Signed & Approved by {app.applicantDetails?.category === "UNDER_GRADUATE_STUDENT" ? "Dean" : "HOD"}</p>
                         </div>
                         {app.hodApprovedAt && (
                           <p className="text-xs text-foreground/70 mb-1">
@@ -1379,21 +1373,27 @@ export default function ApplicantDashboard() {
                     <div>
                       <h4 className="text-sm font-semibold text-foreground mb-3">Application Details</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {Object.entries(app.applicantDetails || {}).map(([key, val]) => (
-                          <div key={key} className="bg-surface-variant/30 rounded-lg px-3 py-2">
-                            <p className="text-[10px] uppercase tracking-wider text-outline font-medium">
-                              {key.replace(/([A-Z])/g, " $1").replace(/_/g, " ")}
-                            </p>
-                            <p className="text-sm text-foreground font-medium truncate">{String(val)}</p>
-                          </div>
-                        ))}
+                        {Object.entries(app.applicantDetails || {}).map(([key, val]) => {
+                          let displayVal = String(val);
+                          if (key.startsWith("emailChoice") && displayVal && !displayVal.includes("@")) {
+                            displayVal = `${displayVal}@bhu.ac.in`;
+                          }
+                          return (
+                            <div key={key} className="bg-surface-variant/30 rounded-lg px-3 py-2">
+                              <p className="text-[10px] uppercase tracking-wider text-outline font-medium">
+                                {key.replace(/([A-Z])/g, " $1").replace(/_/g, " ")}
+                              </p>
+                              <p className="text-sm text-foreground font-medium truncate">{displayVal}</p>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
 
                     {/* Remarks */}
                     {app.hodRemarks && (
                       <div className="bg-primary-container/30 rounded-xl px-5 py-4">
-                        <p className="text-xs font-semibold text-primary mb-1">HOD Remarks</p>
+                        <p className="text-xs font-semibold text-primary mb-1">{(app.applicantDetails as any)?.category === "UNDER_GRADUATE_STUDENT" ? "Dean Remarks" : "HOD Remarks"}</p>
                         <p className="text-sm text-foreground">{app.hodRemarks}</p>
                       </div>
                     )}
@@ -1468,7 +1468,7 @@ export default function ApplicantDashboard() {
                         <p className="text-xs text-outline">
                           {app.department?.name} • Submitted {new Date(app.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                         </p>
-                        {app.hodRemarks && <p className="text-xs text-error/80 mt-1"><span className="font-medium">HOD Remarks:</span> {app.hodRemarks}</p>}
+                        {app.hodRemarks && <p className="text-xs text-error/80 mt-1"><span className="font-medium">{(app.applicantDetails as any)?.category === "UNDER_GRADUATE_STUDENT" ? "Dean Remarks:" : "HOD Remarks:"}</span> {app.hodRemarks}</p>}
                         {existingReq?.hodRemarks && existingReq.status !== "PENDING" && (
                           <p className="text-xs text-primary mt-1"><span className="font-medium">Request Response:</span> {existingReq.hodRemarks}</p>
                         )}
@@ -1538,7 +1538,7 @@ export default function ApplicantDashboard() {
       <Modal isOpen={showReapplyModal} onClose={() => setShowReapplyModal(false)} title="Request Re-apply Permission" size="md">
         <div className="space-y-5">
           <div className="bg-primary-container/20 rounded-xl px-4 py-3">
-            <p className="text-xs text-outline">This request will be sent to your department&apos;s HOD. Once approved, you can submit a new application.</p>
+            <p className="text-xs text-outline">This request will be sent to your department's HOD or Dean. Once approved, you can submit a new application.</p>
             <p className="text-[11px] text-outline/60 mt-1">Requests used: {reapplyRequests.length} / 5</p>
           </div>
           <div>

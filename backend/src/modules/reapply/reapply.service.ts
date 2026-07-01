@@ -49,8 +49,11 @@ export class ReapplyService {
       throw new ForbiddenException('You can only submit requests for your own applications');
     }
 
-    // 2. Check that the application was rejected by HOD
-    if (application.status !== ApplicationStatus.REJECTED_HOD) {
+    // 2. Check that the application was rejected by HOD or DEAN
+    if (
+      application.status !== ApplicationStatus.REJECTED_HOD &&
+      application.status !== ApplicationStatus.REJECTED_DEAN
+    ) {
       throw new BadRequestException(
         'Reapply requests can only be submitted for rejected applications',
       );
@@ -128,11 +131,65 @@ export class ReapplyService {
    * Get pending reapply requests for the HOD's department.
    */
   async findForHod(departmentId: string) {
+    if (!departmentId) return [];
+
     return this.prisma.reapplyRequest.findMany({
       where: {
         status: RequestStatus.PENDING,
         application: {
-          departmentId,
+          is: {
+            departmentId,
+            applicantDetails: {
+              path: ['category'],
+              not: 'UNDER_GRADUATE_STUDENT',
+            },
+          }
+        },
+      },
+      include: {
+        applicant: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            alternateEmail: true,
+          },
+        },
+        application: {
+          select: {
+            trackingId: true,
+            status: true,
+            hodRemarks: true,
+            department: { select: { name: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  /**
+   * Get pending reapply requests for the Dean's departments.
+   */
+  async findForDean(deanId: string) {
+    if (!deanId) return [];
+
+    // Find all departments where this user is the Dean
+    const departments = await this.prisma.department.findMany({
+      where: { deanId },
+      select: { id: true },
+    });
+    const deptIds = departments.map(d => d.id);
+
+    return this.prisma.reapplyRequest.findMany({
+      where: {
+        status: RequestStatus.PENDING,
+        application: {
+          departmentId: { in: deptIds },
+          applicantDetails: {
+            path: ['category'],
+            equals: 'UNDER_GRADUATE_STUDENT',
+          },
         },
       },
       include: {
@@ -175,6 +232,11 @@ export class ReapplyService {
       throw new ForbiddenException('You can only review requests from your own department');
     }
 
+    const details = request.application.applicantDetails as any;
+    if (details?.category === 'UNDER_GRADUATE_STUDENT') {
+      throw new ForbiddenException('HOD cannot review UG applications. These are handled by the Dean.');
+    }
+
     if (request.status !== RequestStatus.PENDING) {
       throw new BadRequestException(`Request is already ${request.status}`);
     }
@@ -212,6 +274,11 @@ export class ReapplyService {
       throw new ForbiddenException('You can only review requests from your own department');
     }
 
+    const details = request.application.applicantDetails as any;
+    if (details?.category === 'UNDER_GRADUATE_STUDENT') {
+      throw new ForbiddenException('HOD cannot review UG applications. These are handled by the Dean.');
+    }
+
     if (request.status !== RequestStatus.PENDING) {
       throw new BadRequestException(`Request is already ${request.status}`);
     }
@@ -226,6 +293,80 @@ export class ReapplyService {
 
     this.logger.log(
       `Reapply request ${requestId} REJECTED for application ${request.application.trackingId}`,
+    );
+
+    return updated;
+  }
+
+  /**
+   * Dean approves a reapply request.
+   * Validates department ownership.
+   */
+  async approveRequestDean(requestId: string, deanId: string, remarks?: string) {
+    const request = await this.prisma.reapplyRequest.findUnique({
+      where: { id: requestId },
+      include: { application: { include: { department: true } } },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Reapply request not found');
+    }
+
+    if (request.application.department.deanId !== deanId) {
+      throw new ForbiddenException('You can only review requests from departments you oversee');
+    }
+
+    if (request.status !== RequestStatus.PENDING) {
+      throw new BadRequestException(`Request is already ${request.status}`);
+    }
+
+    const updated = await this.prisma.reapplyRequest.update({
+      where: { id: requestId },
+      data: {
+        status: RequestStatus.APPROVED,
+        hodRemarks: remarks || 'Approved by Dean',
+      },
+    });
+
+    this.logger.log(
+      `Reapply request ${requestId} APPROVED by Dean for application ${request.application.trackingId}`,
+    );
+
+    return updated;
+  }
+
+  /**
+   * Dean rejects a reapply request.
+   * Validates department ownership.
+   */
+  async rejectRequestDean(requestId: string, deanId: string, remarks?: string) {
+    const request = await this.prisma.reapplyRequest.findUnique({
+      where: { id: requestId },
+      include: { application: { include: { department: true } } },
+    });
+
+    if (!request) {
+      throw new NotFoundException('Reapply request not found');
+    }
+
+    if (request.application.department.deanId !== deanId) {
+      throw new ForbiddenException('You can only review requests from departments you oversee');
+    }
+
+    if (request.status !== RequestStatus.PENDING) {
+      throw new BadRequestException(`Request is already ${request.status}`);
+    }
+
+    const updated = await this.prisma.reapplyRequest.update({
+      where: { id: requestId },
+      data: {
+        status: RequestStatus.REJECTED,
+        hodRemarks: remarks || 'Rejected by Dean',
+      },
+    });
+
+    this.logger.log(
+      `Reapply request ${requestId} REJECTED by Dean for application ${request.application.trackingId}`,
     );
 
     return updated;

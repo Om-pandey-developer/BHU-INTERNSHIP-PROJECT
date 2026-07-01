@@ -139,7 +139,7 @@ export default function AdminDashboard() {
   const [zoomLevel, setZoomLevel] = useState<"sm" | "md" | "lg">("md");
 
   const [editModal, setEditModal] = useState<{ id: string; details: any } | null>(null);
-  const [editJsonStr, setEditJsonStr] = useState("");
+  const [editFormFields, setEditFormFields] = useState<Record<string, string>>({});
 
   // ── Data Fetching ──
   const fetchTabData = useCallback(async (tab: TabId) => {
@@ -204,19 +204,29 @@ export default function AdminDashboard() {
     if (!editModal) return;
     setActionLoading("edit-" + editModal.id);
     try {
-      const parsedDetails = JSON.parse(editJsonStr);
-      await api.patch(`/applications/${editModal.id}/cc-edit`, { applicantDetails: parsedDetails });
+      // Reconstruct the details object from form fields, preserving original types where possible
+      const originalDetails = editModal.details || {};
+      const updatedDetails: Record<string, any> = {};
+      for (const [key, val] of Object.entries(editFormFields)) {
+        const originalVal = originalDetails[key];
+        // Try to preserve number type
+        if (typeof originalVal === 'number') {
+          const num = Number(val);
+          updatedDetails[key] = isNaN(num) ? val : num;
+        } else if (typeof originalVal === 'boolean') {
+          updatedDetails[key] = val === 'true';
+        } else {
+          updatedDetails[key] = val;
+        }
+      }
+      await api.patch(`/applications/${editModal.id}/cc-edit`, { applicantDetails: updatedDetails });
       addToast({ message: `✅ Application details updated successfully.`, variant: "success" });
       setEditModal(null);
-      setEditJsonStr("");
+      setEditFormFields({});
       fetchTabData(activeTab);
     } catch (err: unknown) {
-      if (err instanceof SyntaxError) {
-        addToast({ message: "Invalid JSON format.", variant: "error" });
-      } else {
-        const error = err as { response?: { data?: { message?: string } } };
-        addToast({ message: error.response?.data?.message || "Failed to edit application.", variant: "error" });
-      }
+      const error = err as { response?: { data?: { message?: string } } };
+      addToast({ message: error.response?.data?.message || "Failed to edit application.", variant: "error" });
     } finally {
       setActionLoading(null);
     }
@@ -414,17 +424,7 @@ export default function AdminDashboard() {
       });
     }
 
-    if (apps.length === 0) {
-      return (
-        <div className="bg-surface border border-outline-variant rounded-2xl p-16 text-center shadow-sm">
-          <div className="w-16 h-16 rounded-full bg-surface-variant flex items-center justify-center mx-auto mb-4">
-            <span className="material-symbols-rounded text-[32px] text-outline">search_off</span>
-          </div>
-          <h3 className="text-lg font-bold text-foreground">No records found</h3>
-        </div>
-      );
-    }
-
+    // Empty state will be rendered below the toolbar
     return (
       <div className="bg-surface border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
         <div className="flex flex-wrap justify-between items-center p-2 border-b border-outline-variant/50 bg-surface gap-3">
@@ -497,84 +497,93 @@ export default function AdminDashboard() {
             </div>
           )}
         </div>
-        <div className="overflow-x-auto">
-          <table className={`w-full text-left border-collapse min-w-[2400px] ${
-            zoomLevel === 'sm' ? '[&_span:not(.material-symbols-rounded)]:text-[11px] [&_th]:text-[10px] [&_td]:text-[11px]' :
-            zoomLevel === 'lg' ? '[&_span:not(.material-symbols-rounded)]:text-[14px] [&_th]:text-[13px] [&_td]:text-[14px]' : 'text-sm'
-          }`}>
-            <thead>
-              <tr className="bg-surface-variant/50 text-outline text-left">
-                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider w-10 text-center">
-                  {(activeTab === "active" || activeTab === "suspended" || activeTab === "pending") && (
-                  <input 
-                    type="checkbox" 
-                    checked={selectedIds.size > 0 && selectedIds.size === apps.length} 
-                    onChange={(e) => {
-                      if (e.target.checked) setSelectedIds(new Set(apps.map(a => a.id)));
-                      else setSelectedIds(new Set());
-                    }} 
-                    className="w-4 h-4 rounded border-2 border-outline-variant accent-primary cursor-pointer" 
-                  />
-                  )}
-                </th>
-                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider w-12">S.No</th>
-                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Tracking ID</th>
-                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Applicant Name</th>
-                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Email</th>
-                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Mobile No</th>
-                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Faculty/Institute</th>
-                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Department</th>
-                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Category</th>
-                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Type/Program</th>
-                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Designation</th>
-                <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {apps.map((item, idx) => {
-                const isExpanded = expandedRows.has(item.id);
-                const name = `${item.applicant?.firstName || ''} ${item.applicant?.lastName || ''}`;
-                const email = item.applicant?.alternateEmail || String(item.applicantDetails?.alternateEmail || "") || "—";
-                const trackId = item.trackingId;
-                const department = item.department?.name || "—";
-                const category = String(item.applicantDetails?.category || "—");
-                const designation = String(item.applicantDetails?.designation || item.applicantDetails?.post || "—");
-                const mobileNo = String(item.applicantDetails?.mobileNo || "—");
-                const faculty = String(item.applicantDetails?.facultyInstituteCentre || "—");
-                const typeProgram = String(item.applicantDetails?.typeOfEmployment || item.applicantDetails?.programEnrolled || "—");
-                const serialNo = idx + 1;
-                
-                // Storage info
-                const allocatedGB = item.quotaAssignedGB || getExpectedQuota(item);
-                const usedGB = getMockUsage(item.id, allocatedGB);
-                const remainingGB = Math.round((allocatedGB - usedGB) * 10) / 10;
-                const usagePct = allocatedGB > 0 ? Math.min((usedGB / allocatedGB) * 100, 100) : 0;
-                
-                return (
-                  <React.Fragment key={item.id}>
-                    <tr onClick={() => toggleExpand(item.id)} className={`border-t border-outline-variant hover:bg-surface-variant/20 transition-colors cursor-pointer ${isExpanded ? 'bg-primary/5' : ''}`}>
-                      <td className="px-3 py-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
-                        {(activeTab === "active" || activeTab === "suspended" || activeTab === "pending") && (
-                        <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => toggleSelect(item.id)} className="w-4 h-4 rounded border-2 border-outline-variant accent-primary cursor-pointer" />
-                        )}
-                      </td>
-                      <td className="px-3 py-3 text-sm text-outline font-mono align-middle">{serialNo}</td>
-                      <td className="px-3 py-3 align-middle"><span className="text-primary font-medium tracking-wide">{trackId}</span></td>
-                      <td className="px-3 py-3 font-semibold text-foreground align-middle"><div className="flex items-center gap-2"><div className="w-7 h-7 rounded-full bg-primary-container text-primary flex items-center justify-center text-xs font-bold shrink-0">{name.charAt(0)}</div><span className="truncate">{name}</span></div></td>
-                      <td className="px-3 py-3 text-outline align-middle">{email}</td>
-                      <td className="px-3 py-3 text-outline align-middle">{mobileNo}</td>
-                      <td className="px-3 py-3 text-outline align-middle truncate max-w-[150px]">{faculty}</td>
-                      <td className="px-3 py-3 text-outline align-middle truncate max-w-[150px]">{department}</td>
-                      <td className="px-3 py-3 text-outline align-middle"><span className="px-2 py-0.5 bg-surface-variant rounded-full text-[10px] font-semibold whitespace-nowrap">{category.replace(/_/g, " ")}</span></td>
-                      <td className="px-3 py-3 text-outline align-middle whitespace-nowrap">{typeProgram.replace(/_/g, " ")}</td>
-                      <td className="px-3 py-3 text-outline align-middle whitespace-nowrap">{designation}</td>
-                      <td className="px-3 py-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-center gap-2">
-                          {renderActions(item)}
-                        </div>
-                      </td>
-                    </tr>
-                    {isExpanded && (
+        
+        {apps.length === 0 ? (
+          <div className="bg-surface p-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-surface-variant flex items-center justify-center mx-auto mb-4">
+              <span className="material-symbols-rounded text-[32px] text-outline">search_off</span>
+            </div>
+            <h3 className="text-lg font-bold text-foreground">No records found</h3>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className={`w-full text-left border-collapse min-w-[2400px] ${
+              zoomLevel === 'sm' ? '[&_span:not(.material-symbols-rounded)]:text-[11px] [&_th]:text-[10px] [&_td]:text-[11px]' :
+              zoomLevel === 'lg' ? '[&_span:not(.material-symbols-rounded)]:text-[14px] [&_th]:text-[13px] [&_td]:text-[14px]' : 'text-sm'
+            }`}>
+              <thead>
+                <tr className="bg-surface-variant/50 text-outline text-left">
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider w-10 text-center">
+                    {(activeTab === "active" || activeTab === "suspended" || activeTab === "pending") && (
+                    <input 
+                      type="checkbox" 
+                      checked={selectedIds.size > 0 && selectedIds.size === apps.length} 
+                      onChange={(e) => {
+                        if (e.target.checked) setSelectedIds(new Set(apps.map(a => a.id)));
+                        else setSelectedIds(new Set());
+                      }} 
+                      className="w-4 h-4 rounded border-2 border-outline-variant accent-primary cursor-pointer" 
+                    />
+                    )}
+                  </th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider w-12">S.No</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Tracking ID</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Applicant Name</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Email</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Mobile No</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Faculty/Institute</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Department</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Category</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Type/Program</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Designation</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {apps.map((item, idx) => {
+                  const isExpanded = expandedRows.has(item.id);
+                  const name = `${item.applicant?.firstName || ''} ${item.applicant?.lastName || ''}`;
+                  const email = item.applicant?.alternateEmail || String(item.applicantDetails?.alternateEmail || "") || "—";
+                  const trackId = item.trackingId;
+                  const department = item.department?.name || "—";
+                  const category = String(item.applicantDetails?.category || "—");
+                  const designation = String(item.applicantDetails?.designation || item.applicantDetails?.post || "—");
+                  const mobileNo = String(item.applicantDetails?.mobileNo || "—");
+                  const faculty = String(item.applicantDetails?.facultyInstituteCentre || "—");
+                  const typeProgram = String(item.applicantDetails?.typeOfEmployment || item.applicantDetails?.programEnrolled || "—");
+                  const serialNo = idx + 1;
+                  
+                  // Storage info
+                  const allocatedGB = item.quotaAssignedGB || getExpectedQuota(item);
+                  const usedGB = getMockUsage(item.id, allocatedGB);
+                  const remainingGB = Math.round((allocatedGB - usedGB) * 10) / 10;
+                  const usagePct = allocatedGB > 0 ? Math.min((usedGB / allocatedGB) * 100, 100) : 0;
+                  
+                  return (
+                    <React.Fragment key={item.id}>
+                      <tr onClick={() => toggleExpand(item.id)} className={`border-t border-outline-variant hover:bg-surface-variant/20 transition-colors cursor-pointer ${isExpanded ? 'bg-primary/5' : ''}`}>
+                        <td className="px-3 py-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                          {(activeTab === "active" || activeTab === "suspended" || activeTab === "pending") && (
+                          <input type="checkbox" checked={selectedIds.has(item.id)} onChange={() => toggleSelect(item.id)} className="w-4 h-4 rounded border-2 border-outline-variant accent-primary cursor-pointer" />
+                          )}
+                        </td>
+                        <td className="px-3 py-3 text-sm text-outline font-mono align-middle">{serialNo}</td>
+                        <td className="px-3 py-3 align-middle"><span className="text-primary font-medium tracking-wide">{trackId}</span></td>
+                        <td className="px-3 py-3 font-semibold text-foreground align-middle"><div className="flex items-center gap-2"><div className="w-7 h-7 rounded-full bg-primary-container text-primary flex items-center justify-center text-xs font-bold shrink-0">{name.charAt(0)}</div><span className="truncate">{name}</span></div></td>
+                        <td className="px-3 py-3 text-outline align-middle">{email}</td>
+                        <td className="px-3 py-3 text-outline align-middle">{mobileNo}</td>
+                        <td className="px-3 py-3 text-outline align-middle truncate max-w-[150px]">{faculty}</td>
+                        <td className="px-3 py-3 text-outline align-middle truncate max-w-[150px]">{department}</td>
+                        <td className="px-3 py-3 text-outline align-middle"><span className="px-2 py-0.5 bg-surface-variant rounded-full text-[10px] font-semibold whitespace-nowrap">{category.replace(/_/g, " ")}</span></td>
+                        <td className="px-3 py-3 text-outline align-middle whitespace-nowrap">{typeProgram.replace(/_/g, " ")}</td>
+                        <td className="px-3 py-3 text-outline align-middle whitespace-nowrap">{designation}</td>
+                        <td className="px-3 py-3 text-center align-middle" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-center gap-2">
+                            {renderActions(item)}
+                          </div>
+                        </td>
+                      </tr>
+                      {isExpanded && (
                       <tr className="bg-primary/5 border-t-0">
                         <td colSpan={12} className="px-4 py-4">
                           <div className="bg-surface rounded-xl p-4 border border-primary/10 shadow-inner max-w-4xl">
@@ -605,15 +614,16 @@ export default function AdminDashboard() {
                         </td>
                       </tr>
                     )}
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
   // ── Render ──
   if (loading && pendingApps.length === 0 && activeApps.length === 0) {
@@ -687,30 +697,20 @@ export default function AdminDashboard() {
             />
             <StatsCard icon="speed" label="Avg Wait" value={pendingApps.length > 0 ? `${Math.round(pendingApps.reduce((s, a) => s + (Date.now() - new Date(a.hodApprovedAt || a.createdAt).getTime()) / 3600000, 0) / pendingApps.length)}h` : "—"} variant="default" subtitle="Since HOD approval" />
           </div>
-          {filterApps(pendingApps).length === 0 ? (
-            <div className="bg-surface rounded-2xl border border-gray-200 p-6 sm:p-12 text-center shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200">
-              <div className="w-20 h-20 rounded-full bg-success-container flex items-center justify-center mx-auto mb-5">
-                <span className="material-symbols-rounded text-[36px] text-success">verified</span>
-              </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">Queue is empty</h3>
-              <p className="text-sm text-outline max-w-md mx-auto">All approved applications have been provisioned.</p>
-            </div>
-          ) : (
-            <ApplicationTable apps={filterApps(pendingApps)} renderActions={(app) => (<><>
-                      <Button icon="edit" variant="outlined" size="sm" onClick={() => { setEditModal({ id: app.id, details: app.applicantDetails }); setEditJsonStr(JSON.stringify(app.applicantDetails, null, 2)); }}>
-                        Edit
-                      </Button>
-                      <Button icon="cancel" variant="outlined" size="sm" onClick={() => setRemarksModal({ action: "cc-reject", ids: [app.id] })}>
-                        Reject
-                      </Button>
-                      <Button icon="download" variant="text" size="sm" loading={downloadingPdf === app.id} onClick={() => handleDownloadSignedPdf(app)}>
-                        PDF
-                      </Button>
-                      <Button icon="rocket_launch" variant="filled" size="sm" loading={provisioning === app.id} onClick={() => handleProvision(app)}>
-                        Provision
-                      </Button>
-                    </></>)} />
-          )}
+          <ApplicationTable apps={filterApps(pendingApps)} renderActions={(app) => (<><>
+            <Button icon="edit" variant="outlined" size="sm" onClick={() => { const details = app.applicantDetails || {}; setEditModal({ id: app.id, details }); const fields: Record<string, string> = {}; Object.entries(details).forEach(([k, v]) => { fields[k] = String(v ?? ''); }); setEditFormFields(fields); }}>
+              Edit
+            </Button>
+            <Button icon="cancel" variant="outlined" size="sm" onClick={() => setRemarksModal({ action: "cc-reject", ids: [app.id] })}>
+              Reject
+            </Button>
+            <Button icon="download" variant="text" size="sm" loading={downloadingPdf === app.id} onClick={() => handleDownloadSignedPdf(app)}>
+              PDF
+            </Button>
+            <Button icon="rocket_launch" variant="filled" size="sm" loading={provisioning === app.id} onClick={() => handleProvision(app)}>
+              Provision
+            </Button>
+          </></>)} />
         </>
       )}
 
@@ -1240,26 +1240,42 @@ export default function AdminDashboard() {
       {/* ═══════════════════ EDIT MODAL ═══════════════════ */}
       <Modal
         isOpen={!!editModal}
-        onClose={() => { setEditModal(null); setEditJsonStr(""); }}
+        onClose={() => { setEditModal(null); setEditFormFields({}); }}
         title="Edit Application Details"
-        size="md"
+        size="lg"
         footer={
           <>
-            <Button variant="outlined" onClick={() => { setEditModal(null); setEditJsonStr(""); }}>Cancel</Button>
+            <Button variant="outlined" onClick={() => { setEditModal(null); setEditFormFields({}); }}>Cancel</Button>
             <Button variant="filled" loading={!!actionLoading} onClick={handleEditSubmit}>Save Changes</Button>
           </>
         }
       >
         <div className="space-y-4">
           <p className="text-sm text-outline">
-            Modify the applicant details JSON directly. Be careful with field names and values.
+            Edit the applicant details below. Changes will be saved to the database.
           </p>
-          <textarea
-            value={editJsonStr}
-            onChange={(e) => setEditJsonStr(e.target.value)}
-            rows={15}
-            className="w-full bg-surface-variant/30 font-mono text-xs border border-outline-variant rounded-xl px-4 py-2.5 text-foreground placeholder:text-outline/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors resize-y"
-          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-1">
+            {Object.entries(editFormFields).map(([key, value]) => {
+              const label = key
+                .replace(/([A-Z])/g, ' $1')
+                .replace(/_/g, ' ')
+                .replace(/^./, (s) => s.toUpperCase())
+                .trim();
+              return (
+                <div key={key} className="space-y-1">
+                  <label className="block text-xs font-semibold text-outline uppercase tracking-wider">
+                    {label}
+                  </label>
+                  <input
+                    type="text"
+                    value={value}
+                    onChange={(e) => setEditFormFields(prev => ({ ...prev, [key]: e.target.value }))}
+                    className="w-full bg-surface-variant/30 border border-outline-variant rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-outline/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-colors"
+                  />
+                </div>
+              );
+            })}
+          </div>
         </div>
       </Modal>
     </div>

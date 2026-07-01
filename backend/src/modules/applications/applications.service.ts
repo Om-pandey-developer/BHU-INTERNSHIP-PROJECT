@@ -192,7 +192,7 @@ export class ApplicationsService {
         },
         department: true,
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -266,6 +266,10 @@ export class ApplicationsService {
       where: {
         departmentId: { in: deptIds },
         status: ApplicationStatus.PENDING_DEAN,
+        applicantDetails: {
+          path: ['category'],
+          equals: 'UNDER_GRADUATE_STUDENT',
+        },
       },
       include: {
         applicant: {
@@ -278,7 +282,7 @@ export class ApplicationsService {
         },
         department: true,
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
@@ -297,6 +301,10 @@ export class ApplicationsService {
         departmentId: { in: deptIds },
         status: {
           in: [ApplicationStatus.APPROVED_DEAN, ApplicationStatus.REJECTED_DEAN],
+        },
+        applicantDetails: {
+          path: ['category'],
+          equals: 'UNDER_GRADUATE_STUDENT',
         },
       },
       include: {
@@ -328,6 +336,10 @@ export class ApplicationsService {
       where: {
         departmentId: { in: deptIds },
         status: ApplicationStatus.PROVISIONED,
+        applicantDetails: {
+          path: ['category'],
+          equals: 'UNDER_GRADUATE_STUDENT',
+        },
       },
       include: {
         applicant: {
