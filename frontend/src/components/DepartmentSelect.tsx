@@ -13,9 +13,11 @@ interface DepartmentSelectProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  disabled?: boolean;
+  small?: boolean;
 }
 
-export default function DepartmentSelect({ departments, value, onChange, placeholder = "Select Department *" }: DepartmentSelectProps) {
+export default function DepartmentSelect({ departments, value, onChange, placeholder = "Select Department *", disabled = false, small = false }: DepartmentSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -38,14 +40,16 @@ export default function DepartmentSelect({ departments, value, onChange, placeho
   );
 
   return (
-    <div className="relative w-full" ref={containerRef}>
+    <div className={`relative w-full ${disabled ? "pointer-events-none opacity-60" : ""}`} ref={containerRef}>
       <div
-        className="w-full flex items-center justify-between rounded-lg border-2 border-outline-variant bg-surface pr-4 pl-11 py-3 text-sm text-foreground hover:border-outline focus:border-primary transition-colors cursor-pointer relative"
-        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full flex items-center justify-between rounded-lg ${small ? 'border py-2 px-3 text-xs bg-white min-w-[320px]' : 'border-2 pr-4 pl-11 py-3 text-sm'} border-outline-variant bg-surface text-foreground transition-colors relative ${disabled ? "cursor-not-allowed bg-surface-variant/50" : "hover:border-outline focus:border-primary cursor-pointer"}`}
+        onClick={() => { if (!disabled) setIsOpen(!isOpen); }}
       >
-        <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-outline pointer-events-none">
-          apartment
-        </span>
+        {!small && (
+          <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-outline pointer-events-none">
+            apartment
+          </span>
+        )}
         <span className={selectedDept ? "text-foreground" : "text-outline"}>
           {selectedDept ? selectedDept.name : placeholder}
         </span>

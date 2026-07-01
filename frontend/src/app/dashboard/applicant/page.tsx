@@ -460,6 +460,45 @@ export default function ApplicantDashboard() {
     if (!signature) errors["signature"] = "Signature is required";
     if (!details.applicantPlace?.trim()) errors["applicantPlace"] = "Place is required";
 
+    // ── Cross-field validations for student categories ──
+    const isStudentCategory = ["RESEARCH_SCHOLAR", "POST_GRADUATE_STUDENT", "UNDER_GRADUATE_STUDENT"].includes(categoryConfig.value);
+    if (isStudentCategory) {
+      const admissionYear = parseInt(details["admissionAcademicYear"] || "", 10);
+      const completionYear = parseInt(details["courseCompletionYear"] || "", 10);
+      const dobStr = details["dateOfBirth"];
+
+      if (!isNaN(admissionYear) && !isNaN(completionYear)) {
+        if (completionYear <= admissionYear) {
+          errors["courseCompletionYear"] = "Completion year must be greater than admission year";
+        } else if (completionYear - admissionYear < 1) {
+          errors["courseCompletionYear"] = "Minimum 1 year gap required between admission and completion year";
+        }
+      }
+
+      if (dobStr && !isNaN(admissionYear)) {
+        const dob = new Date(dobStr);
+        if (!isNaN(dob.getTime())) {
+          const birthYear = dob.getFullYear();
+          if (admissionYear - birthYear < 18) {
+            errors["dateOfBirth"] = "Date of birth must be at least 18 years before admission year";
+          }
+          if (birthYear >= admissionYear) {
+            errors["dateOfBirth"] = "Date of birth cannot be on or after the admission year";
+          }
+        }
+      }
+
+      if (dobStr && !isNaN(completionYear)) {
+        const dob = new Date(dobStr);
+        if (!isNaN(dob.getTime())) {
+          const birthYear = dob.getFullYear();
+          if (birthYear >= completionYear) {
+            errors["dateOfBirth"] = "Date of birth cannot be on or after the completion year";
+          }
+        }
+      }
+    }
+
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       // Scroll to first error
@@ -512,7 +551,7 @@ export default function ApplicantDashboard() {
   async function handleDownloadPdf(app: Application) {
     setPdfLoading(true);
     try {
-      if (app.approvedPdfPath && (app.status === "APPROVED_HOD" || app.status === "PENDING_CC" || app.status === "PROVISIONED")) {
+      if (app.approvedPdfPath && (app.status === "APPROVED_HOD" || app.status === "APPROVED_DEAN" || app.status === "PENDING_CC" || app.status === "PROVISIONED")) {
         const response = await api.get(`/applications/${app.id}/approved-pdf`, { responseType: "blob" });
         const blob = new Blob([response.data], { type: "application/pdf" });
         const url = URL.createObjectURL(blob);
@@ -802,6 +841,7 @@ export default function ApplicantDashboard() {
                         setFieldErrors(prev => { const n = {...prev}; delete n["departmentId"]; return n; });
                       }
                     }}
+                    disabled={!!user?.departmentId}
                   />
                   {fieldErrors["departmentId"] && (
                     <p className="text-xs text-error mt-1 font-medium animate-fade-in">{fieldErrors["departmentId"]}</p>
@@ -1205,26 +1245,45 @@ export default function ApplicantDashboard() {
                 </div>
               </div>
 
-              {/* IT Policy Agreement */}
+              {/* Undertaking & IT Policy Agreement */}
               <div className="bg-surface-variant/30 rounded-xl p-5 border border-outline-variant">
                 <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                   <span className="material-symbols-rounded text-[18px] text-warning">policy</span>
-                  IT Policy Agreement
+                  Undertaking & IT Policy Agreement
                 </h4>
-                <div className="text-xs text-outline space-y-2 mb-4 max-h-32 overflow-y-auto pr-2">
-                  <p>By submitting this application, I confirm that all information provided is accurate and complete.</p>
-                  <p>I agree to abide by the BHU IT Usage Policy, including but not limited to: responsible use of institutional email, prohibition of sharing credentials, compliance with data protection guidelines, and acceptable use of Google Workspace services.</p>
-                  <p>I understand that misuse of the email account may result in suspension or termination of email services and may be subject to disciplinary action.</p>
+                <p className="text-xs text-error font-semibold mb-3 flex items-center gap-1">
+                  <span className="material-symbols-rounded text-[14px]">info</span>
+                  Please read the following undertaking carefully before proceeding.
+                </p>
+                <div className="text-xs text-outline space-y-3 mb-4 max-h-52 overflow-y-auto pr-2 border border-outline-variant/50 rounded-lg p-4 bg-surface">
+                  <p className="font-semibold text-foreground text-sm mb-2">Undertaking:</p>
+                  <div className="space-y-2">
+                    <p><span className="font-bold text-foreground">i)</span> The university email account is intended for official use related to University work and it must be used for academic activities only.</p>
+                    <p><span className="font-bold text-foreground">ii)</span> All users must check their email accounts regularly for academic, administrative, and official communications. Failure to do so may result in missed important information. All official communication must be made using the (…@bhu.ac.in) E-mail id. Communications sent from any other E-mail ID may not be considered official or valid.</p>
+                    <p><span className="font-bold text-foreground">iii)</span> Users are prohibited from using their university email accounts to:</p>
+                    <ul className="list-disc list-inside ml-4 space-y-1">
+                      <li>Send harmful software, malware, or viruses.</li>
+                      <li>Misrepresent the identity of the sender.</li>
+                      <li>Engage in the distribution of offensive, illegal, or inappropriate content.</li>
+                    </ul>
+                    <p><span className="font-bold text-foreground">iv)</span> Users must take all necessary steps to secure their email accounts, including maintaining password confidentiality and regularly backing up important data. The Computer Centre (CC) is not responsible for restoring lost data.</p>
+                    <p><span className="font-bold text-foreground">v)</span> Users should regularly delete unnecessary emails and large attachments to manage mailbox space effectively. Important emails should be archived, and users should take periodic backups.</p>
+                    <p><span className="font-bold text-foreground">vi)</span> The maximum E-mail size for <span className="font-bold text-foreground">{categoryConfig?.label || "your category"}</span> will be <span className="font-bold text-primary">{categoryConfig?.quota || "5 GB"}</span>.</p>
+                    <p><span className="font-bold text-foreground">vii)</span> User email accounts will remain active for one year after retirement, after that email account will be deactivated and it may be deleted.</p>
+                    <p><span className="font-bold text-foreground">viii)</span> University email Policy must be applicable to all E-mail users.</p>
+                  </div>
                 </div>
-                <label className="flex items-center gap-3 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={policyAccepted}
-                    onChange={(e) => setPolicyAccepted(e.target.checked)}
-                    className="w-4.5 h-4.5 rounded border-2 border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer"
-                  />
-                  <span className="text-sm text-foreground font-medium">I have read and accept the IT Usage Policy</span>
-                </label>
+                <div className="space-y-3">
+                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={policyAccepted}
+                      onChange={(e) => setPolicyAccepted(e.target.checked)}
+                      className="w-4.5 h-4.5 mt-0.5 rounded border-2 border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer"
+                    />
+                    <span className="text-sm text-foreground font-medium">I have read and understood the above undertaking and I agree to abide by the BHU IT Usage Policy, including responsible use of institutional email, prohibition of sharing credentials, compliance with data protection guidelines, and acceptable use of Google Workspace services.</span>
+                  </label>
+                </div>
               </div>
 
               {error && (
@@ -1252,7 +1311,7 @@ export default function ApplicantDashboard() {
                         firstName: user?.firstName || "",
                         lastName: user?.lastName || "",
                         email: user?.email || "",
-                      }, photoPreview);
+                      }, photoPreview, signaturePreview);
                     }}
                   >
                     Download Preview

@@ -269,7 +269,7 @@ export default function DeanDashboard() {
       return;
     }
 
-    setActionLoading(id);
+    setActionLoading(`${action}-${id}`);
     try {
       const status = action === "approve" ? "APPROVED_DEAN" : "REJECTED_DEAN";
       await api.patch(`/applications/${id}/dean-status`, {
@@ -730,7 +730,7 @@ export default function DeanDashboard() {
                             {activeTab === "pending" && (
                               <Button
                                 onClick={(e) => { e.stopPropagation(); handleApproveReject(item.id, "approve"); }}
-                                loading={actionLoading === item.id}
+                                loading={actionLoading === `approve-${item.id}`}
                                 disabled={!hasSignature}
                                 size="sm"
                                 className="!py-1 !px-3 !text-xs whitespace-nowrap"
@@ -823,8 +823,8 @@ export default function DeanDashboard() {
                                           rows={2}
                                         />
                                         <div className="flex gap-4 justify-start">
-                                          <Button variant="outlined" onClick={() => handleApproveReject(item.id, "reject")} loading={actionLoading === item.id} className="w-32 !border-error !text-error hover:!bg-error/10">Reject</Button>
-                                          <Button onClick={() => handleApproveReject(item.id, "approve")} loading={actionLoading === item.id} disabled={!hasSignature} className="w-40">Approve</Button>
+                                          <Button variant="outlined" onClick={() => handleApproveReject(item.id, "reject")} loading={actionLoading === `reject-${item.id}`} className="w-32 !border-error !text-error hover:!bg-error/10">Reject</Button>
+                                          <Button onClick={() => handleApproveReject(item.id, "approve")} loading={actionLoading === `approve-${item.id}`} disabled={!hasSignature} className="w-40">Approve</Button>
                                         </div>
                                       </div>
                                     )}

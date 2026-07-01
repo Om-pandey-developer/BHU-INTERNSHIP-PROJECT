@@ -78,10 +78,10 @@ const templateCSS = `
 .pdf-undertaking { margin: 12px 0; }
 .pdf-undertaking-title { font-size: 13px; margin-bottom: 6px; }
 .pdf-undertaking-table { width: 100%; border: none; border-collapse: collapse; }
-.pdf-undertaking-table td { border: none; padding: 4px 4px; font-size: 11px; vertical-align: top; line-height: 1.5; }
+.pdf-undertaking-table td { border: none; padding: 6px 8px; font-size: 11px; vertical-align: top; line-height: 1.8; }
 .ut-num { width: 30px; font-weight: bold; text-align: right; padding-right: 8px !important; }
 .pdf-ut-list { margin: 4px 0 4px 20px; padding: 0; list-style-type: square; }
-.pdf-ut-list li { margin-bottom: 3px; }
+.pdf-ut-list li { margin-bottom: 4px; line-height: 1.6; }
 .pdf-signature-block { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 16px; padding: 0 4px; }
 .pdf-sig-left p, .pdf-sig-right p { font-size: 11px; margin-bottom: 4px; }
 .pdf-sig-right { text-align: right; }
