@@ -11,6 +11,8 @@ import Button from "@/components/Button";
 import Modal from "@/components/Modal";
 import SkeletonLoader from "@/components/SkeletonLoader";
 import { useToastStore } from "@/components/Toast";
+import DepartmentSelect from "@/components/DepartmentSelect";
+import { generateApplicationPdf } from "@/lib/pdfGenerator";
 
 interface Application {
   id: string;
@@ -125,6 +127,7 @@ export default function AdminDashboard() {
   const [auditPage, setAuditPage] = useState(1);
   const [auditTotalPages, setAuditTotalPages] = useState(1);
   const [quotaStats, setQuotaStats] = useState<QuotaStats | null>(null);
+  const [dbDepartments, setDbDepartments] = useState<{ id: string, name: string, code: string }[]>([]);
 
   // UI states
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
@@ -192,7 +195,17 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [auditPage]);
+  }, [auditPage, addToast]);
+
+  useEffect(() => {
+    api.get("/departments")
+      .then(res => {
+        const payload = res.data;
+        if (Array.isArray(payload)) setDbDepartments(payload);
+        else if (payload?.data && Array.isArray(payload.data)) setDbDepartments(payload.data);
+      })
+      .catch(err => console.error("Failed to load departments", err));
+  }, []);
 
   useEffect(() => {
     fetchTabData(activeTab);
@@ -235,15 +248,55 @@ export default function AdminDashboard() {
   async function handleBulkPdfDownload() {
     setActionLoading("bulk_pdf");
     try {
+      const JSZip = (await import("jszip")).default;
+      const zip = new JSZip();
       const ids = Array.from(selectedIds);
+      let successCount = 0;
+      let failCount = 0;
+
       for (const id of ids) {
         const app = pendingApps.find(a => a.id === id) || activeApps.find(a => a.id === id) || suspendedApps.find(a => a.id === id) || archivedApps.find(a => a.id === id);
-        if (app) {
-          await handleDownloadSignedPdf(app);
-          await new Promise(r => setTimeout(r, 500));
+        if (!app) { failCount++; continue; }
+
+        try {
+          // Try server-generated approved PDF first
+          const response = await api.get(`/applications/${app.id}/approved-pdf`, { responseType: "blob" });
+          zip.file(`${app.trackingId}_Approved.pdf`, response.data);
+          successCount++;
+        } catch {
+          // Fallback: generate PDF on frontend (without HOD/Dean signature)
+          try {
+            const blob = await generateApplicationPdf(app as any, app.applicant, null, null, true);
+            if (blob) {
+              zip.file(`${app.trackingId}_Draft.pdf`, blob as Blob);
+              successCount++;
+            } else { failCount++; }
+          } catch { failCount++; }
         }
       }
-      addToast({ message: `✅ Downloaded ${ids.length} PDFs.`, variant: "success" });
+
+      if (successCount > 0) {
+        const content = await zip.generateAsync({ type: "blob" });
+        const url = window.URL.createObjectURL(content);
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `Bulk_Applications_${ids.length}.zip`);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode?.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }
+
+      if (failCount > 0 && successCount > 0) {
+        addToast({ message: `⚠️ Downloaded ${successCount} PDFs. ${failCount} failed to generate.`, variant: "warning" });
+      } else if (failCount > 0 && successCount === 0) {
+        addToast({ message: `❌ All ${failCount} PDF downloads failed.`, variant: "error" });
+      } else {
+        addToast({ message: `✅ Downloaded ${successCount} PDFs as ZIP.`, variant: "success" });
+      }
+    } catch (err) {
+      console.error("Bulk PDF download error:", err);
+      addToast({ message: "Failed to create bulk PDF download.", variant: "error" });
     } finally {
       setActionLoading(null);
     }
@@ -340,9 +393,16 @@ export default function AdminDashboard() {
       document.body.appendChild(link);
       link.click();
       link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
       addToast({ message: "Signed PDF downloaded.", variant: "success" });
     } catch {
-      addToast({ message: "Failed to download signed PDF.", variant: "error" });
+      // Fallback: generate PDF on frontend (without HOD/Dean signature)
+      try {
+        await generateApplicationPdf(app as any, app.applicant, null, null, false);
+        addToast({ message: "Approved PDF not available. Draft PDF downloaded instead.", variant: "warning" });
+      } catch {
+        addToast({ message: "Failed to download PDF.", variant: "error" });
+      }
     } finally {
       setDownloadingPdf(null);
     }
@@ -453,22 +513,14 @@ export default function AdminDashboard() {
               <span className="material-symbols-rounded absolute right-2 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
             </div>
 
-            <div className="relative shadow-sm rounded-xl">
-              <select
+            <div className="relative shadow-sm rounded-xl min-w-[320px]">
+              <DepartmentSelect
+                departments={[{ id: "ALL", name: "All Departments", code: "ALL" }, ...dbDepartments]}
                 value={departmentFilter}
-                onChange={(e) => setDepartmentFilter(e.target.value)}
-                className="pl-3 pr-8 py-2 bg-white border border-outline-variant rounded-xl text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all appearance-none cursor-pointer max-w-[200px] truncate"
-              >
-                <option value="ALL">All Departments</option>
-                {Array.from(new Map(
-                  [...pendingApps, ...activeApps, ...suspendedApps, ...archivedApps]
-                    .filter(a => a.department?.id)
-                    .map(a => [a.department?.id, a.department?.name])
-                ).entries()).map(([id, name]) => (
-                  <option key={id} value={id as string}>{name as string}</option>
-                ))}
-              </select>
-              <span className="material-symbols-rounded absolute right-2 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
+                onChange={(val) => setDepartmentFilter(val)}
+                placeholder="All Departments"
+                small={true}
+              />
             </div>
           </div>
 

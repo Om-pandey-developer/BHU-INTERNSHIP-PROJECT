@@ -128,9 +128,9 @@ export class PdfService {
     const dob = this.formatDate(details.dateOfBirth || details.dob) || '';
     const faculty = details.facultyInstituteCentre || details.faculty || '';
     const nationality = details.nationality || 'Indian';
-    const email1 = details.emailChoice1 || '';
-    const email2 = details.emailChoice2 || '';
-    const email3 = details.emailChoice3 || '';
+    const email1 = details.emailChoice1 ? `${details.emailChoice1}@bhu.ac.in` : '';
+    const email2 = details.emailChoice2 ? `${details.emailChoice2}@bhu.ac.in` : '';
+    const email3 = details.emailChoice3 ? `${details.emailChoice3}@bhu.ac.in` : '';
     const mobile = details.mobileNo || '';
     const alternateEmail = details.alternateEmail || application.applicant.alternateEmail || '';
     const applicantDate = application.createdAt ? this.formatDate(application.createdAt) : (this.formatDate(new Date()) || '');
@@ -179,10 +179,10 @@ export class PdfService {
   .pdf-undertaking { margin: 12px 0; }
   .pdf-undertaking-title { font-size: 13px; margin-bottom: 6px; }
   .pdf-undertaking-table { width: 100%; border: none; border-collapse: collapse; }
-  .pdf-undertaking-table td { border: none; padding: 4px 4px; font-size: 11px; vertical-align: top; line-height: 1.5; }
+  .pdf-undertaking-table td { border: none; padding: 6px 8px; font-size: 11px; vertical-align: top; line-height: 1.8; }
   .ut-num { width: 30px; font-weight: bold; text-align: right; padding-right: 8px !important; }
   .pdf-ut-list { margin: 4px 0 4px 20px; padding: 0; list-style-type: square; }
-  .pdf-ut-list li { margin-bottom: 3px; }
+  .pdf-ut-list li { margin-bottom: 4px; line-height: 1.6; }
   .pdf-signature-block { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 16px; padding: 0 4px; }
   .pdf-sig-left p, .pdf-sig-right p { font-size: 11px; margin-bottom: 4px; }
   .pdf-sig-right { text-align: right; }
@@ -360,9 +360,9 @@ export class PdfService {
 
   <!-- HOD DECLARATION -->
   <div class="pdf-declaration">
-    <p class="pdf-declaration-title"><b>Declaration by the Head of the Department</b></p>
+    <p class="pdf-declaration-title"><b>Declaration by the ${categoryRaw === 'UNDER_GRADUATE_STUDENT' ? 'Dean of the Faculty' : 'Head of the Department'}</b></p>
     <p class="pdf-declaration-text">
-      This is to certify that Prof./Dr./Mr. <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 200px; text-align: center;">${applicantName || '&nbsp;'}</span> is working in our Department/ Faculty/Institute/ Centre/Section <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 200px; text-align: center;">${department || '&nbsp;'}</span> as <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 150px; text-align: center;">${designation || '&nbsp;'}</span>. Please issue him/her Email ID for his/her work.
+      This is to certify that ${isStudent ? 'Mr./Ms.' : 'Prof./Dr./Mr.'} <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 200px; text-align: center;">${applicantName || '&nbsp;'}</span> is ${isStudent ? 'a student of' : 'working in our'} Department/ Faculty/Institute/ Centre/Section <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 200px; text-align: center;">${department || '&nbsp;'}</span> ${isStudent ? `enrolled in <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 150px; text-align: center;">${value2 || '&nbsp;'}</span>` : `as <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 150px; text-align: center;">${designation || '&nbsp;'}</span>`}. Please issue him/her Email ID for his/her work.
     </p>
   </div>
 
