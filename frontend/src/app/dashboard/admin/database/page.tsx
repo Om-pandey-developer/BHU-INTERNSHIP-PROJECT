@@ -294,10 +294,10 @@ export default function DatabaseExplorerPage() {
   return (
     <div className="animate-fade-in space-y-8">
       {/* ─── Header ─── */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="flex items-center justify-between flex-wrap gap-4 pt-5 pl-8 pr-5">
         <div>
           <h1
-            className="text-2xl font-bold text-foreground"
+            className="text-3xl font-bold text-foreground"
             style={{ fontFamily: "var(--font-serif)" }}
           >
             Database Explorer
@@ -319,23 +319,24 @@ export default function DatabaseExplorerPage() {
           className="p-2 rounded-lg hover:bg-surface-variant transition-colors cursor-pointer"
           title="Refresh"
         >
-          <span className="material-symbols-rounded text-[22px] text-outline">
+          <span className="material-symbols-rounded text-outline"
+            style={{ fontSize: "30px" }}
+          >
             refresh
           </span>
         </button>
       </div>
 
       {/* ─── Stats Cards ─── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 pl-5 pr-5">
         {tables.map((table) => (
           <div
             key={table.name}
             onClick={() => setSelectedTable(table.name)}
-            className={`cursor-pointer transition-all duration-200 rounded-2xl ${
-              selectedTable === table.name
-                ? "ring-2 ring-primary ring-offset-2"
-                : ""
-            }`}
+            className={`cursor-pointer transition-all duration-200 rounded-2xl ${selectedTable === table.name
+              ? "ring-2 ring-primary ring-offset-2"
+              : ""
+              }`}
           >
             <StatsCard
               icon={table.icon}
@@ -348,18 +349,17 @@ export default function DatabaseExplorerPage() {
       </div>
 
       {/* ─── Table Selector Tabs + Search (Vertical / Full Width) ─── */}
-      <div className="flex flex-col gap-4 w-full">
+      <div className="flex flex-col gap-4 w-full pr-5 pb-3 pl-5 bg-white">
         {/* Table tabs — full width */}
         <div className="flex items-center gap-1 bg-surface-variant/50 rounded-xl p-1 overflow-x-auto w-full">
           {tables.map((table) => (
             <button
               key={table.name}
               onClick={() => setSelectedTable(table.name)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${
-                selectedTable === table.name
-                  ? "bg-surface text-foreground shadow-sm"
-                  : "text-outline hover:text-foreground"
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer whitespace-nowrap ${selectedTable === table.name
+                ? "bg-surface text-foreground shadow-sm"
+                : "text-outline hover:text-foreground"
+                }`}
             >
               <span className="material-symbols-rounded text-[14px] mr-1 align-middle">
                 {table.icon}
@@ -394,7 +394,7 @@ export default function DatabaseExplorerPage() {
               </button>
             )}
           </div>
-          
+
           <div className="flex items-center gap-4 shrink-0">
             <div className="flex items-center gap-2 text-sm text-outline">
               <span>Show</span>
@@ -410,7 +410,7 @@ export default function DatabaseExplorerPage() {
               </select>
               <span>entries</span>
             </div>
-            
+
             <div className="flex items-center gap-2 text-sm text-outline">
               <span>Go to</span>
               <input
@@ -469,10 +469,9 @@ export default function DatabaseExplorerPage() {
             </div>
           </div>
           <div className="overflow-x-auto">
-            <table className={`w-full text-left border-collapse min-w-[800px] ${
-              zoomLevel === 'sm' ? '[&_span:not(.material-symbols-rounded)]:text-[11px] [&_th]:text-[10px] [&_td]:text-[11px]' :
+            <table className={`w-full text-left border-collapse min-w-[800px] ${zoomLevel === 'sm' ? '[&_span:not(.material-symbols-rounded)]:text-[11px] [&_th]:text-[10px] [&_td]:text-[11px]' :
               zoomLevel === 'lg' ? '[&_span:not(.material-symbols-rounded)]:text-[14px] [&_th]:text-[13px] [&_td]:text-[14px]' : 'text-sm'
-            }`}>
+              }`}>
               <thead>
                 <tr className="bg-surface-variant/30 border-b border-outline-variant">
                   <th className="text-left text-[10px] uppercase tracking-wider font-semibold text-outline py-3 px-4">
@@ -558,11 +557,10 @@ export default function DatabaseExplorerPage() {
                         <button
                           key={pageNum}
                           onClick={() => setPage(pageNum)}
-                          className={`w-8 h-8 rounded-lg text-xs font-medium transition-all cursor-pointer ${
-                            pageNum === current
-                              ? "bg-primary text-white shadow-sm"
-                              : "text-outline hover:bg-surface-variant"
-                          }`}
+                          className={`w-8 h-8 rounded-lg text-xs font-medium transition-all cursor-pointer ${pageNum === current
+                            ? "bg-primary text-white shadow-sm"
+                            : "text-outline hover:bg-surface-variant"
+                            }`}
                         >
                           {pageNum}
                         </button>
