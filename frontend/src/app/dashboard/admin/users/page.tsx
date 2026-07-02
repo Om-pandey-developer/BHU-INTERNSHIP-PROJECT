@@ -48,6 +48,8 @@ export default function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [zoomLevel, setZoomLevel] = useState<"sm" | "md" | "lg">("md");
+  const [currentPage, setCurrentPage] = useState<number | "">(1);
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
 
   useEffect(() => {
     fetchUsers();
@@ -82,6 +84,10 @@ export default function AdminUsersPage() {
     HOD: users.filter((u) => u.role === "HOD").length,
     CC_ADMIN: users.filter((u) => u.role === "CC_ADMIN").length,
   };
+
+  const totalPages = Math.ceil(filtered.length / entriesPerPage);
+  const safePage = typeof currentPage === "number" ? currentPage : 1;
+  const paginatedData = filtered.slice((safePage - 1) * entriesPerPage, safePage * entriesPerPage);
 
   if (loading) {
     return (
@@ -165,13 +171,13 @@ export default function AdminUsersPage() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             placeholder="Search by name or email..."
             className="w-full rounded-xl border-2 border-outline-variant bg-surface pl-11 pr-4 py-2.5 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors"
           />
           {search && (
             <button
-              onClick={() => setSearch("")}
+              onClick={() => { setSearch(""); setCurrentPage(1); }}
               className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-surface-variant cursor-pointer"
             >
               <span className="material-symbols-rounded text-[16px] text-outline">
@@ -193,8 +199,8 @@ export default function AdminUsersPage() {
           ).map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setRoleFilter(tab.key)}
-              className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+              onClick={() => { setRoleFilter(tab.key); setCurrentPage(1); }}
+              className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
                 roleFilter === tab.key
                   ? "bg-surface text-foreground shadow-sm"
                   : "text-outline hover:text-foreground"
@@ -207,10 +213,49 @@ export default function AdminUsersPage() {
             </button>
           ))}
         </div>
+
+        {/* Entries per page & Go to page */}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-sm text-outline">
+            <span>Show</span>
+            <select
+              value={entriesPerPage}
+              onChange={(e) => { setEntriesPerPage(Number(e.target.value)); setCurrentPage(1); }}
+              className="px-2 py-1 bg-surface-variant/50 border border-outline-variant rounded-lg text-sm focus:outline-none cursor-pointer"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={30}>30</option>
+              <option value={50}>50</option>
+              <option value={1000000}>All</option>
+            </select>
+            <span>entries</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-outline">
+            <span>Go to</span>
+            <input
+              type="number"
+              min={1}
+              max={Math.max(1, totalPages)}
+              value={currentPage}
+              onChange={(e) => {
+                if (e.target.value === "") {
+                  setCurrentPage("");
+                  return;
+                }
+                const val = parseInt(e.target.value);
+                if (!isNaN(val) && val >= 1) {
+                  setCurrentPage(val);
+                }
+              }}
+              className="w-16 px-2 py-1 bg-surface-variant/50 border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-center"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Users Table */}
-      {filtered.length === 0 ? (
+      {paginatedData.length === 0 ? (
         <div className="bg-surface rounded-2xl border border-outline-variant p-12 text-center">
           <span className="material-symbols-rounded text-[48px] text-outline/40 mb-3">
             person_search
@@ -254,7 +299,7 @@ export default function AdminUsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((user) => {
+                {paginatedData.map((user) => {
                   const roleConfig = roleLabels[user.role];
                   return (
                     <tr
@@ -305,6 +350,32 @@ export default function AdminUsersPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Footer */}
+          {totalPages > 0 && (
+            <div className="p-4 border-t border-outline-variant flex flex-wrap items-center justify-between gap-4 bg-surface-variant/10">
+              <p className="text-sm text-outline">
+                Showing <span className="font-bold text-foreground">{(safePage - 1) * entriesPerPage + 1}</span> to <span className="font-bold text-foreground">{Math.min(safePage * entriesPerPage, filtered.length)}</span> of <span className="font-bold text-foreground">{filtered.length}</span> entries
+              </p>
+              <div className="flex items-center gap-1">
+                <button onClick={() => setCurrentPage(prev => Math.max(1, (Number(prev) || 1) - 1))} disabled={safePage === 1} className="p-1.5 rounded border border-outline-variant text-outline hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                  <span className="material-symbols-rounded text-[18px]">chevron_left</span>
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-8 h-8 rounded text-sm font-semibold cursor-pointer ${safePage === page ? 'bg-primary text-white border-transparent' : 'border border-outline-variant text-outline hover:bg-surface'}`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button onClick={() => setCurrentPage(prev => Math.min(totalPages, (Number(prev) || 1) + 1))} disabled={safePage === totalPages} className="p-1.5 rounded border border-outline-variant text-outline hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                  <span className="material-symbols-rounded text-[18px]">chevron_right</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

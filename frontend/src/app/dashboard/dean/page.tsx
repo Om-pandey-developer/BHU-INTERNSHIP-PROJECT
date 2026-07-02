@@ -127,8 +127,8 @@ export default function DeanDashboard() {
   const [activeTab, setActiveTab] = useState<"pending" | "reviewed" | "reapply" | "provisioned">("pending");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState<number | "">(1);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
   const [zoomLevel, setZoomLevel] = useState<"sm" | "md" | "lg">("md");
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -229,7 +229,8 @@ export default function DeanDashboard() {
 
   // Pagination
   const totalPages = Math.ceil(activeData.length / entriesPerPage);
-  const paginatedData = activeData.slice((currentPage - 1) * entriesPerPage, currentPage * entriesPerPage);
+  const safePage = typeof currentPage === "number" ? currentPage : 1;
+  const paginatedData = activeData.slice((safePage - 1) * entriesPerPage, safePage * entriesPerPage);
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
@@ -543,19 +544,44 @@ export default function DeanDashboard() {
             </select>
           )}
 
-          {/* Entries per page */}
-          <div className="flex items-center gap-2 text-sm text-outline">
-            <span>Show</span>
-            <select
-              value={entriesPerPage}
-              onChange={(e) => setEntriesPerPage(Number(e.target.value))}
-              className="px-2 py-1 bg-surface-variant/50 border border-outline-variant rounded-lg text-sm focus:outline-none cursor-pointer"
-            >
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-            </select>
-            <span>entries</span>
+          {/* Entries per page & Go to page */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-sm text-outline">
+              <span>Show</span>
+              <select
+                value={entriesPerPage}
+                onChange={(e) => setEntriesPerPage(Number(e.target.value))}
+                className="px-2 py-1 bg-surface-variant/50 border border-outline-variant rounded-lg text-sm focus:outline-none cursor-pointer"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={30}>30</option>
+                <option value={50}>50</option>
+                <option value={1000000}>All</option>
+              </select>
+              <span>entries</span>
+            </div>
+            
+            <div className="flex items-center gap-2 text-sm text-outline">
+              <span>Go to</span>
+              <input
+                type="number"
+                min={1}
+                max={Math.max(1, totalPages)}
+                value={currentPage}
+                onChange={(e) => {
+                  if (e.target.value === "") {
+                    setCurrentPage("");
+                    return;
+                  }
+                  const val = parseInt(e.target.value);
+                  if (!isNaN(val) && val >= 1) {
+                    setCurrentPage(val);
+                  }
+                }}
+                className="w-16 px-2 py-1 bg-surface-variant/50 border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-center"
+              />
+            </div>
           </div>
         </div>
 
@@ -650,7 +676,7 @@ export default function DeanDashboard() {
                     ? new Date(item.hodApprovedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
                     : "—";
                   const reapplyReason = isReapply ? (item.reason?.length > 30 ? item.reason.substring(0, 30) + "…" : item.reason || "—") : hodReviewedDate;
-                  const serialNo = (currentPage - 1) * entriesPerPage + idx + 1;
+                  const serialNo = (safePage - 1) * entriesPerPage + idx + 1;
 
                   return (
                     <React.Fragment key={item.id}>
@@ -878,10 +904,10 @@ export default function DeanDashboard() {
         {totalPages > 0 && (
           <div className="p-4 border-t border-outline-variant flex flex-wrap items-center justify-between gap-4 bg-surface-variant/10">
             <p className="text-sm text-outline">
-              Showing <span className="font-bold text-foreground">{(currentPage - 1) * entriesPerPage + 1}</span> to <span className="font-bold text-foreground">{Math.min(currentPage * entriesPerPage, activeData.length)}</span> of <span className="font-bold text-foreground">{activeData.length}</span> entries
+              Showing <span className="font-bold text-foreground">{(safePage - 1) * entriesPerPage + 1}</span> to <span className="font-bold text-foreground">{Math.min(safePage * entriesPerPage, activeData.length)}</span> of <span className="font-bold text-foreground">{activeData.length}</span> entries
             </p>
             <div className="flex items-center gap-1">
-              <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="p-1.5 rounded border border-outline-variant text-outline hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed">
+              <button onClick={() => setCurrentPage(prev => Math.max(1, (Number(prev) || 1) - 1))} disabled={safePage === 1} className="p-1.5 rounded border border-outline-variant text-outline hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed">
                 <span className="material-symbols-rounded text-[18px]">chevron_left</span>
               </button>
 
@@ -889,13 +915,13 @@ export default function DeanDashboard() {
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`w-8 h-8 rounded text-sm font-semibold ${currentPage === page ? 'bg-primary text-white border-transparent' : 'border border-outline-variant text-outline hover:bg-surface'}`}
+                  className={`w-8 h-8 rounded text-sm font-semibold ${safePage === page ? 'bg-primary text-white border-transparent' : 'border border-outline-variant text-outline hover:bg-surface'}`}
                 >
                   {page}
                 </button>
               ))}
 
-              <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="p-1.5 rounded border border-outline-variant text-outline hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed">
+              <button onClick={() => setCurrentPage(prev => Math.min(totalPages, (Number(prev) || 1) + 1))} disabled={safePage === totalPages} className="p-1.5 rounded border border-outline-variant text-outline hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed">
                 <span className="material-symbols-rounded text-[18px]">chevron_right</span>
               </button>
             </div>

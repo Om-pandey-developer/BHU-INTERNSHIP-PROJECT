@@ -119,10 +119,10 @@ export default function DatabaseExplorerPage() {
   const [tableLoading, setTableLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState<number | "">(1);
   const [selectedRow, setSelectedRow] = useState<Record<string, unknown> | null>(null);
   const [zoomLevel, setZoomLevel] = useState<"sm" | "md" | "lg">("md");
-  const limit = 15;
+  const [limit, setLimit] = useState(15);
 
   /* ─── Fetch tables overview ─── */
   useEffect(() => {
@@ -147,8 +147,9 @@ export default function DatabaseExplorerPage() {
     if (!selectedTable) return;
     setTableLoading(true);
     try {
+      const safePage = typeof page === "number" ? page : 1;
       const params = new URLSearchParams({
-        page: String(page),
+        page: String(safePage),
         limit: String(limit),
       });
       if (search) params.set("search", search);
@@ -162,24 +163,26 @@ export default function DatabaseExplorerPage() {
     } finally {
       setTableLoading(false);
     }
-  }, [selectedTable, page, search]);
-
-  useEffect(() => {
-    fetchRecords();
-  }, [fetchRecords]);
+  }, [selectedTable, page, search, limit]);
 
   /* ─── Reset page when table or search changes ─── */
   useEffect(() => {
     setPage(1);
   }, [selectedTable, search]);
 
-  /* ─── Debounced search ─── */
+  /* ─── Search debounce ─── */
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearch(searchInput);
+      setPage(1);
     }, 400);
     return () => clearTimeout(timer);
   }, [searchInput]);
+
+  // Re-fetch when table, page, search, or limit changes
+  useEffect(() => {
+    if (selectedTable) fetchRecords();
+  }, [selectedTable, page, search, limit, fetchRecords]);
 
   /* ─── Get visible columns ─── */
   const currentTableInfo = tables.find((t) => t.name === selectedTable);
@@ -364,28 +367,69 @@ export default function DatabaseExplorerPage() {
           ))}
         </div>
 
-        {/* Search — full width */}
-        <div className="relative w-full">
-          <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-outline">
-            search
-          </span>
-          <input
-            type="text"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder={`Search in ${formatColumnLabel(selectedTable)}...`}
-            className="w-full rounded-xl border-2 border-outline-variant bg-surface pl-11 pr-4 py-2.5 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors"
-          />
-          {searchInput && (
-            <button
-              onClick={() => { setSearchInput(""); setSearch(""); }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-surface-variant cursor-pointer"
-            >
-              <span className="material-symbols-rounded text-[16px] text-outline">
-                close
-              </span>
-            </button>
-          )}
+        {/* Search & Pagination Filters */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full">
+          <div className="relative flex-1 w-full">
+            <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-outline">
+              search
+            </span>
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder={`Search in ${formatColumnLabel(selectedTable)}...`}
+              className="w-full rounded-xl border-2 border-outline-variant bg-surface pl-11 pr-4 py-2.5 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors"
+            />
+            {searchInput && (
+              <button
+                onClick={() => { setSearchInput(""); setSearch(""); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-surface-variant cursor-pointer"
+              >
+                <span className="material-symbols-rounded text-[16px] text-outline">
+                  close
+                </span>
+              </button>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-4 shrink-0">
+            <div className="flex items-center gap-2 text-sm text-outline">
+              <span>Show</span>
+              <select
+                value={limit}
+                onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
+                className="px-2 py-1 bg-surface-variant/50 border border-outline-variant rounded-lg text-sm focus:outline-none cursor-pointer"
+              >
+                <option value={10}>10</option>
+                <option value={15}>15</option>
+                <option value={30}>30</option>
+                <option value={50}>50</option>
+              </select>
+              <span>entries</span>
+            </div>
+            
+            <div className="flex items-center gap-2 text-sm text-outline">
+              <span>Go to</span>
+              <input
+                type="number"
+                min={1}
+                max={tableData?.pagination.totalPages || 1}
+                value={page}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "") {
+                    setPage("");
+                    return;
+                  }
+                  const num = parseInt(val);
+                  if (!isNaN(num) && num >= 1) {
+                    setPage(num);
+                  }
+                }}
+                className="w-16 px-2 py-1 bg-surface-variant/50 border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-center"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -449,7 +493,7 @@ export default function DatabaseExplorerPage() {
                     className="border-b border-outline-variant/50 hover:bg-surface-variant/20 transition-colors cursor-pointer"
                   >
                     <td className="py-2.5 px-4 text-xs text-outline font-mono">
-                      {(tableData.pagination.page - 1) * limit + idx + 1}
+                      {((typeof page === "number" ? page : 1) - 1) * limit + idx + 1}
                     </td>
                     {columns.map((col) => (
                       <td key={col} className="py-3 px-4 min-w-[120px] whitespace-normal break-words">
@@ -468,11 +512,11 @@ export default function DatabaseExplorerPage() {
               <p className="text-xs text-outline">
                 Showing{" "}
                 <span className="font-semibold text-foreground">
-                  {(tableData.pagination.page - 1) * limit + 1}
+                  {((typeof page === "number" ? page : 1) - 1) * limit + 1}
                 </span>{" "}
                 to{" "}
                 <span className="font-semibold text-foreground">
-                  {Math.min(tableData.pagination.page * limit, tableData.pagination.totalCount)}
+                  {Math.min((typeof page === "number" ? page : 1) * limit, tableData.pagination.totalCount)}
                 </span>{" "}
                 of{" "}
                 <span className="font-semibold text-foreground">
@@ -482,7 +526,7 @@ export default function DatabaseExplorerPage() {
               </p>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  onClick={() => setPage((p) => Math.max(1, (typeof p === "number" ? p : 1) - 1))}
                   disabled={!tableData.pagination.hasPrev}
                   className="p-1.5 rounded-lg hover:bg-surface-variant transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                 >
@@ -524,7 +568,7 @@ export default function DatabaseExplorerPage() {
                   )}
                 </div>
                 <button
-                  onClick={() => setPage((p) => p + 1)}
+                  onClick={() => setPage((p) => Math.min(tableData.pagination.totalPages, (Number(p) || 1) + 1))}
                   disabled={!tableData.pagination.hasNext}
                   className="p-1.5 rounded-lg hover:bg-surface-variant transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                 >

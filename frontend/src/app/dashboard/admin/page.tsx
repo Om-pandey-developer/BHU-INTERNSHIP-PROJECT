@@ -140,6 +140,8 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [zoomLevel, setZoomLevel] = useState<"sm" | "md" | "lg">("md");
+  const [currentPage, setCurrentPage] = useState<number | "">(1);
+  const [entriesPerPage, setEntriesPerPage] = useState(10);
 
   const [editModal, setEditModal] = useState<{ id: string; details: any } | null>(null);
   const [editFormFields, setEditFormFields] = useState<Record<string, string>>({});
@@ -464,6 +466,11 @@ export default function AdminDashboard() {
     );
   }
 
+  const currentActiveData = filterApps(activeTab === "pending" ? pendingApps : activeTab === "active" ? activeApps : activeTab === "suspended" ? suspendedApps : activeTab === "archived" ? archivedApps : []);
+  const totalPages = Math.max(1, Math.ceil(currentActiveData.length / entriesPerPage));
+  const safePage = typeof currentPage === "number" ? currentPage : 1;
+  const paginatedData = currentActiveData.slice((safePage - 1) * entriesPerPage, safePage * entriesPerPage);
+
   function formatDate(d: string | undefined) {
     if (!d) return "—";
     return new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
@@ -673,6 +680,32 @@ export default function AdminDashboard() {
               </table>
             </div>
           )}
+
+          {/* Pagination Footer */}
+          {totalPages > 0 && (
+            <div className="p-4 border-t border-outline-variant flex flex-wrap items-center justify-between gap-4 bg-surface-variant/10">
+              <p className="text-sm text-outline">
+                Showing <span className="font-bold text-foreground">{(safePage - 1) * entriesPerPage + 1}</span> to <span className="font-bold text-foreground">{Math.min(safePage * entriesPerPage, currentActiveData.length)}</span> of <span className="font-bold text-foreground">{currentActiveData.length}</span> entries
+              </p>
+              <div className="flex items-center gap-1">
+                <button onClick={() => setCurrentPage(prev => Math.max(1, (Number(prev) || 1) - 1))} disabled={safePage === 1} className="p-1.5 rounded border border-outline-variant text-outline hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                  <span className="material-symbols-rounded text-[18px]">chevron_left</span>
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-8 h-8 rounded text-sm font-semibold cursor-pointer ${safePage === page ? 'bg-primary text-white border-transparent' : 'border border-outline-variant text-outline hover:bg-surface'}`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button onClick={() => setCurrentPage(prev => Math.min(totalPages, (Number(prev) || 1) + 1))} disabled={safePage === totalPages} className="p-1.5 rounded border border-outline-variant text-outline hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+                  <span className="material-symbols-rounded text-[18px]">chevron_right</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
@@ -706,7 +739,7 @@ export default function AdminDashboard() {
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => { setActiveTab(tab.id); setSelectedIds(new Set()); setSearchQuery(""); }}
+            onClick={() => { setActiveTab(tab.id); setSelectedIds(new Set()); setSearchQuery(""); setCurrentPage(1); }}
             className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === tab.id
               ? "bg-gray-800 text-on-primary shadow-[0_0_9px_rgba(0,0,0,0.3)]"
               : "text-gray-500 hover:text-foreground hover:bg-surface "
@@ -719,17 +752,58 @@ export default function AdminDashboard() {
         ))}
       </div>
 
-      {/* Search Bar (for list tabs) */}
+      {/* Search Bar & Pagination Filters */}
       {activeTab !== "audit" && (
-        <div className="relative mb-4">
-          <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[20px]">search</span>
-          <input
-            type="text"
-            placeholder="Search by name, tracking ID, email, or department..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-white border border-black/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-stone focus:outline-none focus:border-black-800 focus:ring-1 focus:ring-primary/30 transition-colors shadow-[0_0_9px_rgba(0,0,0,0.3)]"
-          />
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
+          <div className="relative flex-1 w-full">
+            <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[20px]">search</span>
+            <input
+              type="text"
+              placeholder="Search by name, tracking ID, email, or department..."
+              value={searchQuery}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              className="w-full bg-white border border-black/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-stone focus:outline-none focus:border-black-800 focus:ring-1 focus:ring-primary/30 transition-colors shadow-[0_0_9px_rgba(0,0,0,0.3)]"
+            />
+          </div>
+          
+          <div className="flex items-center gap-4 shrink-0">
+            <div className="flex items-center gap-2 text-sm text-outline">
+              <span>Show</span>
+              <select
+                value={entriesPerPage}
+                onChange={(e) => { setEntriesPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                className="px-2 py-1 bg-surface-variant/50 border border-outline-variant rounded-lg text-sm focus:outline-none cursor-pointer"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={30}>30</option>
+                <option value={50}>50</option>
+                <option value={1000000}>All</option>
+              </select>
+              <span>entries</span>
+            </div>
+            
+            <div className="flex items-center gap-2 text-sm text-outline">
+              <span>Go to</span>
+              <input
+                type="number"
+                min={1}
+                max={totalPages}
+                value={currentPage}
+                onChange={(e) => {
+                  if (e.target.value === "") {
+                    setCurrentPage("");
+                    return;
+                  }
+                  const val = parseInt(e.target.value);
+                  if (!isNaN(val) && val >= 1) {
+                    setCurrentPage(val);
+                  }
+                }}
+                className="w-16 px-2 py-1 bg-surface-variant/50 border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-center"
+              />
+            </div>
+          </div>
         </div>
       )}
 
@@ -749,7 +823,7 @@ export default function AdminDashboard() {
             />
             <StatsCard icon="speed" label="Avg Wait" value={pendingApps.length > 0 ? `${Math.round(pendingApps.reduce((s, a) => s + (Date.now() - new Date(a.hodApprovedAt || a.createdAt).getTime()) / 3600000, 0) / pendingApps.length)}h` : "—"} variant="default" subtitle="Since HOD approval" />
           </div>
-          <ApplicationTable apps={filterApps(pendingApps)} renderActions={(app) => (<><>
+          <ApplicationTable apps={paginatedData} renderActions={(app) => (<><>
             <Button icon="edit" variant="outlined" size="sm" onClick={() => { const details = app.applicantDetails || {}; setEditModal({ id: app.id, details }); const fields: Record<string, string> = {}; Object.entries(details).forEach(([k, v]) => { fields[k] = String(v ?? ''); }); setEditFormFields(fields); }}>
               Edit
             </Button>
@@ -794,7 +868,7 @@ export default function AdminDashboard() {
                 />
                 <span className="text-xs text-outline">Select All</span>
               </div>
-              <ApplicationTable apps={filterApps(activeApps)} renderActions={(app) => (<><>
+              <ApplicationTable apps={paginatedData} renderActions={(app) => (<><>
                         <Button icon="download" variant="text" size="sm" loading={downloadingPdf === app.id} onClick={() => handleDownloadSignedPdf(app)}>
                           PDF
                         </Button>
@@ -840,7 +914,7 @@ export default function AdminDashboard() {
                 />
                 <span className="text-xs text-outline">Select All</span>
               </div>
-              <ApplicationTable apps={filterApps(suspendedApps)} renderActions={(app) => (<><>
+              <ApplicationTable apps={paginatedData} renderActions={(app) => (<><>
                         <Button icon="play_circle" variant="filled" size="sm" loading={actionLoading === "reactivate"} onClick={() => handleAction("reactivate", [app.id], "Reactivated by admin")}>
                           Reactivate
                         </Button>
@@ -865,7 +939,7 @@ export default function AdminDashboard() {
             <StatsCard icon="inventory_2" label="Archived" value={archivedApps.length} variant="default" subtitle="Retired / Left" />
             <StatsCard icon="shield" label="Policy" value="IT Compliant" variant="success" subtitle="Data retained per BHU IT rules" />
           </div>
-          {filterApps(archivedApps).length === 0 ? (
+          {paginatedData.length === 0 ? (
             <div className="bg-surface rounded-2xl border border-gray-200 p-6 sm:p-12 text-center shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200">
               <div className="w-20 h-20 rounded-full bg-surface-variant flex items-center justify-center mx-auto mb-5">
                 <span className="material-symbols-rounded text-[36px] text-outline">inventory_2</span>
@@ -873,7 +947,7 @@ export default function AdminDashboard() {
               <h3 className="text-lg font-bold text-foreground mb-2">No archived accounts</h3>
             </div>
           ) : (
-            <ApplicationTable apps={filterApps(archivedApps)} renderActions={(app) => (<><Button icon="download" variant="text" size="sm" loading={downloadingPdf === app.id} onClick={() => handleDownloadSignedPdf(app)}>
+            <ApplicationTable apps={paginatedData} renderActions={(app) => (<><Button icon="download" variant="text" size="sm" loading={downloadingPdf === app.id} onClick={() => handleDownloadSignedPdf(app)}>
                       PDF
                     </Button></>)} />
           )}
