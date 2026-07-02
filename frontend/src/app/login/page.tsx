@@ -444,9 +444,10 @@ export default function LoginPage() {
         {/* logo watermark */}
         <Image
           src="/BHUlogo.png"
-          alt=""
+          alt="BHU Logo"
           width={850}
           height={800}
+          priority
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[full] h-[full] object-contain opacity-[0.4] pointer-events-none select-none"
         />
         <div className="w-full max-w-md animate-fade-in">

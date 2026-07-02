@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Source_Serif_4, Inter } from "next/font/google";
 import ToastContainer from "@/components/Toast";
+import HideDevIndicator from "@/components/HideDevIndicator";
 import "./globals.css";
 
 const sourceSerif = Source_Serif_4({
@@ -41,6 +42,7 @@ export default function RootLayout({
         />
       </head>
       <body suppressHydrationWarning className="min-h-full flex flex-col bg-background text-foreground">
+        <HideDevIndicator />
         {children}
         <ToastContainer />
       </body>

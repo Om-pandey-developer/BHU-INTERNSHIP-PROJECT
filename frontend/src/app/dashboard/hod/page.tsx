@@ -496,7 +496,7 @@ export default function HodDashboard() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`px-5 py-3 rounded-t-xl text-sm font-semibold transition-all whitespace-nowrap ${activeTab === tab.id
+            className={`px-5 py-3 rounded-t-xl text-sm font-semibold transition-all whitespace-nowrap shrink-0 ${activeTab === tab.id
               ? "bg-surface border-t border-x border-outline-variant text-primary shadow-[0_-4px_6px_-2px_rgba(0,0,0,0.05)]"
               : "text-outline hover:bg-surface-variant hover:text-foreground border border-transparent"
               }`}
@@ -513,10 +513,10 @@ export default function HodDashboard() {
       </div>
 
       {/* Action Bar */}
-      <div className="bg-surface border border-outline-variant rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-sm">
-        <div className="flex flex-wrap items-center gap-4 flex-1">
+      <div className="bg-surface border border-outline-variant rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4 w-full md:w-auto flex-1">
           {/* Search */}
-          <div className="relative w-full max-w-sm">
+          <div className="relative w-full sm:max-w-sm">
             <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
             <input
               type="text"
@@ -544,7 +544,7 @@ export default function HodDashboard() {
           )}
 
           {/* Entries per page & Go to page */}
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
             <div className="flex items-center gap-2 text-sm text-outline">
               <span>Show</span>
               <select
@@ -585,7 +585,7 @@ export default function HodDashboard() {
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <div className="flex bg-surface-variant/50 p-1 rounded-xl border border-outline-variant">
             <button onClick={() => setZoomLevel("sm")} className={`p-1.5 rounded-lg ${zoomLevel === 'sm' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Small text"><span className="material-symbols-rounded text-[18px]">format_size</span></button>
             <button onClick={() => setZoomLevel("md")} className={`p-1.5 rounded-lg ${zoomLevel === 'md' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Medium text"><span className="material-symbols-rounded text-[20px]">format_size</span></button>
@@ -796,7 +796,7 @@ export default function HodDashboard() {
                               {/* Reapply Specific View */}
                               {isReapply ? (
                                 <div className="space-y-4">
-                                  <div className="grid grid-cols-2 gap-4">
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                       <p className="text-xs text-outline font-semibold uppercase tracking-wider mb-1">Reason for Re-applying</p>
                                       <div className="bg-surface-variant/30 p-3 rounded-lg text-sm text-foreground">{item.reason}</div>
@@ -810,9 +810,9 @@ export default function HodDashboard() {
                                   </div>
 
                                   {item.status === 'PENDING' && (
-                                    <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant">
-                                      <Button variant="outlined" onClick={() => handleReapplyAction(item.id, "reject")} loading={actionLoading === item.id} className="!border-error !text-error hover:!bg-error/10">Reject Request</Button>
-                                      <Button onClick={() => handleReapplyAction(item.id, "approve")} loading={actionLoading === item.id}>Approve Request</Button>
+                                    <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-4 border-t border-outline-variant">
+                                      <Button variant="outlined" onClick={() => handleReapplyAction(item.id, "reject")} loading={actionLoading === item.id} className="w-full sm:w-auto !border-error !text-error hover:!bg-error/10">Reject Request</Button>
+                                      <Button onClick={() => handleReapplyAction(item.id, "approve")} loading={actionLoading === item.id} className="w-full sm:w-auto">Approve Request</Button>
                                     </div>
                                   )}
                                 </div>
@@ -821,7 +821,7 @@ export default function HodDashboard() {
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                   <div className="lg:col-span-2 space-y-4">
                                     <h4 className="text-base font-bold text-foreground border-b border-outline-variant pb-2">Application Details</h4>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                                       <div>
                                         <p className="text-xs uppercase tracking-wider text-outline font-bold mb-1">Alternate Email</p>
                                         <p className="text-base text-foreground font-semibold lowercase">{item.applicant?.alternateEmail || "-"}</p>
@@ -851,9 +851,9 @@ export default function HodDashboard() {
                                           className="w-full text-base p-4 border border-outline-variant rounded-xl bg-surface mb-4 focus:outline-none focus:border-primary resize-none"
                                           rows={2}
                                         />
-                                        <div className="flex gap-4 justify-start">
-                                          <Button variant="outlined" onClick={() => handleApproveReject(item.id, "reject")} loading={actionLoading === item.id} className="w-32 !border-error !text-error hover:!bg-error/10">Reject</Button>
-                                          <Button onClick={() => handleApproveReject(item.id, "approve")} loading={actionLoading === item.id} disabled={!hasSignature} className="w-40">Approve</Button>
+                                        <div className="flex flex-col sm:flex-row gap-4 sm:justify-start">
+                                          <Button variant="outlined" onClick={() => handleApproveReject(item.id, "reject")} loading={actionLoading === item.id} className="w-full sm:w-32 !border-error !text-error hover:!bg-error/10">Reject</Button>
+                                          <Button onClick={() => handleApproveReject(item.id, "approve")} loading={actionLoading === item.id} disabled={!hasSignature} className="w-full sm:w-40">Approve</Button>
                                         </div>
                                       </div>
                                     )}

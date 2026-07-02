@@ -129,6 +129,7 @@ export default function DashboardLayout({
               alt="BHU Logo"
               width={160}
               height={50}
+              priority
               className="object-contain h-[4.5rem] sm:h-14 w-auto scale-110 sm:scale-100 origin-left"
             />
           </div>
