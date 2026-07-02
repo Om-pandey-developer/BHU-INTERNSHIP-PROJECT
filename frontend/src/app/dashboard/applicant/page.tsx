@@ -460,12 +460,24 @@ export default function ApplicantDashboard() {
     if (!signature) errors["signature"] = "Signature is required";
     if (!details.applicantPlace?.trim()) errors["applicantPlace"] = "Place is required";
 
-    // ── Cross-field validations for student categories ──
+    // ── Cross-field validations ──
     const isStudentCategory = ["RESEARCH_SCHOLAR", "POST_GRADUATE_STUDENT", "UNDER_GRADUATE_STUDENT"].includes(categoryConfig.value);
+    const dobStr = details["dateOfBirth"];
+
+    if (dobStr) {
+      const dob = new Date(dobStr);
+      if (!isNaN(dob.getTime())) {
+        const birthYear = dob.getFullYear();
+        const currentYear = new Date().getFullYear();
+        if (currentYear - birthYear < 16) {
+          errors["dateOfBirth"] = "Applicant must be at least 16 years old";
+        }
+      }
+    }
+
     if (isStudentCategory) {
       const admissionYear = parseInt(details["admissionAcademicYear"] || "", 10);
       const completionYear = parseInt(details["courseCompletionYear"] || "", 10);
-      const dobStr = details["dateOfBirth"];
 
       if (!isNaN(admissionYear) && !isNaN(completionYear)) {
         if (completionYear <= admissionYear) {
@@ -479,8 +491,8 @@ export default function ApplicantDashboard() {
         const dob = new Date(dobStr);
         if (!isNaN(dob.getTime())) {
           const birthYear = dob.getFullYear();
-          if (admissionYear - birthYear < 18) {
-            errors["dateOfBirth"] = "Date of birth must be at least 18 years before admission year";
+          if (admissionYear - birthYear < 16) {
+            errors["dateOfBirth"] = "Date of birth must be at least 16 years before admission year";
           }
           if (birthYear >= admissionYear) {
             errors["dateOfBirth"] = "Date of birth cannot be on or after the admission year";
@@ -494,6 +506,23 @@ export default function ApplicantDashboard() {
           const birthYear = dob.getFullYear();
           if (birthYear >= completionYear) {
             errors["dateOfBirth"] = "Date of birth cannot be on or after the completion year";
+          }
+        }
+      }
+    } else {
+      // Validation for staff
+      const appointmentDateStr = details["dateOfAppointment"];
+      if (dobStr && appointmentDateStr) {
+        const dob = new Date(dobStr);
+        const apptDate = new Date(appointmentDateStr);
+        if (!isNaN(dob.getTime()) && !isNaN(apptDate.getTime())) {
+          const birthYear = dob.getFullYear();
+          const apptYear = apptDate.getFullYear();
+          if (apptYear - birthYear < 16) {
+            errors["dateOfBirth"] = "Date of birth must be at least 16 years before date of appointment";
+          }
+          if (birthYear >= apptYear) {
+            errors["dateOfBirth"] = "Date of birth cannot be on or after the date of appointment";
           }
         }
       }
