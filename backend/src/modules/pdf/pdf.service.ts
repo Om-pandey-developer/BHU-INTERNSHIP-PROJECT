@@ -151,47 +151,63 @@ export class PdfService {
     background: #FFFFFF;
     color: #000000;
     font-family: 'Times New Roman', Times, serif;
-    font-size: 12px;
-    line-height: 1.4;
-    padding: 5mm 10mm;
+    font-size: 11px;
+    padding: 8mm; /* Less padding to allow double border */
   }
-  .pdf-header-table { width: 100%; border: none; border-collapse: collapse; margin-bottom: 6px; }
+  .page-wrapper {
+    border: 4px double #555;
+    padding: 15px 25px;
+    min-height: calc(100% - 10px);
+    display: flex;
+    flex-direction: column;
+  }
+  .pdf-header-table { width: 100%; border: none; border-collapse: collapse; margin-bottom: 12px; }
   .pdf-header-table td { vertical-align: middle; border: none; padding: 0; }
-  .pdf-logo-cell { width: 260px; padding-right: 0; }
-  .pdf-logo-img { width: 250px; height: auto; }
+  .pdf-logo-cell { width: 300px; padding-right: 0; text-align: left; }
+  .pdf-logo-img { width: 280px; height: auto; }
   .pdf-title-cell { text-align: center; vertical-align: middle; }
-  .pdf-cc-title { font-size: 22px; font-weight: bold; letter-spacing: 1.5px; }
-  .pdf-photo-cell { width: 120px; vertical-align: top; }
-  .pdf-photo-box { width: 105px; height: 130px; border: 1.5px solid #000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin-left: auto; position: relative; overflow: hidden; }
+  .pdf-cc-title { font-size: 20px; font-weight: bold; letter-spacing: 1px; }
+  .pdf-photo-cell { width: 130px; vertical-align: top; text-align: right; }
+  .pdf-photo-box { width: 110px; height: 135px; border: 1.5px solid #000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; margin-left: auto; position: relative; overflow: hidden; padding: 4px; }
   .pdf-photo-box img { width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0; }
-  .pdf-photo-label { font-size: 12px; font-weight: bold; margin-bottom: 4px; }
-  .pdf-photo-hint { font-size: 8px; font-style: italic; color: #555; }
-  .pdf-sub-header { padding-top: 2px; }
-  .pdf-institution-line { font-size: 8px; letter-spacing: 0.5px; color: #333; text-transform: uppercase; }
-  .pdf-form-title { text-align: center; font-size: 15px; font-weight: bold; margin: 12px 0 10px; padding: 4px 0; }
-  .pdf-data-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
-  .pdf-data-table td { border: 1px solid #000; padding: 6px 8px; vertical-align: middle; font-size: 12px; }
-  .pdf-field-label { width: 25%; font-size: 12px; }
-  .pdf-field-value { width: 25%; font-size: 12px; min-height: 22px; font-weight: bold; }
-  .pdf-email-choice { display: table-cell; vertical-align: middle; padding: 4px 8px; }
-  .pdf-choice-num { font-size: 12px; font-weight: bold; min-width: 24px; display: inline-block; }
-  .pdf-choice-val { font-size: 12px; font-weight: bold; margin-left: 8px; }
-  .pdf-undertaking { margin: 12px 0; }
-  .pdf-undertaking-title { font-size: 13px; margin-bottom: 6px; }
+  .pdf-photo-label { font-size: 11px; margin-bottom: 10px; }
+  .pdf-photo-hint { font-size: 9px; }
+  .pdf-form-title { text-align: center; font-size: 14px; font-weight: bold; margin: 0 0 10px 0; }
+  .pdf-data-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; table-layout: fixed; }
+  .pdf-data-table td { border: 1px solid #000; padding: 4px 6px; vertical-align: middle; text-align: left; font-size: 11px; overflow: hidden; word-wrap: break-word; }
+  .td-bold { font-weight: bold; }
+  .w-25 { width: 25%; }
+  .w-50 { width: 50%; }
+  .pdf-email-choices-container { padding: 0 !important; }
+  .pdf-inner-table { width: 100%; border-collapse: collapse; height: 100%; }
+  .pdf-inner-table td { border: none; border-bottom: 1px solid #000; padding: 4px 6px; border-right: 1px solid #000; }
+  .pdf-inner-table tr:last-child td { border-bottom: none; }
+  .pdf-inner-table td:last-child { border-right: none; }
+  .pdf-undertaking { margin: 8px 0; }
+  .pdf-undertaking-title { font-size: 11px; font-weight: bold; margin-bottom: 2px; }
   .pdf-undertaking-table { width: 100%; border: none; border-collapse: collapse; }
-  .pdf-undertaking-table td { border: none; padding: 6px 8px; font-size: 11px; vertical-align: top; line-height: 1.8; }
-  .ut-num { width: 30px; font-weight: bold; text-align: right; padding-right: 8px !important; }
-  .pdf-ut-list { margin: 4px 0 4px 20px; padding: 0; list-style-type: square; }
-  .pdf-ut-list li { margin-bottom: 4px; line-height: 1.6; }
-  .pdf-signature-block { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 16px; padding: 0 4px; }
-  .pdf-sig-left p, .pdf-sig-right p { font-size: 11px; margin-bottom: 4px; }
-  .pdf-sig-right { text-align: right; }
-  .pdf-declaration { margin-top: 20px; padding: 0 4px; }
-  .pdf-declaration-title { text-align: center; font-size: 13px; margin-bottom: 8px; }
-  .pdf-declaration-text { font-size: 12px; line-height: 2; text-align: left; }
-  .pdf-note { margin-top: 18px; padding: 0 4px; }
-  .pdf-note p { font-size: 9.5px; line-height: 1.5; }
+  .pdf-undertaking-table td { border: none; padding: 2px 4px; font-size: 10px; vertical-align: top; text-align: left; line-height: 1.4; }
+  .ut-num { width: 25px; text-align: left; padding-right: 4px !important; }
+  .pdf-ut-list { margin: 2px 0 2px 20px; padding: 0; list-style-type: square; }
+  .pdf-ut-list li { margin-bottom: 2px; }
+  
+  .signature-container { margin-top: 20px; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 20px; }
+  .sig-left, .sig-right { display: flex; flex-direction: column; justify-content: flex-end; }
+  .sig-right { align-items: center; }
+  .sig-left p { margin: 4px 0; font-size: 12px; font-weight: bold; }
+  .sig-image-container { height: 50px; min-width: 150px; display: flex; justify-content: center; align-items: flex-end; margin-bottom: 5px; }
+  .sig-image-container img { max-height: 50px; max-width: 150px; object-fit: contain; }
+  .sig-label { font-size: 12px; font-weight: bold; text-align: center; }
 
+  .declaration-section { margin-top: 15px; text-align: center; }
+  .declaration-title { font-size: 12px; font-weight: bold; margin-bottom: 10px; }
+  .declaration-text { font-size: 12px; text-align: justify; line-height: 1.8; margin-bottom: 15px; }
+  .fill-blank { display: inline-block; min-width: 250px; border-bottom: 1px solid #000; font-weight: normal; text-align: center; padding: 0 5px; }
+  .fill-blank-small { display: inline-block; min-width: 150px; border-bottom: 1px solid #000; font-weight: normal; text-align: center; padding: 0 5px; }
+
+  .pdf-note { margin-top: 15px; }
+  .pdf-note p { font-size: 10px; line-height: 1.4; text-align: left; }
+  
   /* Hologram Stamp */
   .hologram-stamp {
     margin-top: 20px;
@@ -202,6 +218,7 @@ export class PdfService {
     text-align: center;
     position: relative;
     overflow: hidden;
+    page-break-inside: avoid;
   }
   .hologram-stamp::before {
     content: '';
@@ -218,41 +235,15 @@ export class PdfService {
       rgba(26, 82, 118, 0.03) 20px
     );
   }
-  .hologram-title {
-    font-size: 14px;
-    font-weight: bold;
-    color: #1a5276;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-  .hologram-check {
-    font-size: 11px;
-    color: #196f3d;
-    font-weight: bold;
-    margin-bottom: 4px;
-  }
-  .hologram-hash {
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 9px;
-    color: #555;
-    letter-spacing: 1px;
-    margin-bottom: 4px;
-  }
-  .hologram-date {
-    font-size: 10px;
-    color: #666;
-  }
-  .hologram-hod {
-    font-size: 11px;
-    color: #1a5276;
-    font-weight: bold;
-    margin-top: 4px;
-  }
+  .hologram-title { font-size: 12px; font-weight: bold; color: #1a5276; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+  .hologram-check { font-size: 10px; color: #196f3d; font-weight: bold; margin-bottom: 4px; }
+  .hologram-hash { font-family: 'Courier New', Courier, monospace; font-size: 8px; color: #555; letter-spacing: 1px; margin-bottom: 4px; }
+  .hologram-date { font-size: 9px; color: #666; }
+  .hologram-hod { font-size: 10px; color: #1a5276; font-weight: bold; margin-top: 4px; }
 </style>
 </head>
 <body>
-
+  <div class="page-wrapper">
   <!-- HEADER -->
   <table class="pdf-header-table">
     <tr>
@@ -262,123 +253,134 @@ export class PdfService {
       <td class="pdf-title-cell">
         <span class="pdf-cc-title">COMPUTER CENTRE</span>
       </td>
-      <td class="pdf-photo-cell" rowspan="2">
+      <td class="pdf-photo-cell">
         <div class="pdf-photo-box">
-          ${photoDataUrl ? `<img src="${photoDataUrl}" style="display:block;width:100%;height:100%;object-fit:cover;">` : `<span class="pdf-photo-label">Applicant<br>Photograph</span><span class="pdf-photo-hint">Photo must be<br>certified by Head<br>of Department</span>`}
+          ${photoDataUrl ? `<img src="${photoDataUrl}">` : `<span class="pdf-photo-label">Applicant<br>Photograph</span><span class="pdf-photo-hint">Photo must be<br>certified by Head<br>of Department</span>`}
         </div>
-      </td>
-    </tr>
-    <tr>
-      <td colspan="2" class="pdf-sub-header">
-        <span class="pdf-institution-line">AN INSTITUTION OF NATIONAL IMPORTANCE ESTABLISHED BY AN ACT OF PARLIAMENT</span>
       </td>
     </tr>
   </table>
 
   <!-- FORM TITLE -->
-  <p class="pdf-form-title">Application Form of BHU Domain E-Mail ID: <span>${categoryRaw.replace(/_/g, ' ')}</span></p>
+  <p class="pdf-form-title">Application Form of BHU Domain E-Mail ID: ${categoryRaw.replace(/_/g, ' ')}</p>
 
   <!-- DATA TABLE -->
   <table class="pdf-data-table">
     <tr>
-      <td class="pdf-field-label"><b>1. Name of the Applicant</b></td>
-      <td class="pdf-field-value">${applicantName}</td>
-      <td class="pdf-field-label"><b>${label2}</b></td>
-      <td class="pdf-field-value">${value2}</td>
+      <td class="td-bold w-25">1. Name of the Applicant</td>
+      <td class="w-25">${applicantName}</td>
+      <td class="td-bold w-25">${label2}</td>
+      <td class="w-25">${value2}</td>
     </tr>
     <tr>
-      <td class="pdf-field-label"><b>3. Department</b></td>
-      <td class="pdf-field-value">${department}</td>
-      <td class="pdf-field-label"><b>${label4}</b></td>
-      <td class="pdf-field-value">${value4}</td>
+      <td class="td-bold">3. Department</td>
+      <td>${department}</td>
+      <td class="td-bold">${label4}</td>
+      <td>${value4}</td>
     </tr>
     <tr>
-      <td class="pdf-field-label"><b>5. Faculty/Institute/Centre</b></td>
-      <td class="pdf-field-value">${faculty}</td>
-      <td class="pdf-field-label"><b>${label6}</b></td>
-      <td class="pdf-field-value">${value6}</td>
+      <td class="td-bold">5. Faculty/Institute/Centre</td>
+      <td>${faculty}</td>
+      <td class="td-bold">${label6}</td>
+      <td>${value6}</td>
     </tr>
     <tr>
-      <td class="pdf-field-label"><b>7. Date of Birth</b></td>
-      <td class="pdf-field-value">${dob}</td>
-      <td class="pdf-field-label"><b>${label8}</b></td>
-      <td class="pdf-field-value">${value8}</td>
+      <td class="td-bold">7. Date of Birth</td>
+      <td>${dob}</td>
+      <td class="td-bold">${label8}</td>
+      <td>${value8}</td>
     </tr>
     <tr>
-      <td class="pdf-field-label"><b>9. Nationality</b></td>
-      <td class="pdf-field-value">${nationality}</td>
-      <td class="pdf-field-label"><b>${label10}</b></td>
-      <td class="pdf-field-value">${value10}</td>
+      <td class="td-bold">9. Nationality</td>
+      <td>${nationality}</td>
+      <td class="td-bold">${label10}</td>
+      <td>${value10}</td>
     </tr>
     <tr>
-      <td class="pdf-field-label" rowspan="4"><b>11. Choice of Email Id</b><br><span style="font-size:9px;">[Default E-mail Id Name of the applicant (Full Name/Short form)]</span></td>
-      <td class="pdf-field-label" style="text-align:center;"><b>Choices</b></td>
-      <td class="pdf-field-label"><b>12. Mobile No</b></td>
-      <td class="pdf-field-value" rowspan="2" style="vertical-align: middle;">${mobile}</td>
+      <td class="td-bold" rowspan="4" style="vertical-align: top;">11. Choice of Email Id<br><span style="font-size:9px; font-weight: normal;">[Default Email Id Name of the applicant (Full Name/Short form)]</span></td>
+      <td class="td-bold" style="text-align: center;">Choices</td>
+      <td class="td-bold" colspan="2" style="vertical-align: top;">12. Alternate E-mail Id :<br><span style="font-size:9px; font-weight: normal; font-style: italic;">(Write in Capital letters only)</span></td>
     </tr>
     <tr>
-      <td class="pdf-email-choice"><span class="pdf-choice-num">1<sup>st</sup></span><span class="pdf-choice-val">${email1}</span></td>
-      <td class="pdf-field-label" rowspan="3"><b>13. Alternate E-mail Id :</b><br><span style="font-size:8px;font-style:italic;">(Write in Capital letters only)</span></td>
+      <td class="pdf-email-choices-container">
+        <table class="pdf-inner-table">
+          <tr><td style="width: 25px;">1<sup>st</sup></td><td>${email1}</td></tr>
+        </table>
+      </td>
+      <td colspan="2" rowspan="3" style="vertical-align: middle;">${alternateEmail}</td>
     </tr>
     <tr>
-      <td class="pdf-email-choice"><span class="pdf-choice-num">2<sup>nd</sup></span><span class="pdf-choice-val">${email2}</span></td>
-      <td class="pdf-field-value" rowspan="2" style="vertical-align: middle;">${alternateEmail}</td>
+      <td class="pdf-email-choices-container">
+        <table class="pdf-inner-table">
+          <tr><td style="width: 25px;">2<sup>nd</sup></td><td>${email2}</td></tr>
+        </table>
+      </td>
     </tr>
     <tr>
-      <td class="pdf-email-choice"><span class="pdf-choice-num">3<sup>rd</sup></span><span class="pdf-choice-val">${email3}</span></td>
+      <td class="pdf-email-choices-container">
+        <table class="pdf-inner-table">
+          <tr><td style="width: 25px;">3<sup>rd</sup></td><td>${email3}</td></tr>
+        </table>
+      </td>
     </tr>
   </table>
 
   <!-- UNDERTAKING -->
   <div class="pdf-undertaking">
-    <p class="pdf-undertaking-title"><b>Undertaking:</b></p>
+    <p class="pdf-undertaking-title">Undertaking:</p>
     <table class="pdf-undertaking-table">
       <tr><td class="ut-num">i)</td><td>The university email account is intended for official use related to University work and it must be used for academic activities only.</td></tr>
-      <tr><td class="ut-num">ii)</td><td>All users must check their email accounts regularly for academic, administrative, and official communications. Failure to do so may result in missed important information. All official communication must be made using the( …@bhu.ac.in) E-mail id. Communications sent from any other E-mail ID may not be considered official or valid.</td></tr>
+      <tr><td class="ut-num">ii)</td><td>All users must check their email accounts regularly for academic, administrative, and official communications. Failure to do so may result in missed important information. All official communication must be made using the( …@bhu.ac.in) E-mail id. Communications sent from any other email ID may not be considered official or valid.</td></tr>
       <tr><td class="ut-num">iii)</td><td>Users are prohibited from using their university email accounts to:<ul class="pdf-ut-list"><li>Send harmful software, malware, or viruses.</li><li>Misrepresent the identity of the sender.</li><li>Engage in the distribution of offensive, illegal, or inappropriate content.</li></ul></td></tr>
-      <tr><td class="ut-num">iv)</td><td>Users must take all necessary steps to secure their email accounts, including maintaining password confidentiality and regularly backing up important data. The computer centre (CC) is not responsible for restoring lost data.</td></tr>
+      <tr><td class="ut-num">iv)</td><td>Users must take all necessary steps to secure their email accounts, including maintaining password confidentiality and regularly backing up important data. The Computer Centre (CC) is not responsible for restoring your lost data.</td></tr>
       <tr><td class="ut-num">v)</td><td>Users should regularly delete unnecessary emails and large attachments to manage mailbox space effectively. Important emails should be archived, and users should take periodic backups.</td></tr>
-      <tr><td class="ut-num">vi)</td><td>The maximum E-mail size for <b>${config.quotaLabel}</b> will be <b>${config.quotaValue}</b>.</td></tr>
-      <tr><td class="ut-num">vii)</td><td>User email accounts will remain active for one year after retirement, after that email account will be deactivated and it may be deleted.</td></tr>
-      <tr><td class="ut-num">viii)</td><td>University email Policy must be applicable to all E-mail users.</td></tr>
+      <tr><td class="ut-num">vi)</td><td>The maximum E-mail size for ${config.quotaLabel} (${config.quotaValue}) respectively.</td></tr>
+      <tr><td class="ut-num">vii)</td><td>User email accounts will remain active for one year after course completion, after that email account will be deactivated and it may be deleted.</td></tr>
+      <tr><td class="ut-num">viii)</td><td>University E-mail Policy must be applicable to all E-mail users.</td></tr>
     </table>
   </div>
 
   <!-- APPLICANT SIGNATURE -->
-  <div class="pdf-signature-block">
-    <div class="pdf-sig-left">
-      <p><b>Date:</b> ${applicantDate}</p>
-      <p><b>Place:</b> ${applicantPlace}</p>
+  <div class="signature-container">
+    <div class="sig-left">
+      <p>Date: <span class="fill-blank-small">${applicantDate}</span></p>
+      <p>Place: <span class="fill-blank-small">${applicantPlace}</span></p>
     </div>
-    <div class="pdf-sig-right" style="position: relative;">
-      <div style="height: 40px; margin-bottom: 5px; display: flex; justify-content: flex-end;">
-        ${applicantSigDataUrl ? `<img src="${applicantSigDataUrl}" style="max-height: 40px; max-width: 150px; object-fit: contain;">` : ''}
+    <div class="sig-right">
+      <div class="sig-image-container">
+        ${applicantSigDataUrl ? `<img src="${applicantSigDataUrl}">` : ''}
       </div>
-      <p><b>(Signature of the Applicant)</b></p>
+      <div class="sig-label">(Signature of the Applicant)</div>
     </div>
   </div>
 
   <!-- HOD DECLARATION -->
-  <div class="pdf-declaration">
-    <p class="pdf-declaration-title"><b>Declaration by the ${categoryRaw === 'UNDER_GRADUATE_STUDENT' ? 'Dean of the Faculty' : 'Head of the Department'}</b></p>
-    <p class="pdf-declaration-text">
-      This is to certify that ${isStudent ? 'Mr./Ms.' : 'Prof./Dr./Mr.'} <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 200px; text-align: center;">${applicantName || '&nbsp;'}</span> is ${isStudent ? 'a student of' : 'working in our'} Department/ Faculty/Institute/ Centre/Section <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 200px; text-align: center;">${department || '&nbsp;'}</span> ${isStudent ? `enrolled in <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 150px; text-align: center;">${value2 || '&nbsp;'}</span>` : `as <span style="font-weight: bold; border-bottom: 1px solid #000; padding: 0 10px; display: inline-block; min-width: 150px; text-align: center;">${designation || '&nbsp;'}</span>`}. Please issue him/her Email ID for his/her work.
-    </p>
+  <div class="declaration-section">
+    <div class="declaration-title">Declaration by the Head of the Department</div>
+    <div class="declaration-text">
+      This is to certify that ${isStudent ? 'Mr./Ms./Mrs./Dr.' : 'Prof./Dr./Mr.'} <span class="fill-blank">${applicantName || '&nbsp;'}</span> is the ${isStudent ? 'Scholar of our Department/' : 'working in our'} Faculty/Institute/Centre/Section <span class="fill-blank">${department || '&nbsp;'}</span> as <span class="fill-blank">${isStudent ? value2 : designation || '&nbsp;'}</span>. Please issue him/her Email ID for his/her work.
+    </div>
   </div>
 
   <!-- HOD SIGNATURE -->
-  <div class="pdf-signature-block">
-    <div class="pdf-sig-left">
-      <p><b>Date:</b> ${approvalDate}</p>
+  <div class="signature-container">
+    <div class="sig-left">
+      <p>Date: <span class="fill-blank-small">${approvalDate}</span></p>
+      <p>Place: <span class="fill-blank-small">&nbsp;</span></p>
     </div>
-    <div class="pdf-sig-right">
-      <div style="height: 40px; margin-bottom: 5px; display: flex; justify-content: flex-end;">
-        ${hodSigDataUrl ? `<img src="${hodSigDataUrl}" style="max-height: 40px; max-width: 150px; object-fit: contain;">` : ''}
+    <div class="sig-right">
+      <div class="sig-image-container">
+        ${hodSigDataUrl ? `<img src="${hodSigDataUrl}">` : ''}
       </div>
-      <p><b>${categoryRaw === 'UNDER_GRADUATE_STUDENT' ? '(Signature & Seal of Dean)' : '(Signature & Seal of HOD / Coordinator / PI / Supervisor)'}</b></p>
-      <p><b>${hodName}</b></p>
-      <p><b>${categoryRaw === 'UNDER_GRADUATE_STUDENT' ? '(Dean)' : '(Head of the Department)'}</b></p>
+      <div class="sig-label">(Signature of the Head of the Department with Seal)</div>
+      <div style="font-size:10px; margin-top:2px;">${hodName}</div>
     </div>
+  </div>
+
+  <!-- NOTE -->
+  <div class="pdf-note">
+    <p>NOTE:- 1. Kindly submit this form to the Computer Centre duly signed by the appropriate authority and your E-mail ID will be instantly created and will be send to your alternate Email-ID from “GOOGLE WORKSPACE”.</p>
+    <p style="padding-left:45px;">2. After receiving your created Email ID of BHU Domain you have to create your own Password by clicking on “Sign In” option.</p>
   </div>
 
   <!-- HOLOGRAM STAMP -->
@@ -390,12 +392,7 @@ export class PdfService {
     <div class="hologram-date">Signed on: ${approvalDate} | Ref: ${application.trackingId}</div>
   </div>
 
-  <!-- NOTE -->
-  <div class="pdf-note">
-    <p><b>NOTE:-</b> 1. Kindly submit this form to the Computer Centre duly signed by the appropriate authority and your E-mail ID will be instantly created and will be send to your alternate Email-ID from <b>"GOOGLE WORKSPACE"</b>.</p>
-    <p style="padding-left:38px;">2. After receiving your created Email ID of BHU Domain you have to create your own Password by clicking on <b>"Sign In"</b> Option.</p>
-  </div>
-
+  </div> <!-- end page-wrapper -->
 </body>
 </html>`;
 
