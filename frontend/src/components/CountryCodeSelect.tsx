@@ -26,22 +26,22 @@ export default function CountryCodeSelect({ value, onChange }: CountryCodeSelect
   const selectedCountry = countryCodes.find((c) => c.code === value) || countryCodes[0];
 
   return (
-    <div className="relative w-36 shrink-0" ref={containerRef}>
+    <div className="relative w-24 sm:w-36 shrink-0" ref={containerRef}>
       <div
-        className="w-full flex items-center justify-between rounded-lg border-2 border-outline-variant bg-surface px-3 py-3 text-sm text-foreground hover:border-outline focus:border-primary transition-colors cursor-pointer"
+        className="w-full flex items-center justify-between rounded-lg border-2 border-outline-variant bg-surface px-2 sm:px-3 py-3 text-sm text-foreground hover:border-outline focus:border-primary transition-colors cursor-pointer"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <img
             src={`https://flagcdn.com/w20/${selectedCountry.iso}.png`}
             srcSet={`https://flagcdn.com/w40/${selectedCountry.iso}.png 2x`}
             width="20"
             alt={selectedCountry.name}
-            className="rounded-sm"
+            className="rounded-sm shrink-0"
           />
-          <span className="font-medium">{selectedCountry.code}</span>
+          <span className="font-medium text-xs sm:text-sm">{selectedCountry.code}</span>
         </div>
-        <span className="material-symbols-rounded text-[18px] text-outline">
+        <span className="material-symbols-rounded text-[16px] sm:text-[18px] text-outline shrink-0">
           expand_more
         </span>
       </div>

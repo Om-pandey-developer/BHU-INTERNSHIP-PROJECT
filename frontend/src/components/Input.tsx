@@ -45,7 +45,7 @@ export default function Input({
             placeholder-transparent transition-colors duration-200
             focus:border-primary focus:outline-none focus:ring-0
             ${icon ? "pl-11" : ""}
-            ${suffix || isPasswordType ? "pr-12" : ""}
+            ${suffix ? "pr-[104px]" : isPasswordType ? "pr-12" : ""}
             ${error ? "border-error" : "border-outline-variant hover:border-outline"}
           `}
           placeholder={label}
@@ -55,7 +55,7 @@ export default function Input({
           htmlFor={inputId}
           className={`
             absolute top-1/2 -translate-y-1/2 text-sm text-outline transition-all duration-200
-            pointer-events-none z-10
+            pointer-events-none z-10 whitespace-nowrap truncate max-w-[calc(100%-3.5rem)]
             peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-sm
             peer-focus:top-0 peer-focus:text-xs peer-focus:text-primary peer-focus:bg-surface peer-focus:px-1
             peer-not-placeholder-shown:top-0 peer-not-placeholder-shown:text-xs peer-not-placeholder-shown:bg-surface peer-not-placeholder-shown:px-1

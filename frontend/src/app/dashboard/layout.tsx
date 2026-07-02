@@ -114,7 +114,7 @@ export default function DashboardLayout({
       <main className="flex-1 flex flex-col min-h-screen min-w-0">
 
         {/* ── 5. TOP NAVIGATION BAR ── */}
-        <header className="site-header sticky top-0 z-30 bg-white backdrop-blur-md border-b border-black/30 px-6 py-3 flex items-center gap-4 shadow-[0_0_9px_rgba(0,0,0,0.3)]">
+        <header className="site-header sticky top-0 z-20 bg-white backdrop-blur-md border-b border-black/30 px-3 sm:px-6 py-1.5 sm:py-3 flex items-center gap-2 sm:gap-4 shadow-[0_0_9px_rgba(0,0,0,0.3)]">
 
 
           <div className="flex-0">
@@ -123,13 +123,13 @@ export default function DashboardLayout({
               {user.lastName[0]}
             </span>
           </div>
-          <div className="flex items-center ml-2">
+          <div className="flex items-center ml-1 sm:ml-2">
             <Image
               src="/BHUlogo.png"
               alt="BHU Logo"
               width={160}
               height={50}
-              className="object-contain h-14 w-auto"
+              className="object-contain h-[4.5rem] sm:h-14 w-auto scale-110 sm:scale-100 origin-left"
             />
           </div>
 
@@ -138,27 +138,24 @@ export default function DashboardLayout({
           {/* ── Applicant & HOD navbar actions: Settings + Logout ── */}
 
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-0 sm:gap-3">
             <button
               onClick={handleLogout}
-              className="p-1 rounded-lg hover:bg-error-container text-outline hover:text-error transition-colors cursor-pointer flex items-center gap-1"
+              className="pl-5 sm:p-2 rounded-lg hover:bg-error-container text-outline hover:text-error transition-colors cursor-pointer flex items-center gap-1"
               title="Logout"
             >
               <span className="material-symbols-rounded text-[22px]">logout</span>
               <h2 className="text-sm font-medium hidden sm:block">Logout</h2>
             </button>
-          </div>
 
-          <a
-            href="/dashboard/settings"
-            className={`p-2 rounded-lg transition-colors cursor-pointer ${pathname === "/dashboard/settings"
-              ? "bg-primary-container text-primary"
-              : "hover:bg-surface-variant text-outline hover:text-foreground"
-              }`}
-            title="Settings"
-          >
-            <span className="material-symbols-rounded text-[22px]">settings</span>
-          </a>
+            <a
+              href="/dashboard/settings"
+              className={`pl-5 sm:p-2 rounded-lg hover:bg-error-container text-outline hover:text-error transition-colors cursor-pointer flex items-center gap-1}}`}
+              title="Settings"
+            >
+              <span className="material-symbols-rounded text-[22px]">settings</span>
+            </a>
+          </div>
 
         </header>
 
