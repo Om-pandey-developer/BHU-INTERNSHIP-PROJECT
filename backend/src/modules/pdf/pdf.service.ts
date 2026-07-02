@@ -274,9 +274,28 @@ export class PdfService {
   .pdf-note p { font-size: 10px; line-height: 1.4; text-align: left; }
   
   /* Digital Verified Stamp */
-  .digital-stamp { margin-top: 5px; font-size: 10px; color: #196f3d; font-weight: bold; text-align: center; }
-  .digital-stamp .tick { font-size: 12px; margin-right: 3px; }
-  .digital-stamp .hash-text { font-size: 7px; color: #777; font-weight: normal; font-family: monospace; margin-top: 2px; }
+  .sig-middle { display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 5px; }
+  .digital-stamp { 
+    border: 1px solid #aaa;
+    padding: 6px;
+    width: 170px;
+    position: relative;
+    background: #fff;
+    margin: 0 10px;
+    text-align: left;
+    overflow: hidden;
+  }
+  .ds-title { font-size: 14px; font-weight: bold; margin-bottom: 2px; color: #000; }
+  .ds-content { font-size: 8px; color: #000; line-height: 1.2; position: relative; z-index: 2; font-family: sans-serif; }
+  .ds-check { 
+    position: absolute; 
+    top: 50%; left: 50%; 
+    transform: translate(-50%, -50%); 
+    font-size: 70px; 
+    color: rgba(40, 167, 69, 0.4); 
+    z-index: 1;
+    font-weight: bold;
+  }
 </style>
 </head>
 <body>
@@ -292,7 +311,7 @@ export class PdfService {
       </td>
       <td class="pdf-photo-cell">
         <div class="pdf-photo-box">
-          ${photoDataUrl ? `<img src="${photoDataUrl}">` : `<span class="pdf-photo-label">Applicant<br>Photograph</span><span class="pdf-photo-hint">Photo must be<br>certified by Head<br>of Department</span>`}
+          ${photoDataUrl ? `<img src="${photoDataUrl}">` : `<span class="pdf-photo-label">Applicant<br>Photograph</span><span class="pdf-photo-hint">Photo must be<br>certified by ${categoryRaw === 'UNDER_GRADUATE_STUDENT' ? 'Dean' : 'Head'}<br>of ${categoryRaw === 'UNDER_GRADUATE_STUDENT' ? 'Faculty' : 'Department'}</span>`}
         </div>
       </td>
     </tr>
@@ -367,7 +386,7 @@ export class PdfService {
 
   <!-- HOD DECLARATION -->
   <div class="declaration-section">
-    <div class="declaration-title">Declaration by the Head of the Department</div>
+    <div class="declaration-title">Declaration by the ${categoryRaw === 'UNDER_GRADUATE_STUDENT' ? 'Dean' : 'Head of the Department'}</div>
     <div class="declaration-text">
       This is to certify that ${isStudent ? 'Mr./Ms./Mrs./Dr.' : 'Prof./Dr./Mr.'} <span class="fill-blank">${applicantName || '&nbsp;'}</span> is the ${isStudent ? 'Scholar of our Department/' : 'working in our'} Faculty/Institute/Centre/Section <span class="fill-blank">${department || '&nbsp;'}</span> as <span class="fill-blank">${isStudent ? value2 : designation || '&nbsp;'}</span>. Please issue him/her Email ID for his/her work.
     </div>
@@ -379,16 +398,24 @@ export class PdfService {
       <p>Date: <span class="fill-blank-small">${approvalDate}</span></p>
       <p>Place: <span class="fill-blank-small">&nbsp;</span></p>
     </div>
+    <div class="sig-middle">
+      <div class="digital-stamp">
+        <div class="ds-check">✔</div>
+        <div class="ds-title">Signature valid</div>
+        <div class="ds-content">
+          Digitally signed by ${categoryRaw === 'UNDER_GRADUATE_STUDENT' ? 'Dean' : 'HOD'}<br>
+          Name: ${hodName}<br>
+          Date: ${approvalDate}<br>
+          Hash: ${hashDisplay}…
+        </div>
+      </div>
+    </div>
     <div class="sig-right">
       <div class="sig-image-container">
         ${hodSigDataUrl ? `<img src="${hodSigDataUrl}">` : ''}
       </div>
-      <div class="sig-label">(Signature of the Head of the Department with Seal)</div>
-      <div style="font-size:10px; margin-top:2px;">${hodName}</div>
-      <div class="digital-stamp">
-        <span class="tick">✓</span> Digitally signed and verified by ${categoryRaw === 'UNDER_GRADUATE_STUDENT' ? 'Dean' : 'HOD'}
-        <div class="hash-text">Hash: ${hashDisplay}…</div>
-      </div>
+      <div class="sig-label">(Signature and Seal of ${categoryRaw === 'UNDER_GRADUATE_STUDENT' ? 'Dean' : 'Head of Department'})</div>
+      <div style="font-size:10px; margin-top:2px; text-align: center;">${hodName}</div>
     </div>
   </div>
 

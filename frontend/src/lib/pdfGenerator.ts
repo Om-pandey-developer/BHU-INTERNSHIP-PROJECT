@@ -252,7 +252,7 @@ export async function generateApplicationPdf(
                     <div class="pdf-photo-box">
                         <img id="pdfPhoto" src="${photoDataUrl || ''}" style="${photoDataUrl ? 'display:block;width:100%;height:100%;object-fit:cover;' : 'display:none;'}">
                         <span class="pdf-photo-label" style="${photoDataUrl ? 'display:none;' : 'display:block;'}">Applicant<br>Photograph</span>
-                        <span class="pdf-photo-hint" style="${photoDataUrl ? 'display:none;' : 'display:block;'}">Photo must be<br>certified by Head<br>of Department</span>
+                        <span class="pdf-photo-hint" style="${photoDataUrl ? 'display:none;' : 'display:block;'}">Photo must be<br>certified by ${isUG ? 'Dean' : 'Head'}<br>of ${isUG ? 'Faculty' : 'Department'}</span>
                     </div>
                 </td>
             </tr>
