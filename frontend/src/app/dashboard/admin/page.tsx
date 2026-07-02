@@ -602,7 +602,7 @@ export default function AdminDashboard() {
                 {apps.map((item, idx) => {
                   const isExpanded = expandedRows.has(item.id);
                   const name = `${item.applicant?.firstName || ''} ${item.applicant?.lastName || ''}`;
-                  const email = item.applicant?.alternateEmail || String(item.applicantDetails?.alternateEmail || "") || "—";
+                  const email = (item.applicant?.alternateEmail || String(item.applicantDetails?.alternateEmail || "") || "").toLowerCase() || "—";
                   const trackId = item.trackingId;
                   const department = item.department?.name || "—";
                   const category = String(item.applicantDetails?.category || "—");
@@ -1262,7 +1262,7 @@ export default function AdminDashboard() {
                 <p className="font-bold text-foreground">
                   {selectedApp.applicant?.firstName} {selectedApp.applicant?.lastName}
                 </p>
-                <p className="text-sm text-outline">{selectedApp.applicant?.alternateEmail}</p>
+                <p className="text-sm text-outline lowercase">{selectedApp.applicant?.alternateEmail}</p>
                 {selectedApp.applicant?.bhuEmail && (
                   <p className="text-sm text-primary font-semibold">{selectedApp.applicant.bhuEmail}</p>
                 )}
@@ -1297,7 +1297,7 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="bg-surface-variant/30 rounded-lg px-3 py-2">
                   <p className="text-[10px] uppercase tracking-wider text-outline font-medium">Alternate Email</p>
-                  <p className="text-sm text-foreground font-medium truncate">{selectedApp.applicant?.alternateEmail}</p>
+                  <p className="text-sm text-foreground font-medium truncate lowercase">{selectedApp.applicant?.alternateEmail}</p>
                 </div>
                 {Object.entries(selectedApp.applicantDetails || {}).map(([key, val]) => {
                   let displayVal = String(val);

@@ -1199,7 +1199,7 @@ export default function ApplicantDashboard() {
                   </div>
                   <div className="bg-surface-variant/40 rounded-lg px-3 py-2 col-span-2 sm:col-span-1">
                     <p className="text-[10px] uppercase tracking-wider text-outline font-medium">Alternate Email</p>
-                    <p className="text-sm text-foreground font-medium">{user?.email}</p>
+                    <p className="text-sm text-foreground font-medium lowercase">{user?.email}</p>
                   </div>
                   {categoryConfig.fields.map((field) => {
                     if (field === "emailChoice") {
@@ -1461,7 +1461,7 @@ export default function ApplicantDashboard() {
                         </div>
                         <div className="bg-surface-variant/30 rounded-lg px-3 py-2">
                           <p className="text-[10px] uppercase tracking-wider text-outline font-medium">Alternate Email</p>
-                          <p className="text-sm text-foreground font-medium truncate">{user?.email}</p>
+                          <p className="text-sm text-foreground font-medium truncate lowercase">{user?.email}</p>
                         </div>
                         {Object.entries(app.applicantDetails || {}).map(([key, val]) => {
                           let displayVal = String(val);

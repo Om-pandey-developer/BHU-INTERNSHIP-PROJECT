@@ -318,7 +318,7 @@ export default function AdminUsersPage() {
                           </p>
                         </div>
                       </td>
-                      <td className="py-3 px-5 text-sm text-outline">
+                      <td className="py-3 px-5 text-[13px] text-outline truncate max-w-[200px] lowercase">
                         {user.alternateEmail}
                       </td>
                       <td className="py-3 px-5">
@@ -330,7 +330,7 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="py-3 px-5">
                         {user.bhuEmail ? (
-                          <span className="text-sm text-success font-medium">
+                          <span className="text-sm text-success font-medium lowercase">
                             {user.bhuEmail}
                           </span>
                         ) : (
@@ -405,7 +405,7 @@ export default function AdminUsersPage() {
                 <p className="text-lg font-bold text-foreground">
                   {selectedUser.firstName} {selectedUser.lastName}
                 </p>
-                <p className="text-sm text-outline">
+                <p className="text-sm font-medium text-foreground lowercase">
                   {selectedUser.alternateEmail}
                 </p>
                 <span
