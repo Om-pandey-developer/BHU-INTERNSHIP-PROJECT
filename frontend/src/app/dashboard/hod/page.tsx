@@ -522,7 +522,7 @@ export default function HodDashboard() {
               type="text"
               placeholder="Search by ID, Name, Email..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
               className="w-full pl-10 pr-4 py-2 bg-surface-variant/50 border border-outline-variant rounded-xl text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
             />
           </div>
@@ -531,7 +531,7 @@ export default function HodDashboard() {
           {activeTab !== "reapply" && (
             <select
               value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
+              onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
               className="px-4 py-2 bg-surface-variant/50 border border-outline-variant rounded-xl text-sm focus:outline-none focus:border-primary transition-all appearance-none cursor-pointer"
             >
               <option value="ALL">All Categories</option>
@@ -549,7 +549,7 @@ export default function HodDashboard() {
               <span>Show</span>
               <select
                 value={entriesPerPage}
-                onChange={(e) => setEntriesPerPage(Number(e.target.value))}
+                onChange={(e) => { setEntriesPerPage(Number(e.target.value)); setCurrentPage(1); }}
                 className="px-2 py-1 bg-surface-variant/50 border border-outline-variant rounded-lg text-sm focus:outline-none cursor-pointer"
               >
                 <option value={10}>10</option>

@@ -208,38 +208,10 @@ export class PdfService {
   .pdf-note { margin-top: 15px; }
   .pdf-note p { font-size: 10px; line-height: 1.4; text-align: left; }
   
-  /* Hologram Stamp */
-  .hologram-stamp {
-    margin-top: 20px;
-    border: 3px double #1a5276;
-    border-radius: 8px;
-    padding: 12px 16px;
-    background: linear-gradient(135deg, #eaf2f8 0%, #d4efdf 50%, #eaf2f8 100%);
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-    page-break-inside: avoid;
-  }
-  .hologram-stamp::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: repeating-linear-gradient(
-      45deg,
-      transparent,
-      transparent 10px,
-      rgba(26, 82, 118, 0.03) 10px,
-      rgba(26, 82, 118, 0.03) 20px
-    );
-  }
-  .hologram-title { font-size: 12px; font-weight: bold; color: #1a5276; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
-  .hologram-check { font-size: 10px; color: #196f3d; font-weight: bold; margin-bottom: 4px; }
-  .hologram-hash { font-family: 'Courier New', Courier, monospace; font-size: 8px; color: #555; letter-spacing: 1px; margin-bottom: 4px; }
-  .hologram-date { font-size: 9px; color: #666; }
-  .hologram-hod { font-size: 10px; color: #1a5276; font-weight: bold; margin-top: 4px; }
+  /* Digital Verified Stamp */
+  .digital-stamp { margin-top: 5px; font-size: 10px; color: #196f3d; font-weight: bold; text-align: center; }
+  .digital-stamp .tick { font-size: 12px; margin-right: 3px; }
+  .digital-stamp .hash-text { font-size: 7px; color: #777; font-weight: normal; font-family: monospace; margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -374,6 +346,10 @@ export class PdfService {
       </div>
       <div class="sig-label">(Signature of the Head of the Department with Seal)</div>
       <div style="font-size:10px; margin-top:2px;">${hodName}</div>
+      <div class="digital-stamp">
+        <span class="tick">✓</span> Digitally signed and verified by ${categoryRaw === 'UNDER_GRADUATE_STUDENT' ? 'Dean' : 'HOD'}
+        <div class="hash-text">Hash: ${hashDisplay}…</div>
+      </div>
     </div>
   </div>
 
@@ -381,15 +357,6 @@ export class PdfService {
   <div class="pdf-note">
     <p>NOTE:- 1. Kindly submit this form to the Computer Centre duly signed by the appropriate authority and your E-mail ID will be instantly created and will be send to your alternate Email-ID from “GOOGLE WORKSPACE”.</p>
     <p style="padding-left:45px;">2. After receiving your created Email ID of BHU Domain you have to create your own Password by clicking on “Sign In” option.</p>
-  </div>
-
-  <!-- HOLOGRAM STAMP -->
-  <div class="hologram-stamp">
-    <div class="hologram-title">✦ Digitally Signed & Approved ✦</div>
-    <div class="hologram-check">✓ Verified by ${categoryRaw === 'UNDER_GRADUATE_STUDENT' ? 'Dean' : 'Head of Department'}</div>
-    <div class="hologram-hod">Approved by: ${hodName}</div>
-    <div class="hologram-hash">Hash: ${hashDisplay}…</div>
-    <div class="hologram-date">Signed on: ${approvalDate} | Ref: ${application.trackingId}</div>
   </div>
 
   </div> <!-- end page-wrapper -->
