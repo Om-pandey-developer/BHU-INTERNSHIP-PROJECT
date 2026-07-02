@@ -488,10 +488,21 @@ export class ApplicationsController {
     }
 
     try {
-      const { createReadStream } = await import('fs');
+      const { createReadStream, existsSync } = await import('fs');
+      if (!existsSync(app.photoStoragePath)) {
+        throw new NotFoundException('Photo file not found on disk');
+      }
       const fileStream = createReadStream(app.photoStoragePath);
+      
+      fileStream.on('error', (err) => {
+        if (!res.headersSent) {
+          res.status(404).send('Photo file not found on disk');
+        }
+      });
+      
       fileStream.pipe(res);
     } catch (error) {
+      if (error instanceof NotFoundException) throw error;
       throw new NotFoundException('Photo file not found on disk');
     }
   }
@@ -518,10 +529,21 @@ export class ApplicationsController {
     }
 
     try {
-      const { createReadStream } = await import('fs');
+      const { createReadStream, existsSync } = await import('fs');
+      if (!existsSync(app.signatureStoragePath)) {
+        throw new NotFoundException('Signature file not found on disk');
+      }
       const fileStream = createReadStream(app.signatureStoragePath);
+
+      fileStream.on('error', (err) => {
+        if (!res.headersSent) {
+          res.status(404).send('Signature file not found on disk');
+        }
+      });
+
       fileStream.pipe(res);
     } catch (error) {
+      if (error instanceof NotFoundException) throw error;
       throw new NotFoundException('Signature file not found on disk');
     }
   }

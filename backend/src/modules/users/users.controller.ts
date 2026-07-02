@@ -116,10 +116,21 @@ export class UsersController {
     }
 
     try {
-      const { createReadStream } = await import('fs');
+      const { createReadStream, existsSync } = await import('fs');
+      if (!existsSync(sigPath)) {
+        throw new NotFoundException('Signature file not found on disk');
+      }
       const fileStream = createReadStream(sigPath);
+      
+      fileStream.on('error', (err) => {
+        if (!res.headersSent) {
+          res.status(404).send('Signature file not found on disk');
+        }
+      });
+      
       fileStream.pipe(res);
-    } catch {
+    } catch (error) {
+      if (error instanceof NotFoundException) throw error;
       throw new NotFoundException('Signature file not found on disk');
     }
   }
