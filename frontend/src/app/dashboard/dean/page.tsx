@@ -213,7 +213,7 @@ export default function DeanDashboard() {
       const q = searchQuery.toLowerCase();
       data = data.filter(item => {
         const name = activeTab === "reapply" ? item.studentName : `${item.applicant?.firstName} ${item.applicant?.lastName}`;
-        const email = item.applicant?.alternateEmail || "";
+        const email = (item.applicant?.alternateEmail || "").toLowerCase();
         const id = activeTab === "reapply" ? item.application?.trackingId : item.trackingId;
         const roll = activeTab === "reapply" ? item.rollNumber : "";
         return name?.toLowerCase().includes(q) || email?.toLowerCase().includes(q) || id?.toLowerCase().includes(q) || roll?.toLowerCase().includes(q);
@@ -661,7 +661,7 @@ export default function DeanDashboard() {
                   const isExpanded = expandedRows.has(item.id);
                   const isReapply = activeTab === "reapply";
                   const name = isReapply ? item.studentName : `${item.applicant?.firstName} ${item.applicant?.lastName}`;
-                  const email = isReapply ? item.applicant?.alternateEmail : item.applicant?.alternateEmail;
+                  const email = (isReapply ? item.applicant?.alternateEmail : item.applicant?.alternateEmail || "").toLowerCase();
                   const trackId = isReapply ? item.application?.trackingId : item.trackingId;
                   const department = isReapply ? item.application?.department?.name : item.department?.name;
                   const category = !isReapply ? (item.applicantDetails?.category || "—") : "—";
@@ -825,7 +825,7 @@ export default function DeanDashboard() {
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
                                       <div>
                                         <p className="text-xs uppercase tracking-wider text-outline font-bold mb-1">Alternate Email</p>
-                                        <p className="text-base text-foreground font-semibold">{item.applicant?.alternateEmail || "-"}</p>
+                                        <p className="text-base text-foreground font-semibold lowercase">{item.applicant?.alternateEmail || "-"}</p>
                                       </div>
                                       {Object.entries(item.applicantDetails || {}).map(([k, v]) => (
                                         <div key={k}>

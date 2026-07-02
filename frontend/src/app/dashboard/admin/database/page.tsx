@@ -214,7 +214,10 @@ export default function DatabaseExplorerPage() {
 
   /* ─── Status-like badge for known enum values ─── */
   function renderCellValue(key: string, value: unknown) {
-    const str = String(value ?? "");
+    let str = String(value ?? "");
+    if (key.toLowerCase().includes("email")) {
+      str = str.toLowerCase();
+    }
 
     // Role badges
     if (key === "role" && ["APPLICANT", "HOD", "CC_ADMIN"].includes(str)) {

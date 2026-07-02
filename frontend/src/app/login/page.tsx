@@ -485,7 +485,7 @@ export default function LoginPage() {
                   icon="mail"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value.toLowerCase().replace(/[^a-z0-9.@]/g, ""))}
                   required
                   autoComplete="off"
                 />
@@ -629,7 +629,7 @@ export default function LoginPage() {
                   type="email"
                   value={resetEmail}
                   onChange={(e) => {
-                    setResetEmail(e.target.value);
+                    setResetEmail(e.target.value.toLowerCase().replace(/[^a-z0-9.@]/g, ""));
                     setError("");
                   }}
                   required

@@ -99,6 +99,9 @@ export default function RegisterPage() {
     if (e.target.name === "firstName" || e.target.name === "lastName") {
       value = value.replace(/[^a-zA-Z\s]/g, "");
     }
+    if (e.target.name === "alternateEmail") {
+      value = value.toLowerCase().replace(/[^a-z0-9.@]/g, "");
+    }
     setForm((prev) => ({ ...prev, [e.target.name]: value }));
     setError("");
   }

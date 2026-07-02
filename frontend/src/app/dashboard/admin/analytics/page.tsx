@@ -327,7 +327,7 @@ export default function AdminAnalyticsPage() {
                       <p className="text-sm text-foreground">
                         {app.applicant?.firstName} {app.applicant?.lastName}
                       </p>
-                      <p className="text-[11px] text-outline">
+                      <p className="text-xs text-outline lowercase truncate max-w-[150px]">
                         {app.applicant?.alternateEmail}
                       </p>
                     </td>
