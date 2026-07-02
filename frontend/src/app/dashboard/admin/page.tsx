@@ -581,7 +581,7 @@ export default function AdminDashboard() {
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider w-12">S.No</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Tracking ID</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Applicant Name</th>
-                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Email</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Alternate Email</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Mobile No</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Faculty/Institute</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Department</th>
@@ -1221,6 +1221,10 @@ export default function AdminDashboard() {
             <div>
               <h4 className="text-sm font-semibold text-foreground mb-3">Application Details</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="bg-surface-variant/30 rounded-lg px-3 py-2">
+                  <p className="text-[10px] uppercase tracking-wider text-outline font-medium">Alternate Email</p>
+                  <p className="text-sm text-foreground font-medium truncate">{selectedApp.applicant?.alternateEmail}</p>
+                </div>
                 {Object.entries(selectedApp.applicantDetails || {}).map(([key, val]) => {
                   let displayVal = String(val);
                   if (key.startsWith("emailChoice") && displayVal && !displayVal.includes("@")) {

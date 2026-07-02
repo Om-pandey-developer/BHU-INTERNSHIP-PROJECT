@@ -1193,6 +1193,14 @@ export default function ApplicantDashboard() {
                 </div>
 
                 <div className="p-5 grid grid-cols-2 gap-3">
+                  <div className="bg-surface-variant/40 rounded-lg px-3 py-2 col-span-2 sm:col-span-1">
+                    <p className="text-[10px] uppercase tracking-wider text-outline font-medium">Name</p>
+                    <p className="text-sm text-foreground font-medium">{user?.firstName} {user?.lastName}</p>
+                  </div>
+                  <div className="bg-surface-variant/40 rounded-lg px-3 py-2 col-span-2 sm:col-span-1">
+                    <p className="text-[10px] uppercase tracking-wider text-outline font-medium">Alternate Email</p>
+                    <p className="text-sm text-foreground font-medium">{user?.email}</p>
+                  </div>
                   {categoryConfig.fields.map((field) => {
                     if (field === "emailChoice") {
                       return (
@@ -1447,6 +1455,14 @@ export default function ApplicantDashboard() {
                     <div>
                       <h4 className="text-sm font-semibold text-foreground mb-3">Application Details</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="bg-surface-variant/30 rounded-lg px-3 py-2">
+                          <p className="text-[10px] uppercase tracking-wider text-outline font-medium">Name</p>
+                          <p className="text-sm text-foreground font-medium truncate">{user?.firstName} {user?.lastName}</p>
+                        </div>
+                        <div className="bg-surface-variant/30 rounded-lg px-3 py-2">
+                          <p className="text-[10px] uppercase tracking-wider text-outline font-medium">Alternate Email</p>
+                          <p className="text-sm text-foreground font-medium truncate">{user?.email}</p>
+                        </div>
                         {Object.entries(app.applicantDetails || {}).map(([key, val]) => {
                           let displayVal = String(val);
                           if (key.startsWith("emailChoice") && displayVal && !displayVal.includes("@")) {

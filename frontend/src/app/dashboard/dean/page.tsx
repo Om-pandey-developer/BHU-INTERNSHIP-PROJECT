@@ -616,7 +616,7 @@ export default function DeanDashboard() {
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider w-12">S.No</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Tracking ID</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Applicant Name</th>
-                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Email</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Alternate Email</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Mobile No</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Faculty/Institute</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Department</th>
@@ -797,6 +797,10 @@ export default function DeanDashboard() {
                                   <div className="lg:col-span-2 space-y-4">
                                     <h4 className="text-base font-bold text-foreground border-b border-outline-variant pb-2">Application Details</h4>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                                      <div>
+                                        <p className="text-xs uppercase tracking-wider text-outline font-bold mb-1">Alternate Email</p>
+                                        <p className="text-base text-foreground font-semibold">{item.applicant?.alternateEmail || "-"}</p>
+                                      </div>
                                       {Object.entries(item.applicantDetails || {}).map(([k, v]) => (
                                         <div key={k}>
                                           <p className="text-xs uppercase tracking-wider text-outline font-bold mb-1">{k.replace(/([A-Z])/g, ' $1').trim()}</p>

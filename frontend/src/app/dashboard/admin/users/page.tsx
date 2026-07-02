@@ -240,7 +240,7 @@ export default function AdminUsersPage() {
                     User
                   </th>
                   <th className="text-left text-[11px] uppercase tracking-wider font-semibold text-outline py-3 px-5">
-                    Email
+                    Alternate Email
                   </th>
                   <th className="text-left text-[11px] uppercase tracking-wider font-semibold text-outline py-3 px-5">
                     Role
