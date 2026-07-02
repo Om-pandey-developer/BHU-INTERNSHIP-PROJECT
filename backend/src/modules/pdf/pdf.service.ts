@@ -87,7 +87,7 @@ export class PdfService {
     const details = (application.applicantDetails as Record<string, any>) || {};
 
     // Prepare image data URLs
-    const logoPath = path.join(process.cwd(), '..', 'frontend', 'public', 'BHUlogo.png');
+    const logoPath = path.join(process.cwd(), '..', 'frontend', 'public', 'BHUpdfLOGO.png');
     const logoBase64 = this.fileToBase64(logoPath) || '';
     const photoDataUrl = this.fileToBase64(application.photoStoragePath);
     const applicantSigDataUrl = this.fileToBase64(application.signatureStoragePath || '');
@@ -122,8 +122,8 @@ export class PdfService {
     const value6 = isStudent ? (details.enrollmentNo || '') : (details.employeeId || '');
     const label8 = isStudent ? '8. Course Completion Year' : '8. Type of Employment';
     const value8 = isStudent ? (details.courseCompletionYear || '') : (details.typeOfEmployment || '');
-    const label10 = isStudent ? '10. ' : '10. Date of Retirement';
-    const value10 = isStudent ? '' : (this.formatDate(details.dateOfRetirement) || '');
+    const label10 = isStudent ? '10. Mobile No' : '10. Date of Retirement';
+    const value10 = isStudent ? (details.mobileNo || '') : (this.formatDate(details.dateOfRetirement) || '');
 
     const dob = this.formatDate(details.dateOfBirth || details.dob) || '';
     const faculty = details.facultyInstituteCentre || details.faculty || '';
@@ -137,6 +137,71 @@ export class PdfService {
     const applicantPlace = details.applicantPlace || '';
     const approvalDate = this.formatDate(approvalTimestamp) || '';
     const hashDisplay = digitalHash.substring(0, 16).toUpperCase();
+
+    let emailSectionHTML = '';
+    if (isStudent) {
+      emailSectionHTML = `
+      <tr>
+        <td class="td-bold" rowspan="4" style="vertical-align: top;">
+          11. Choice of Email Id<br>
+          <span style="font-size:9px; font-weight: normal;">[Default Email Id Name of the applicant (Full Name/Short form)]</span>
+        </td>
+        <td class="td-bold" style="text-align: center;">Choices</td>
+        <td class="td-bold" rowspan="4" style="vertical-align: top;">
+          12. Alternate E-mail Id :<br>
+          <span style="font-size:9px; font-weight: normal; font-style: italic;">(Write in Capital letters only)</span>
+        </td>
+        <td rowspan="4" style="vertical-align: middle;">${alternateEmail}</td>
+      </tr>
+      <tr>
+        <td class="pdf-email-choices-container">
+          <table class="pdf-inner-table"><tr><td style="width: 25px;">1<sup>st</sup></td><td>${email1}</td></tr></table>
+        </td>
+      </tr>
+      <tr>
+        <td class="pdf-email-choices-container">
+          <table class="pdf-inner-table"><tr><td style="width: 25px;">2<sup>nd</sup></td><td>${email2}</td></tr></table>
+        </td>
+      </tr>
+      <tr>
+        <td class="pdf-email-choices-container">
+          <table class="pdf-inner-table"><tr><td style="width: 25px;">3<sup>rd</sup></td><td>${email3}</td></tr></table>
+        </td>
+      </tr>
+      `;
+    } else {
+      emailSectionHTML = `
+      <tr>
+        <td class="td-bold" rowspan="4" style="vertical-align: top;">
+          11. Choice of Email Id<br>
+          <span style="font-size:9px; font-weight: normal;">[Default E-mail Id Name of the applicant (Full Name/Short form)]</span>
+        </td>
+        <td class="td-bold" style="text-align: center;">Choices</td>
+        <td class="td-bold" rowspan="2">12. Mobile No</td>
+        <td rowspan="2" style="vertical-align: middle;">${mobile}</td>
+      </tr>
+      <tr>
+        <td class="pdf-email-choices-container">
+          <table class="pdf-inner-table"><tr><td style="width: 25px;">1<sup>st</sup></td><td>${email1}</td></tr></table>
+        </td>
+      </tr>
+      <tr>
+        <td class="pdf-email-choices-container">
+          <table class="pdf-inner-table"><tr><td style="width: 25px;">2<sup>nd</sup></td><td>${email2}</td></tr></table>
+        </td>
+        <td class="td-bold" rowspan="2" style="vertical-align: top;">
+          13. Alternate E-mail Id :<br>
+          <span style="font-size:9px; font-weight: normal; font-style: italic;">(Write in Capital letters only)</span>
+        </td>
+        <td rowspan="2" style="vertical-align: middle;">${alternateEmail}</td>
+      </tr>
+      <tr>
+        <td class="pdf-email-choices-container">
+          <table class="pdf-inner-table"><tr><td style="width: 25px;">3<sup>rd</sup></td><td>${email3}</td></tr></table>
+        </td>
+      </tr>
+      `;
+    }
 
     const html = `
 <!DOCTYPE html>
@@ -268,33 +333,7 @@ export class PdfService {
       <td class="td-bold">${label10}</td>
       <td>${value10}</td>
     </tr>
-    <tr>
-      <td class="td-bold" rowspan="4" style="vertical-align: top;">11. Choice of Email Id<br><span style="font-size:9px; font-weight: normal;">[Default Email Id Name of the applicant (Full Name/Short form)]</span></td>
-      <td class="td-bold" style="text-align: center;">Choices</td>
-      <td class="td-bold" colspan="2" style="vertical-align: top;">12. Alternate E-mail Id :<br><span style="font-size:9px; font-weight: normal; font-style: italic;">(Write in Capital letters only)</span></td>
-    </tr>
-    <tr>
-      <td class="pdf-email-choices-container">
-        <table class="pdf-inner-table">
-          <tr><td style="width: 25px;">1<sup>st</sup></td><td>${email1}</td></tr>
-        </table>
-      </td>
-      <td colspan="2" rowspan="3" style="vertical-align: middle;">${alternateEmail}</td>
-    </tr>
-    <tr>
-      <td class="pdf-email-choices-container">
-        <table class="pdf-inner-table">
-          <tr><td style="width: 25px;">2<sup>nd</sup></td><td>${email2}</td></tr>
-        </table>
-      </td>
-    </tr>
-    <tr>
-      <td class="pdf-email-choices-container">
-        <table class="pdf-inner-table">
-          <tr><td style="width: 25px;">3<sup>rd</sup></td><td>${email3}</td></tr>
-        </table>
-      </td>
-    </tr>
+    ${emailSectionHTML}
   </table>
 
   <!-- UNDERTAKING -->
