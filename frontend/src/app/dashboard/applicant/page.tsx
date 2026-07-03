@@ -297,6 +297,11 @@ export default function ApplicantDashboard() {
     }
   }, [loading, canApply, applications.length, formStep]);
 
+  // Scroll to top when form step changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [formStep]);
+
   async function fetchData() {
     try {
       const [appsRes, reqsRes] = await Promise.all([
