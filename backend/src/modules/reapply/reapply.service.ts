@@ -206,6 +206,7 @@ export class ReapplyService {
             trackingId: true,
             status: true,
             hodRemarks: true,
+            deanRemarks: true,
             department: { select: { name: true } },
           },
         },
@@ -324,7 +325,7 @@ export class ReapplyService {
       where: { id: requestId },
       data: {
         status: RequestStatus.APPROVED,
-        hodRemarks: remarks || 'Approved by Dean',
+        deanRemarks: remarks || 'Approved by Dean',
       },
     });
 
@@ -361,7 +362,7 @@ export class ReapplyService {
       where: { id: requestId },
       data: {
         status: RequestStatus.REJECTED,
-        hodRemarks: remarks || 'Rejected by Dean',
+        deanRemarks: remarks || 'Rejected by Dean',
       },
     });
 

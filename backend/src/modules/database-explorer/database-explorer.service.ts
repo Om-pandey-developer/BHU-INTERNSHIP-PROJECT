@@ -57,7 +57,7 @@ export class DatabaseExplorerService {
         icon: 'description',
         description: 'Email account applications with workflow status',
         count: applicationCount,
-        columns: ['trackingId', 'applicantId', 'departmentId', 'status', 'hodRemarks', 'ccAdminRemarks', 'createdAt', 'updatedAt'],
+        columns: ['trackingId', 'applicantId', 'departmentId', 'status', 'hodRemarks', 'deanRemarks', 'ccAdminRemarks', 'createdAt', 'updatedAt'],
       },
       {
         name: 'Department',
@@ -85,7 +85,7 @@ export class DatabaseExplorerService {
         icon: 'replay',
         description: 'Re-application requests after HOD rejection',
         count: reapplyCount,
-        columns: ['id', 'applicationId', 'applicantId', 'reason', 'rollNumber', 'studentName', 'status', 'hodRemarks', 'createdAt', 'updatedAt'],
+        columns: ['id', 'applicationId', 'applicantId', 'reason', 'rollNumber', 'studentName', 'status', 'hodRemarks', 'deanRemarks', 'createdAt', 'updatedAt'],
       },
     ];
   }

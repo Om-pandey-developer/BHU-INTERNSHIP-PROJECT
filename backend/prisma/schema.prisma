@@ -60,8 +60,9 @@ model User {
   department     Department?   @relation(fields: [departmentId], references: [id])
 
   // Application relations
-  applications   Application[] @relation("ApplicantApplications")
-  approvedApps   Application[] @relation("HODApprovals")
+  applications     Application[] @relation("ApplicantApplications")
+  approvedApps     Application[] @relation("HODApprovals")
+  approvedDeanApps Application[] @relation("DeanApprovals")
 
   // Reapply request relations
   reapplyRequests ReapplyRequest[] @relation("ApplicantReapplyRequests")
@@ -118,6 +119,13 @@ model Application {
   hod              User?             @relation("HODApprovals", fields: [hodId], references: [id])
   hodRemarks       String?
   hodApprovedAt    DateTime?
+
+  /// Dean who reviewed this application (for UG students)
+  deanId           String?
+  dean             User?             @relation("DeanApprovals", fields: [deanId], references: [id])
+  deanRemarks      String?
+  deanApprovedAt   DateTime?
+
   digitalSignatureHash String?   /// SHA-256 hash for document integrity verification
   approvedPdfPath      String?   /// Server path to the finalized, signed PDF
 
@@ -202,6 +210,7 @@ model ReapplyRequest {
 
   status         RequestStatus @default(PENDING)
   hodRemarks     String?       /// Optional remarks from HOD on approval/rejection
+  deanRemarks    String?       /// Optional remarks from Dean on approval/rejection
 
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt

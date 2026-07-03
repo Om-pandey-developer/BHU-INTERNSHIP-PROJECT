@@ -468,9 +468,9 @@ export class ApplicationsService {
       where: { id: applicationId },
       data: {
         status: newStatus,
-        hodId: deanId,
-        hodRemarks: dto.remarks || null,
-        hodApprovedAt:
+        deanId: deanId,
+        deanRemarks: dto.remarks || null,
+        deanApprovedAt:
           newStatus === ApplicationStatus.APPROVED_DEAN ? approvalTimestamp : null,
         digitalSignatureHash,
         approvedPdfPath,
@@ -658,8 +658,14 @@ export class ApplicationsService {
             lastName: true,
           },
         },
+        dean: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
       },
-      orderBy: { hodApprovedAt: 'asc' },
+      orderBy: { updatedAt: 'asc' },
     });
   }
 
@@ -680,6 +686,12 @@ export class ApplicationsService {
         },
         department: true,
         hod: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
+        dean: {
           select: {
             firstName: true,
             lastName: true,
