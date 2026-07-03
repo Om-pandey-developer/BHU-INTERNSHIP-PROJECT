@@ -21,6 +21,7 @@ interface Application {
   applicantDetails: Record<string, unknown>;
   photoStoragePath: string;
   hodRemarks?: string;
+  deanRemarks?: string;
   ccAdminRemarks?: string;
   quotaAssignedGB?: number;
   createdAt: string;
@@ -40,6 +41,10 @@ interface Application {
     code: string;
   };
   hod?: {
+    firstName: string;
+    lastName: string;
+  };
+  dean?: {
     firstName: string;
     lastName: string;
   };

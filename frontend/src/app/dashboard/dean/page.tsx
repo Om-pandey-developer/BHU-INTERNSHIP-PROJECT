@@ -19,7 +19,7 @@ interface Application {
   applicantDetails: Record<string, any>;
   photoStoragePath?: string;
   signatureStoragePath?: string;
-  hodRemarks?: string;
+  deanRemarks?: string;
   createdAt: string;
   hodApprovedAt?: string;
   applicant?: {
@@ -42,7 +42,7 @@ interface ReapplyRequest {
   rollNumber: string;
   studentName: string;
   status: string;
-  hodRemarks?: string;
+  deanRemarks?: string;
   createdAt: string;
   applicant?: {
     id: string;
@@ -53,7 +53,7 @@ interface ReapplyRequest {
   application?: {
     trackingId: string;
     status: string;
-    hodRemarks?: string;
+    deanRemarks?: string;
     department?: { name: string };
   };
 }
@@ -802,10 +802,10 @@ export default function DeanDashboard() {
                                       <p className="text-xs text-outline font-semibold uppercase tracking-wider mb-1">Reason for Re-applying</p>
                                       <div className="bg-surface-variant/30 p-3 rounded-lg text-sm text-foreground">{item.reason}</div>
                                     </div>
-                                    {item.application?.hodRemarks && (
-                                      <div>
-                                        <p className="text-xs text-outline font-semibold uppercase tracking-wider mb-1">Previous Rejection Remarks</p>
-                                        <div className="bg-error-container/30 border border-error/20 p-3 rounded-lg text-sm text-error">{item.application.hodRemarks}</div>
+                                    {item.application?.deanRemarks && (
+                                      <div className="mt-3">
+                                        <p className="text-sm font-medium text-error mb-1">Reason for Rejection</p>
+                                        <div className="bg-error-container/30 border border-error/20 p-3 rounded-lg text-sm text-error">{item.application.deanRemarks}</div>
                                       </div>
                                     )}
                                   </div>
@@ -834,10 +834,10 @@ export default function DeanDashboard() {
                                         </div>
                                       ))}
                                     </div>
-                                    {item.hodRemarks && (
-                                      <div className="mt-6 bg-primary-container/20 border border-primary/20 p-4 rounded-xl">
-                                        <p className="text-sm text-primary font-bold uppercase mb-1">Dean Remarks</p>
-                                        <p className="text-base text-foreground">{item.hodRemarks}</p>
+                                    {item.deanRemarks && (
+                                      <div className="mt-4 bg-surface p-4 rounded-lg border border-outline-variant/30">
+                                        <h4 className="text-sm font-medium text-foreground/70 mb-2">Dean's Feedback</h4>
+                                        <p className="text-base text-foreground">{item.deanRemarks}</p>
                                       </div>
                                     )}
 

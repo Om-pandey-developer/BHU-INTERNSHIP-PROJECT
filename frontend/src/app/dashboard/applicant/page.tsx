@@ -30,6 +30,7 @@ interface Application {
   applicantDetails: Record<string, unknown>;
   photoStoragePath: string;
   hodRemarks?: string;
+  deanRemarks?: string;
   ccAdminRemarks?: string;
   quotaAssignedGB?: number;
   createdAt: string;
@@ -48,6 +49,7 @@ interface ReapplyRequest {
   studentName: string;
   status: string;
   hodRemarks?: string;
+  deanRemarks?: string;
   createdAt: string;
   application?: {
     trackingId: string;
@@ -728,7 +730,7 @@ export default function ApplicantDashboard() {
               <span className="material-symbols-rounded text-[22px] text-error mt-0.5">block</span>
               <div>
                 <p className="text-sm font-bold text-error">Reapply Request Denied by HOD</p>
-                <p className="text-xs text-foreground/70 mt-1">{latestReapplyForRejected.hodRemarks || "Your HOD has denied your request to re-apply."}</p>
+                <p className="text-xs text-foreground/70 mt-1">{(latestApp.applicantDetails as any)?.category === "UNDER_GRADUATE_STUDENT" ? (latestReapplyForRejected.deanRemarks || "Your Dean has denied your request to re-apply.") : (latestReapplyForRejected.hodRemarks || "Your HOD has denied your request to re-apply.")}</p>
               </div>
             </div>
           )}
@@ -746,7 +748,7 @@ export default function ApplicantDashboard() {
               <span className="material-symbols-rounded text-[22px] text-error mt-0.5">error</span>
               <div>
                 <p className="text-sm font-bold text-error">Application Rejected</p>
-                <p className="text-xs text-foreground/70 mt-1 mb-3">Your last application was rejected by {(latestApp.applicantDetails as any)?.category === "UNDER_GRADUATE_STUDENT" ? "Dean" : "HOD"}{latestApp?.hodRemarks ? `: "${latestApp.hodRemarks}"` : "."} To re-apply, you must submit a request to your {(latestApp.applicantDetails as any)?.category === "UNDER_GRADUATE_STUDENT" ? "Dean" : "HOD"} for permission.</p>
+                <p className="text-xs text-foreground/70 mt-1 mb-3">Your last application was rejected by {(latestApp.applicantDetails as any)?.category === "UNDER_GRADUATE_STUDENT" ? "Dean" : "HOD"}{(latestApp.applicantDetails as any)?.category === "UNDER_GRADUATE_STUDENT" ? (latestApp?.deanRemarks ? `: "${latestApp.deanRemarks}"` : ".") : (latestApp?.hodRemarks ? `: "${latestApp.hodRemarks}"` : ".")} To re-apply, you must submit a request to your {(latestApp.applicantDetails as any)?.category === "UNDER_GRADUATE_STUDENT" ? "Dean" : "HOD"} for permission.</p>
                 <Button icon="send" size="sm" onClick={() => { setSelectedRejectedAppId(latestApp.id); setShowReapplyModal(true); }}>Request Re-apply Permission</Button>
               </div>
             </div>
@@ -1488,6 +1490,14 @@ export default function ApplicantDashboard() {
                     {/* Details Grid */}
                     <div>
                       <h4 className="text-sm font-semibold text-foreground mb-3">Application Details</h4>
+                      
+                      {(app.deanRemarks || app.hodRemarks) && (
+                        <div className="mb-4 bg-surface p-3 rounded-lg border border-outline-variant/30">
+                          <p className="text-xs text-outline font-semibold uppercase tracking-wider mb-1">{(app.applicantDetails as any)?.category === "UNDER_GRADUATE_STUDENT" ? "Dean" : "HOD"} Remarks</p>
+                          <p className="text-sm text-foreground">{app.deanRemarks || app.hodRemarks}</p>
+                        </div>
+                      )}
+
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="bg-surface-variant/30 rounded-lg px-3 py-2">
                           <p className="text-[10px] uppercase tracking-wider text-outline font-medium">Name</p>
@@ -1592,9 +1602,9 @@ export default function ApplicantDashboard() {
                         <p className="text-xs text-outline">
                           {app.department?.name} • Submitted {new Date(app.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                         </p>
-                        {app.hodRemarks && <p className="text-xs text-error/80 mt-1"><span className="font-medium">{(app.applicantDetails as any)?.category === "UNDER_GRADUATE_STUDENT" ? "Dean Remarks:" : "HOD Remarks:"}</span> {app.hodRemarks}</p>}
-                        {existingReq?.hodRemarks && existingReq.status !== "PENDING" && (
-                          <p className="text-xs text-primary mt-1"><span className="font-medium">Request Response:</span> {existingReq.hodRemarks}</p>
+                        {(app.deanRemarks || app.hodRemarks) && <p className="text-xs text-error/80 mt-1"><span className="font-medium">{(app.applicantDetails as any)?.category === "UNDER_GRADUATE_STUDENT" ? "Dean Remarks:" : "HOD Remarks:"}</span> {app.deanRemarks || app.hodRemarks}</p>}
+                        {(existingReq?.deanRemarks || existingReq?.hodRemarks) && existingReq.status !== "PENDING" && (
+                          <p className="text-xs text-primary mt-1"><span className="font-medium">Request Response:</span> {existingReq.deanRemarks || existingReq.hodRemarks}</p>
                         )}
                       </div>
                     </div>
