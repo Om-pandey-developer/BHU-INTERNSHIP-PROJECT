@@ -79,7 +79,7 @@ const templateCSS = `
 .td-value { width: 25%; }
 .pdf-email-inner { padding: 0 !important; }
 .pdf-email-inner-table { width: 100%; border-collapse: collapse; }
-.pdf-email-inner-table td { border: none; padding: 4px 6px; font-size: 11px; word-break: break-all; }
+.pdf-email-inner-table td { border: none; padding: 8px 6px 12px 6px; font-size: 11px; word-break: break-all; vertical-align: middle; }
 
 .pdf-undertaking { margin: 8px 0 4px 0; }
 .pdf-undertaking-title { font-size: 11px; font-weight: bold; margin-bottom: 2px; }
@@ -98,8 +98,8 @@ const templateCSS = `
 .pdf-declaration { margin-top: 14px; padding: 0 4px; }
 .pdf-declaration-title { text-align: center; font-size: 12px; font-weight: bold; margin-bottom: 6px; }
 .pdf-declaration-text { font-size: 11px; line-height: 1.8; text-align: justify; }
-.fill-line { display: inline-block; min-width: 200px; border-bottom: 1px solid #000; padding: 0 8px 2px 8px; text-align: center; font-size: 12px; }
-.fill-line-sm { display: inline-block; min-width: 120px; border-bottom: 1px solid #000; padding: 0 4px 2px 4px; font-size: 12px; }
+.fill-line { display: inline-block; min-width: 200px; border-bottom: 1px solid #000; padding: 0 8px 4px 8px; text-align: center; font-size: 12px; }
+.fill-line-sm { display: inline-block; min-width: 120px; border-bottom: 1px solid #000; padding: 0 4px 4px 4px; font-size: 12px; }
 .pdf-note { margin-top: 12px; padding: 0 4px; }
 .pdf-note p { font-size: 9.5px; line-height: 1.5; }
 `;
