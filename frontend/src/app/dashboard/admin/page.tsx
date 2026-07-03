@@ -142,6 +142,7 @@ export default function AdminDashboard() {
   const [zoomLevel, setZoomLevel] = useState<"sm" | "md" | "lg">("md");
   const [currentPage, setCurrentPage] = useState<number | "">(1);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const [editModal, setEditModal] = useState<{ id: string; details: any } | null>(null);
   const [editFormFields, setEditFormFields] = useState<Record<string, string>>({});
@@ -479,9 +480,7 @@ export default function AdminDashboard() {
 
 
   // ── Application Table (reusable) ──
-  function ApplicationTable({ apps, renderActions }: { apps: Application[]; renderActions: (app: Application) => React.ReactNode }) {
-    const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
-    
+  const renderApplicationTable = (apps: Application[], renderActions: (app: Application) => React.ReactNode) => {
     function toggleExpand(id: string) {
       setExpandedRows(prev => {
         const next = new Set(prev);
@@ -493,43 +492,99 @@ export default function AdminDashboard() {
 
     // Empty state will be rendered below the toolbar
     return (
-      <div className="bg-surface border border-outline-variant rounded-2xl overflow-hidden shadow-sm">
-        <div className="flex flex-wrap justify-between items-center p-2 border-b border-outline-variant/50 bg-surface gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 bg-surface-variant/30 p-1.5 rounded-xl border border-outline-variant shadow-sm ml-2">
-              <span className="text-xs font-bold text-outline uppercase tracking-wider ml-2 mr-1">Zoom:</span>
-              <button onClick={(e) => { e.stopPropagation(); setZoomLevel("sm"); }} className={`p-1.5 rounded-lg ${zoomLevel === 'sm' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Small text"><span className="material-symbols-rounded text-[18px]">format_size</span></button>
-              <button onClick={(e) => { e.stopPropagation(); setZoomLevel("md"); }} className={`p-1.5 rounded-lg ${zoomLevel === 'md' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Medium text"><span className="material-symbols-rounded text-[20px]">format_size</span></button>
-              <button onClick={(e) => { e.stopPropagation(); setZoomLevel("lg"); }} className={`p-1.5 rounded-lg ${zoomLevel === 'lg' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Large text"><span className="material-symbols-rounded text-[24px]">format_size</span></button>
-            </div>
-            
-            <div className="relative shadow-sm rounded-xl">
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="pl-3 pr-8 py-2 bg-white border border-outline-variant rounded-xl text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all appearance-none cursor-pointer"
-              >
-                <option value="ALL">All Categories</option>
-                <option value="TEACHING_STAFF">Teaching Staff</option>
-                <option value="NON_TEACHING_STAFF">Non-Teaching Staff</option>
-                <option value="GROUP_A_OFFICER">Group A Officer</option>
-                <option value="RESEARCH_SCHOLAR">Research Scholar</option>
-                <option value="POST_GRADUATE_STUDENT">PG Student</option>
-                <option value="UNDER_GRADUATE_STUDENT">UG Student</option>
-              </select>
-              <span className="material-symbols-rounded absolute right-2 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
-            </div>
-
-            <div className="relative shadow-sm rounded-xl min-w-[320px]">
-              <DepartmentSelect
-                departments={[{ id: "ALL", name: "All Departments", code: "ALL" }, ...dbDepartments]}
-                value={departmentFilter}
-                onChange={(val) => setDepartmentFilter(val)}
-                placeholder="All Departments"
-                small={true}
+      <div className="bg-surface border border-outline-variant rounded-2xl overflow-hidden shadow-sm mt-4">
+        <div className="flex flex-col gap-3 p-3 border-b border-outline-variant/50 bg-surface">
+          {/* Top Row: Search and Pagination controls */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="relative flex-1 w-full max-w-xl">
+              <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[20px]">search</span>
+              <input
+                type="text"
+                placeholder="Search by name, tracking ID, email, or department..."
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                className="w-full bg-white border border-black/10 rounded-xl pl-10 pr-4 py-2 text-sm text-foreground placeholder:text-stone focus:outline-none focus:border-black-800 focus:ring-1 focus:ring-primary/30 transition-colors shadow-sm"
               />
             </div>
+            
+            <div className="flex flex-wrap items-center gap-4 shrink-0">
+              <div className="flex items-center gap-2 text-sm text-outline">
+                <span>Show</span>
+                <select
+                  value={entriesPerPage}
+                  onChange={(e) => { setEntriesPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                  className="px-2 py-1.5 bg-surface-variant/50 border border-outline-variant rounded-lg text-sm focus:outline-none cursor-pointer"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={30}>30</option>
+                  <option value={50}>50</option>
+                  <option value={1000000}>All</option>
+                </select>
+                <span>entries</span>
+              </div>
+              
+              <div className="flex items-center gap-2 text-sm text-outline">
+                <span>Page</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={totalPages}
+                  value={currentPage}
+                  onChange={(e) => {
+                    if (e.target.value === "") {
+                      setCurrentPage("");
+                      return;
+                    }
+                    const val = parseInt(e.target.value);
+                    if (!isNaN(val) && val >= 1) {
+                      setCurrentPage(val);
+                    }
+                  }}
+                  className="w-16 px-2 py-1.5 bg-surface-variant/50 border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-center"
+                />
+                <span>of {totalPages}</span>
+              </div>
+            </div>
           </div>
+
+          {/* Bottom Row: Filters, Zoom, and Actions */}
+          <div className="flex flex-wrap justify-between items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 bg-surface-variant/30 p-1.5 rounded-xl border border-outline-variant shadow-sm">
+                <span className="text-xs font-bold text-outline uppercase tracking-wider ml-2 mr-1">Zoom:</span>
+                <button onClick={(e) => { e.stopPropagation(); setZoomLevel("sm"); }} className={`p-1.5 rounded-lg ${zoomLevel === 'sm' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Small text"><span className="material-symbols-rounded text-[18px]">format_size</span></button>
+                <button onClick={(e) => { e.stopPropagation(); setZoomLevel("md"); }} className={`p-1.5 rounded-lg ${zoomLevel === 'md' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Medium text"><span className="material-symbols-rounded text-[20px]">format_size</span></button>
+                <button onClick={(e) => { e.stopPropagation(); setZoomLevel("lg"); }} className={`p-1.5 rounded-lg ${zoomLevel === 'lg' ? 'bg-white shadow-sm text-primary' : 'text-outline hover:text-foreground'}`} title="Large text"><span className="material-symbols-rounded text-[24px]">format_size</span></button>
+              </div>
+              
+              <div className="relative shadow-sm rounded-xl">
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="pl-3 pr-8 py-2 bg-white border border-outline-variant rounded-xl text-sm font-medium focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all appearance-none cursor-pointer"
+                >
+                  <option value="ALL">All Categories</option>
+                  <option value="TEACHING_STAFF">Teaching Staff</option>
+                  <option value="NON_TEACHING_STAFF">Non-Teaching Staff</option>
+                  <option value="GROUP_A_OFFICER">Group A Officer</option>
+                  <option value="RESEARCH_SCHOLAR">Research Scholar</option>
+                  <option value="POST_GRADUATE_STUDENT">PG Student</option>
+                  <option value="UNDER_GRADUATE_STUDENT">UG Student</option>
+                </select>
+                <span className="material-symbols-rounded absolute right-2 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
+              </div>
+
+              <div className="relative shadow-sm rounded-xl min-w-[280px]">
+                <DepartmentSelect
+                  departments={[{ id: "ALL", name: "All Departments", code: "ALL" }, ...dbDepartments]}
+                  value={departmentFilter}
+                  onChange={(val) => setDepartmentFilter(val)}
+                  placeholder="All Departments"
+                  small={true}
+                />
+              </div>
+            </div>
 
           {selectedIds.size > 0 && (activeTab === "active" || activeTab === "suspended" || activeTab === "pending") && (
             <div className="flex items-center gap-2 bg-primary-container/20 border border-primary/20 rounded-xl px-3 py-1.5 shadow-sm mr-2 animate-fade-in">
@@ -556,8 +611,9 @@ export default function AdminDashboard() {
             </div>
           )}
         </div>
+      </div>
         
-        {apps.length === 0 ? (
+      {apps.length === 0 ? (
           <div className="bg-surface p-16 text-center">
             <div className="w-16 h-16 rounded-full bg-surface-variant flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-rounded text-[32px] text-outline">search_off</span>
@@ -606,11 +662,11 @@ export default function AdminDashboard() {
                   const trackId = item.trackingId;
                   const department = item.department?.name || "—";
                   const category = String(item.applicantDetails?.category || "—");
-                  const designation = String(item.applicantDetails?.designation || item.applicantDetails?.post || "—");
                   const mobileNo = String(item.applicantDetails?.mobileNo || "—");
                   const faculty = String(item.applicantDetails?.facultyInstituteCentre || "—");
-                  const typeProgram = String(item.applicantDetails?.typeOfEmployment || item.applicantDetails?.programEnrolled || "—");
-                  const serialNo = idx + 1;
+                  const typeProgram = String((item.applicantDetails as any)?.programEnrolled || (item.applicantDetails as any)?.staffType || "—");
+                  const designation = String((item.applicantDetails as any)?.designation || (item.applicantDetails as any)?.courseName || "—");
+                  const serialNo = (safePage - 1) * entriesPerPage + idx + 1;
                   
                   // Storage info
                   const allocatedGB = item.quotaAssignedGB || getExpectedQuota(item);
@@ -708,7 +764,7 @@ export default function AdminDashboard() {
           )}
         </div>
       );
-    }
+    };
 
   // ── Render ──
   if (loading && pendingApps.length === 0 && activeApps.length === 0) {
@@ -750,66 +806,7 @@ export default function AdminDashboard() {
             <span className="hidden xs:inline sm:inline">{tab.label}</span>
           </button>
         ))}
-      </div>
-
-      {/* Search Bar & Pagination Filters */}
-      {activeTab !== "audit" && (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
-          <div className="relative flex-1 w-full">
-            <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-[20px]">search</span>
-            <input
-              type="text"
-              placeholder="Search by name, tracking ID, email, or department..."
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              className="w-full bg-white border border-black/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-foreground placeholder:text-stone focus:outline-none focus:border-black-800 focus:ring-1 focus:ring-primary/30 transition-colors shadow-[0_0_9px_rgba(0,0,0,0.3)]"
-            />
-          </div>
-          
-          <div className="flex items-center gap-4 shrink-0">
-            <div className="flex items-center gap-2 text-sm text-outline">
-              <span>Show</span>
-              <select
-                value={entriesPerPage}
-                onChange={(e) => { setEntriesPerPage(Number(e.target.value)); setCurrentPage(1); }}
-                className="px-2 py-1 bg-surface-variant/50 border border-outline-variant rounded-lg text-sm focus:outline-none cursor-pointer"
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={30}>30</option>
-                <option value={50}>50</option>
-                <option value={1000000}>All</option>
-              </select>
-              <span>entries</span>
-            </div>
-            
-            <div className="flex items-center gap-2 text-sm text-outline">
-              <span>Go to</span>
-              <input
-                type="number"
-                min={1}
-                max={totalPages}
-                value={currentPage}
-                onChange={(e) => {
-                  if (e.target.value === "") {
-                    setCurrentPage("");
-                    return;
-                  }
-                  const val = parseInt(e.target.value);
-                  if (!isNaN(val) && val >= 1) {
-                    setCurrentPage(val);
-                  }
-                }}
-                className="w-16 px-2 py-1 bg-surface-variant/50 border border-outline-variant rounded-lg text-sm focus:outline-none focus:border-primary text-center"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-
-
-      {/* ═══════════════════ TAB: PENDING QUEUE ═══════════════════ */}
+      </div>      {/* ═══════════════════ TAB: PENDING QUEUE ═══════════════════ */}
       {activeTab === "pending" && (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
@@ -821,22 +818,24 @@ export default function AdminDashboard() {
               variant="primary"
               subtitle="Will be allocated"
             />
-            <StatsCard icon="speed" label="Avg Wait" value={pendingApps.length > 0 ? `${Math.round(pendingApps.reduce((s, a) => s + (Date.now() - new Date(a.hodApprovedAt || a.createdAt).getTime()) / 3600000, 0) / pendingApps.length)}h` : "—"} variant="default" subtitle="Since HOD approval" />
+            <StatsCard icon="speed" label="Avg Wait" value={pendingApps.length > 0 ? `${Math.round(pendingApps.reduce((s, a) => s + (new Date().getTime() - new Date(a.hodApprovedAt || a.createdAt).getTime()) / 3600000, 0) / pendingApps.length)}h` : "—"} variant="default" subtitle="Since HOD approval" />
           </div>
-          <ApplicationTable apps={paginatedData} renderActions={(app) => (<><>
-            <Button icon="edit" variant="outlined" size="sm" onClick={() => { const details = app.applicantDetails || {}; setEditModal({ id: app.id, details }); const fields: Record<string, string> = {}; Object.entries(details).forEach(([k, v]) => { fields[k] = String(v ?? ''); }); setEditFormFields(fields); }}>
-              Edit
-            </Button>
-            <Button icon="cancel" variant="outlined" size="sm" onClick={() => setRemarksModal({ action: "cc-reject", ids: [app.id] })}>
-              Reject
-            </Button>
-            <Button icon="download" variant="text" size="sm" loading={downloadingPdf === app.id} onClick={() => handleDownloadSignedPdf(app)}>
-              PDF
-            </Button>
-            <Button icon="rocket_launch" variant="filled" size="sm" loading={provisioning === app.id} onClick={() => handleProvision(app)}>
-              Provision
-            </Button>
-          </></>)} />
+          {renderApplicationTable(paginatedData, (app) => (
+            <>
+              <Button icon="edit" variant="outlined" size="sm" onClick={() => { const details = app.applicantDetails || {}; setEditModal({ id: app.id, details }); const fields: Record<string, string> = {}; Object.entries(details).forEach(([k, v]) => { fields[k] = String(v ?? ''); }); setEditFormFields(fields); }}>
+                Edit
+              </Button>
+              <Button icon="cancel" variant="outlined" size="sm" onClick={() => setRemarksModal({ action: "cc-reject", ids: [app.id] })}>
+                Reject
+              </Button>
+              <Button icon="download" variant="text" size="sm" loading={downloadingPdf === app.id} onClick={() => handleDownloadSignedPdf(app)}>
+                PDF
+              </Button>
+              <Button icon="rocket_launch" variant="filled" size="sm" loading={provisioning === app.id} onClick={() => handleProvision(app)}>
+                Provision
+              </Button>
+            </>
+          ))}
         </>
       )}
 
@@ -868,22 +867,24 @@ export default function AdminDashboard() {
                 />
                 <span className="text-xs text-outline">Select All</span>
               </div>
-              <ApplicationTable apps={paginatedData} renderActions={(app) => (<><>
-                        <Button icon="download" variant="text" size="sm" loading={downloadingPdf === app.id} onClick={() => handleDownloadSignedPdf(app)}>
-                          PDF
-                        </Button>
-                        <Button icon="lock_reset" variant="text" size="sm" loading={actionLoading === "reset-" + app.id} onClick={() => handleResetPassword(app)}>
-                          Reset
-                        </Button>
-                        <Button
-                          icon="pause_circle"
-                          variant="outlined"
-                          size="sm"
-                          onClick={() => setRemarksModal({ action: "suspend", ids: [app.id] })}
-                        >
-                          Suspend
-                        </Button>
-                      </></>)} />
+              {renderApplicationTable(paginatedData, (app) => (
+                <>
+                  <Button icon="download" variant="text" size="sm" loading={downloadingPdf === app.id} onClick={() => handleDownloadSignedPdf(app)}>
+                    PDF
+                  </Button>
+                  <Button icon="lock_reset" variant="text" size="sm" loading={actionLoading === "reset-" + app.id} onClick={() => handleResetPassword(app)}>
+                    Reset
+                  </Button>
+                  <Button
+                    icon="pause_circle"
+                    variant="outlined"
+                    size="sm"
+                    onClick={() => setRemarksModal({ action: "suspend", ids: [app.id] })}
+                  >
+                    Suspend
+                  </Button>
+                </>
+              ))}
             </>
           )}
         </>
@@ -914,19 +915,21 @@ export default function AdminDashboard() {
                 />
                 <span className="text-xs text-outline">Select All</span>
               </div>
-              <ApplicationTable apps={paginatedData} renderActions={(app) => (<><>
-                        <Button icon="play_circle" variant="filled" size="sm" loading={actionLoading === "reactivate"} onClick={() => handleAction("reactivate", [app.id], "Reactivated by admin")}>
-                          Reactivate
-                        </Button>
-                        <Button
-                          icon="inventory_2"
-                          variant="outlined"
-                          size="sm"
-                          onClick={() => setRemarksModal({ action: "archive", ids: [app.id] })}
-                        >
-                          Archive
-                        </Button>
-                      </></>)} />
+              {renderApplicationTable(paginatedData, (app) => (
+                <>
+                  <Button icon="play_circle" variant="filled" size="sm" loading={actionLoading === "reactivate"} onClick={() => handleAction("reactivate", [app.id], "Reactivated by admin")}>
+                    Reactivate
+                  </Button>
+                  <Button
+                    icon="inventory_2"
+                    variant="outlined"
+                    size="sm"
+                    onClick={() => setRemarksModal({ action: "archive", ids: [app.id] })}
+                  >
+                    Archive
+                  </Button>
+                </>
+              ))}
             </>
           )}
         </>
@@ -947,9 +950,13 @@ export default function AdminDashboard() {
               <h3 className="text-lg font-bold text-foreground mb-2">No archived accounts</h3>
             </div>
           ) : (
-            <ApplicationTable apps={paginatedData} renderActions={(app) => (<><Button icon="download" variant="text" size="sm" loading={downloadingPdf === app.id} onClick={() => handleDownloadSignedPdf(app)}>
-                      PDF
-                    </Button></>)} />
+            renderApplicationTable(paginatedData, (app) => (
+              <>
+                <Button icon="download" variant="text" size="sm" loading={downloadingPdf === app.id} onClick={() => handleDownloadSignedPdf(app)}>
+                  PDF
+                </Button>
+              </>
+            ))
           )}
         </>
       )}
