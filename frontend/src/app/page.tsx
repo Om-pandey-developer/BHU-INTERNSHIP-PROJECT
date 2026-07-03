@@ -219,8 +219,8 @@ export default function Home() {
       </section>
 
       {/* ── 5. FOOTER ── */}
-      <footer className="site-footer border-t border-white/2s0 bg-blue-900 backdrop-blur-sm py-2 px-6 text-center opacity-80 ">
-        <p className="text-[14px] text-amber-200/60">
+      <footer className="site-footer border-t border-white/20 bg-blue-900 backdrop-blur-sm py-2 px-6 text-center opacity-90 ">
+        <p className="text-[8px] sm:text-[14px] text-amber-200">
           © {new Date().getFullYear()} Banaras Hindu University — Computer
           Centre. All rights reserved.
           <br></br>

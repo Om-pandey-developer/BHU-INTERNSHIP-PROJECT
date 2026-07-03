@@ -740,7 +740,7 @@ export default function AdminDashboard() {
           <button
             key={tab.id}
             onClick={() => { setActiveTab(tab.id); setSelectedIds(new Set()); setSearchQuery(""); setCurrentPage(1); }}
-            className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${activeTab === tab.id
+            className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap shrink-0 ${activeTab === tab.id
               ? "bg-gray-800 text-on-primary shadow-[0_0_9px_rgba(0,0,0,0.3)]"
               : "text-gray-500 hover:text-foreground hover:bg-surface "
               }`}

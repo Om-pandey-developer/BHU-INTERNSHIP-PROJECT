@@ -496,7 +496,7 @@ export default function DeanDashboard() {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`px-5 py-3 rounded-t-xl text-sm font-semibold transition-all whitespace-nowrap ${activeTab === tab.id
+            className={`px-5 py-3 rounded-t-xl text-sm font-semibold transition-all whitespace-nowrap shrink-0 ${activeTab === tab.id
               ? "bg-surface border-t border-x border-outline-variant text-primary shadow-[0_-4px_6px_-2px_rgba(0,0,0,0.05)]"
               : "text-outline hover:bg-surface-variant hover:text-foreground border border-transparent"
               }`}

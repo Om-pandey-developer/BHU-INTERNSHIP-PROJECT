@@ -664,11 +664,11 @@ export default function ApplicantDashboard() {
             <span className="material-symbols-rounded text-[22px] text-primary">lightbulb</span>
           </div>
           <div>
-            <h3 className="text-sm font-bold text-orange-700 mb-2 text-[20px]">Steps to Follow</h3>
-            <ol className="text-xs space-y-1.5 list-decimal list-inside text-orange-500">
+            <h3 className="text-sm font-bold text-orange-700 mb-2 text-[22px]">Steps to Follow</h3>
+            <ol className="text-md space-y-1.5 list-decimal list-inside text-orange-500">
               <li>Fill and submit the application form with required documents.</li>
-              <li>Your application will be forwarded to the Head of Department (HOD) for approval.</li>
-              <li>After HOD approval, CC Admin will provision your email account.</li>
+              <li>Your application will be forwarded to the Head of Department (HOD)/to the Dean for UG for approval.</li>
+              <li>After HOD/Dean approval, CC Admin will provision your email account.</li>
               <li className="text-primary font-medium">
                 You will receive your @bhu.ac.in credentials via email from Google Workspace.
               </li>
