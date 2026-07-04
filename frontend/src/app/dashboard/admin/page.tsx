@@ -788,11 +788,17 @@ export default function AdminDashboard() {
   return (
     <div className="">
       {/* Header */}
-      <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl lg:text-[32px] font-bold text-amber-800" style={{ fontFamily: "var(--font-serif)" }}>
-          Computer Center Admin Dashboard
-        </h1>
-        <p className="text-xs sm:text-[13px] text-amber-600 mt-1">User Lifecycle Management — Provisioning, Monitoring & Administration</p>
+      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl lg:text-[32px] font-bold text-amber-800" style={{ fontFamily: "var(--font-serif)" }}>
+            Computer Center Admin Dashboard
+          </h1>
+          <p className="text-xs sm:text-[13px] text-amber-600 mt-1">User Lifecycle Management — Provisioning, Monitoring & Administration</p>
+        </div>
+        <a href="/dashboard/admin/manage-hods" className="flex items-center gap-2 bg-amber-800 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-md hover:bg-amber-900 transition shrink-0">
+          <span className="material-symbols-rounded text-[20px]">admin_panel_settings</span>
+          Manage HODs & Deans
+        </a>
       </div>
 
       {/* Tab Navigation */}
