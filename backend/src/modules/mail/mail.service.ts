@@ -424,12 +424,12 @@ export class MailService {
       await this.transporter.sendMail({
         from: '"Computer Centre, BHU" <' + process.env.SMTP_USER + '>',
         to: applicantEmail,
-        subject: \`Action Required: Official BHU Email Account Provisioned [Tracking ID: \${trackingId}]\`,
+        subject: `Action Required: Official BHU Email Account Provisioned [Tracking ID: ${trackingId}]`,
         html: htmlBody,
       });
-      this.logger.log(\`Provisioning notification sent to \${applicantEmail} for \${bhuEmail}\`);
+      this.logger.log(`Provisioning notification sent to ${applicantEmail} for ${bhuEmail}`);
     } catch (error) {
-      this.logger.error(\`Failed to send provisioning notification to \${applicantEmail}\`, error);
+      this.logger.error(`Failed to send provisioning notification to ${applicantEmail}`, error);
     }
   }
 }

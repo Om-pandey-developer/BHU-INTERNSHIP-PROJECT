@@ -70,6 +70,10 @@ model User {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
+  // ── Administrative Tracking ──
+  roleExpiryDate DateTime?     /// Expiry date for temporary roles like HOD/Dean
+  retirementDate DateTime?     /// Date of superannuation for staff (used for auto-archiving)
+
   @@index([alternateEmail])
   @@index([role])
 }
