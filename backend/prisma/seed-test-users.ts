@@ -66,7 +66,7 @@ async function main() {
 
   await prisma.department.updateMany({
     where: { id: 'dept-cs' },
-    data: { deanId: dean.id },
+    data: { deanId: dean.id, hodId: hod.id },
   });
 
   // Create dummy applications for HOD dashboard
@@ -163,9 +163,17 @@ async function main() {
     'REJECTED_DEAN', 'REJECTED_DEAN', 'REJECTED_DEAN'
   ];
 
-  for (const category of categories) {
-    for (let i = 0; i < 10; i++) {
-      const status = deanStatuses[i];
+  const deanCategories = [
+    { cat: 'UNDER_GRADUATE_STUDENT', prefix: 'UG' }
+  ];
+
+  const deanUser = await prisma.user.findFirst({
+    where: { role: 'DEAN' }
+  });
+
+  for (const category of deanCategories) {
+    for (let i = 0; i < 40; i++) {
+      const status = deanStatuses[i % 10];
       const email = `dummy_dean_${category.prefix.toLowerCase()}_${i}@bhu.ac.in`;
       
       const user = await prisma.user.upsert({
@@ -192,17 +200,10 @@ async function main() {
           mobileNo: `98765${Math.floor(10000 + Math.random() * 90000)}`,
           facultyInstituteCentre: 'Computer Science',
           emailChoice: email,
-          dateOfBirth: '1990-01-01',
+          dateOfBirth: '2004-01-01',
+          programEnrolled: 'B.Sc.',
+          enrollmentNo: `EN_DEAN${1000 + i}`,
         };
-        
-        if (category.cat === 'RESEARCH_SCHOLAR' || category.cat === 'POST_GRADUATE_STUDENT') {
-          applicantDetails.programEnrolled = category.cat === 'RESEARCH_SCHOLAR' ? 'Ph.D.' : 'M.Sc.';
-          applicantDetails.enrollmentNo = `EN_DEAN${1000 + i}`;
-        } else {
-          applicantDetails.typeOfEmployment = 'Permanent';
-          applicantDetails.designation = category.cat === 'TEACHING_STAFF' ? 'Assistant Professor' : 'Officer';
-          applicantDetails.employeeId = `EMP_DEAN${1000 + i}`;
-        }
 
         await prisma.application.create({
           data: {
@@ -212,8 +213,9 @@ async function main() {
             applicantDetails,
             photoStoragePath: '/dummy/photo.jpg',
             signatureStoragePath: '/dummy/signature.jpg',
-            hodId: hod.id,
-            hodApprovedAt: new Date(Date.now() - 5000000000), // simulate HOD approval in the past
+            // It's a Dean (UG) application, so it only goes to Dean.
+            deanId: deanUser?.id, 
+            deanApprovedAt: new Date(Date.now() - 5000000000), // simulate Dean approval in the past
             createdAt: new Date(Date.now() - Math.random() * 10000000000), 
           }
         });

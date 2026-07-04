@@ -482,6 +482,10 @@ export class ApplicationsController {
     if (req.user.role === 'HOD' && app.departmentId !== req.user.departmentId) {
       throw new ForbiddenException('You can only view applications from your department');
     }
+    if (req.user.role === 'DEAN') {
+      const hasAccess = await this.applicationsService.checkDeanAccess(req.user.userId, app.departmentId);
+      if (!hasAccess) throw new ForbiddenException('You can only view applications from departments you oversee');
+    }
 
     if (!app.photoStoragePath) {
       throw new NotFoundException('Photo not found');
@@ -522,6 +526,10 @@ export class ApplicationsController {
     }
     if (req.user.role === 'HOD' && app.departmentId !== req.user.departmentId) {
       throw new ForbiddenException('You can only view applications from your department');
+    }
+    if (req.user.role === 'DEAN') {
+      const hasAccess = await this.applicationsService.checkDeanAccess(req.user.userId, app.departmentId);
+      if (!hasAccess) throw new ForbiddenException('You can only view applications from departments you oversee');
     }
 
     if (!app.signatureStoragePath) {
@@ -568,6 +576,10 @@ export class ApplicationsController {
     }
     if (req.user.role === 'HOD' && app.departmentId !== req.user.departmentId) {
       throw new ForbiddenException('You can only download PDFs from your department');
+    }
+    if (req.user.role === 'DEAN') {
+      const hasAccess = await this.applicationsService.checkDeanAccess(req.user.userId, app.departmentId);
+      if (!hasAccess) throw new ForbiddenException('You can only download PDFs from departments you oversee');
     }
 
     const pdfPath = (app as unknown as { approvedPdfPath: string | null }).approvedPdfPath;

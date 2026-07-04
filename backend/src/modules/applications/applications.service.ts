@@ -670,6 +670,17 @@ export class ApplicationsService {
   }
 
   /**
+   * Check if a Dean has access to a specific department.
+   */
+  async checkDeanAccess(deanId: string, departmentId: string): Promise<boolean> {
+    const dept = await this.prisma.department.findUnique({
+      where: { id: departmentId },
+      select: { deanId: true },
+    });
+    return dept?.deanId === deanId;
+  }
+
+  /**
    * Find a single application by ID with full details.
    */
   async findById(id: string) {

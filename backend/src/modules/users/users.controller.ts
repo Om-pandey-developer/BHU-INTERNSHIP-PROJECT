@@ -56,7 +56,7 @@ export class UsersController {
         filename: (req, file, cb) => {
           const uniqueSuffix =
             Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `hod-sig-${uniqueSuffix}${extname(file.originalname)}`);
+          cb(null, `sig-${uniqueSuffix}${extname(file.originalname)}`);
         },
       }),
       fileFilter: (req, file, cb) => {
@@ -70,7 +70,7 @@ export class UsersController {
       },
     }),
   )
-  @ApiOperation({ summary: 'Upload HOD signature image' })
+  @ApiOperation({ summary: 'Upload signature image' })
   @ApiConsumes('multipart/form-data')
   async uploadSignature(
     @Req() req: Request & { user: { userId: string } },
@@ -90,7 +90,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.HOD, Role.DEAN)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Check HOD signature upload status' })
+  @ApiOperation({ summary: 'Check signature upload status' })
   async getSignatureStatus(
     @Req() req: Request & { user: { userId: string } },
   ) {
