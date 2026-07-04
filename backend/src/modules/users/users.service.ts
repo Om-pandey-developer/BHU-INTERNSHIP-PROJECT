@@ -183,5 +183,70 @@ export class UsersService {
 
     return user?.signatureStoragePath || null;
   }
+
+  /**
+   * Fetch users by an array of roles.
+   */
+  async getUsersByRoles(roles: Role[]) {
+    return this.prisma.user.findMany({
+      where: { role: { in: roles } },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        bhuEmail: true,
+        alternateEmail: true,
+        role: true,
+        departmentId: true,
+        roleExpiryDate: true,
+      },
+    });
+  }
+
+  /**
+   * Create an admin user (HOD/Dean) directly.
+   */
+  async createAdminUser(data: any) {
+    // Generate a random temporary password hash since they will reset it via the token
+    const passwordHash = await argon2.hash(Math.random().toString(36).slice(-8));
+
+    return this.prisma.user.create({
+      data: {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        alternateEmail: data.alternateEmail,
+        bhuEmail: data.bhuEmail,
+        role: data.role,
+        departmentId: data.departmentId,
+        roleExpiryDate: data.roleExpiryDate,
+        passwordHash,
+      },
+    });
+  }
+
+  /**
+   * Update a user's details.
+   */
+  async updateUser(id: string, data: any) {
+    return this.prisma.user.update({
+      where: { id },
+      data,
+    });
+  }
+
+  /**
+   * Save a password reset token. (We use refreshToken field or create a new one. 
+   * Since we don't have a resetToken field in schema, we will reuse refreshToken for this purpose temporarily, 
+   * or preferably, we should add a resetToken field to Prisma schema.
+   * Wait, let's just use refreshToken for now, or add resetToken). 
+   * Actually, it's better to add resetToken to the schema in the next phase, but for now we can store it in refreshToken.
+   */
+  async savePasswordResetToken(id: string, token: string) {
+    const hashedToken = await argon2.hash(token);
+    return this.prisma.user.update({
+      where: { id },
+      data: { refreshToken: hashedToken },
+    });
+  }
 }
 

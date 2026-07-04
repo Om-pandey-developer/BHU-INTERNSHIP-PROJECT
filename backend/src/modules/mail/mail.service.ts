@@ -432,4 +432,71 @@ export class MailService {
       this.logger.error(`Failed to send provisioning notification to ${applicantEmail}`, error);
     }
   }
+
+  async sendHodWelcomeMail(
+    personalEmail: string,
+    name: string,
+    designationEmail: string,
+    resetToken: string,
+    role: string = 'HOD',
+  ) {
+    const resetLink = `${process.env.FRONTEND_URL}/auth/reset-password?token=${resetToken}`;
+    
+    const htmlBody = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #E0E0E0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        <!-- Header -->
+        <div style="background-color: #6750A4; padding: 24px; text-align: center;">
+          <h2 style="color: #FFFFFF; margin: 0; font-size: 22px; font-weight: 500;">BHU Email Portal</h2>
+          <p style="color: #EADDFF; margin: 8px 0 0 0; font-size: 14px;">Official Computer Centre Communication</p>
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 32px 24px; background-color: #FFFFFF;">
+          <h3 style="color: #1D1B20; font-size: 18px; margin-top: 0;">Welcome, ${name}</h3>
+          
+          <p style="color: #49454F; font-size: 15px; line-height: 1.6;">
+            You have been assigned the role of <strong>${role}</strong> in the BHU Email Provisioning Portal.
+            Your official designation email ID is:
+          </p>
+
+          <div style="background-color: #F3EDF7; padding: 16px; border-radius: 8px; margin: 24px 0; text-align: center;">
+            <p style="color: #21005D; font-size: 18px; font-weight: bold; margin: 0; letter-spacing: 0.5px;">${designationEmail}</p>
+          </div>
+
+          <p style="color: #49454F; font-size: 15px; line-height: 1.6;">
+            Please click the secure button below to set up your password and access the HOD/Dean Dashboard.
+          </p>
+
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${resetLink}" style="background-color: #6750A4; color: #FFFFFF; padding: 12px 24px; text-decoration: none; border-radius: 100px; font-weight: 500; font-size: 15px; display: inline-block;">
+              Set Password & Login
+            </a>
+          </div>
+
+          <p style="color: #49454F; font-size: 13px; line-height: 1.6; margin-bottom: 0;">
+            If you did not expect this invitation, please contact the Computer Centre Administrator.
+          </p>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #F4F6F8; padding: 20px; text-align: center; border-top: 1px solid #E0E0E0;">
+          <p style="color: #CAC4D0; font-size: 11px; margin: 12px 0 0 0;">
+            © ${new Date().getFullYear()} Banaras Hindu University. All rights reserved.
+          </p>
+        </div>
+      </div>
+    `;
+
+    try {
+      await this.transporter.sendMail({
+        from: '"Computer Centre, BHU" <' + process.env.SMTP_USER + '>',
+        to: personalEmail,
+        subject: `Welcome to BHU Email Portal: Set your ${role} Password`,
+        html: htmlBody,
+      });
+      this.logger.log(`Welcome notification sent to ${personalEmail} for ${designationEmail}`);
+    } catch (error) {
+      this.logger.error(`Failed to send welcome notification to ${personalEmail}`, error);
+    }
+  }
 }
