@@ -329,78 +329,107 @@ export class MailService {
 
   /**
    * Send provisioning notification to applicant when CC Admin provisions the email.
+   * Includes the temporary password and official BHU branding.
    * In dev mode, logs to console instead.
    */
   async sendProvisioningNotification(
     applicantEmail: string,
     applicantName: string,
     bhuEmail: string,
+    tempPassword: string,
     trackingId: string,
     quotaGB?: number,
   ): Promise<void> {
     if (this.isDev) {
       this.logger.warn(
-        `[DEV MODE] Provisioning Notification → ${applicantEmail}: BHU Email ${bhuEmail} created for ${trackingId}`,
+        `[DEV MODE] Provisioning Notification → ${applicantEmail}: BHU Email ${bhuEmail} created for ${trackingId}. Password: ${tempPassword}`,
       );
       return;
     }
 
     const htmlBody = `
-      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px; background: #FFFBFE; border-radius: 16px; border: 1px solid #CAC4D0;">
-        <div style="text-align: center; margin-bottom: 24px;">
-          <div style="display: inline-block; padding: 12px 16px; background: #6750A4; border-radius: 12px;">
-            <span style="color: white; font-size: 24px; font-weight: 700;">BHU</span>
+      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background: #FFFFFF; border: 1px solid #E0E0E0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        
+        <!-- Header with BHU Logo & Colors -->
+        <div style="background-color: #21005D; padding: 24px; text-align: center; border-bottom: 4px solid #FFB81C;">
+          <img src="https://upload.wikimedia.org/wikipedia/en/4/47/Banaras_Hindu_University_Logo.svg" alt="BHU Logo" style="width: 80px; height: auto; margin-bottom: 12px;" />
+          <h1 style="color: #FFFFFF; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 1px;">BANARAS HINDU UNIVERSITY</h1>
+          <p style="color: #EADDFF; margin: 8px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Computer Centre</p>
+        </div>
+
+        <!-- Main Content -->
+        <div style="padding: 32px 40px;">
+          <h2 style="color: #1C1B1F; font-size: 22px; margin-top: 0; margin-bottom: 16px;">
+            Official Email Account Provisioned
+          </h2>
+          
+          <p style="color: #49454F; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
+            Dear <strong>${applicantName}</strong>,<br><br>
+            This is an automated notification from the Computer Centre, Banaras Hindu University. Your application for an institutional email account (Tracking ID: <strong>${trackingId}</strong>) has been processed and approved. Your official Google Workspace account is now ready for use.
+          </p>
+
+          <!-- Credentials Box -->
+          <div style="background-color: #F4F6F8; border-left: 4px solid #6750A4; padding: 20px 24px; border-radius: 4px; margin-bottom: 32px;">
+            <p style="color: #6750A4; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 0; margin-bottom: 12px;">Account Credentials</p>
+            
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr>
+                <td style="padding: 8px 0; color: #49454F; font-size: 14px; width: 140px;">Email Address:</td>
+                <td style="padding: 8px 0; color: #1C1B1F; font-size: 16px; font-weight: 700;">${bhuEmail}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 0; color: #49454F; font-size: 14px;">Temporary Password:</td>
+                <td style="padding: 8px 0; color: #1C1B1F; font-size: 16px; font-weight: 700; font-family: monospace; letter-spacing: 1px; background: #EADDFF; padding-left: 8px; border-radius: 4px;">${tempPassword}</td>
+              </tr>
+              ${quotaGB ? `
+              <tr>
+                <td style="padding: 8px 0; color: #49454F; font-size: 14px;">Storage Quota:</td>
+                <td style="padding: 8px 0; color: #1C1B1F; font-size: 14px; font-weight: 600;">${quotaGB} GB</td>
+              </tr>
+              ` : ''}
+            </table>
           </div>
+
+          <!-- Instructions -->
+          <h3 style="color: #1C1B1F; font-size: 16px; margin-bottom: 12px;">Important Instructions:</h3>
+          <ul style="color: #49454F; font-size: 14px; line-height: 1.6; padding-left: 20px; margin-bottom: 32px;">
+            <li style="margin-bottom: 8px;">Go to <strong>mail.google.com</strong> or <strong>workspace.google.com</strong> to log in.</li>
+            <li style="margin-bottom: 8px;">Enter the Email Address and Temporary Password provided above.</li>
+            <li style="margin-bottom: 8px;">You will be prompted to create a new, strong password upon your first login. Please do so immediately.</li>
+            <li>This email is for official academic and administrative communication only. Adhere to the university's IT policy.</li>
+          </ul>
+
+          <!-- Sign off -->
+          <p style="color: #49454F; font-size: 15px; line-height: 1.6; margin-bottom: 0;">
+            Regards,<br>
+            <strong>Computer Centre Administrator</strong><br>
+            Banaras Hindu University
+          </p>
         </div>
 
-        <h2 style="color: #1C1B1F; font-size: 20px; text-align: center; margin-bottom: 8px;">
-          🎉 Email Account Created!
-        </h2>
-        <p style="color: #79747E; font-size: 14px; text-align: center; margin-bottom: 24px;">
-          Congratulations ${applicantName}! Your BHU institutional email has been provisioned.
-        </p>
-
-        <div style="background: #D4F5DF; border-radius: 12px; padding: 20px; margin-bottom: 24px; border: 1px solid #1B873E30;">
-          <table style="width: 100%; border-collapse: collapse;">
-            <tr>
-              <td style="padding: 8px 0; color: #79747E; font-size: 13px;">BHU Email</td>
-              <td style="padding: 8px 0; color: #1B873E; font-size: 15px; font-weight: 700; text-align: right;">${bhuEmail}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px 0; color: #79747E; font-size: 13px;">Tracking ID</td>
-              <td style="padding: 8px 0; color: #1C1B1F; font-size: 13px; font-weight: 600; text-align: right;">${trackingId}</td>
-            </tr>
-            ${quotaGB ? `
-            <tr>
-              <td style="padding: 8px 0; color: #79747E; font-size: 13px;">Storage Quota</td>
-              <td style="padding: 8px 0; color: #1C1B1F; font-size: 13px; font-weight: 600; text-align: right;">${quotaGB} GB</td>
-            </tr>
-            ` : ''}
-          </table>
+        <!-- Footer -->
+        <div style="background-color: #F4F6F8; padding: 20px; text-align: center; border-top: 1px solid #E0E0E0;">
+          <p style="color: #79747E; font-size: 12px; margin: 0; line-height: 1.5;">
+            This is an automatically generated authenticated email. Please do not reply to this email address.<br>
+            For support, please contact the Computer Centre helpdesk.
+          </p>
+          <p style="color: #CAC4D0; font-size: 11px; margin: 12px 0 0 0;">
+            © ${new Date().getFullYear()} Banaras Hindu University. All rights reserved.
+          </p>
         </div>
-
-        <p style="color: #79747E; font-size: 13px; text-align: center; margin-bottom: 24px;">
-          You will receive a separate email from Google Workspace with your login credentials. 
-          Use your new @bhu.ac.in email for all official university communications.
-        </p>
-
-        <hr style="border: none; border-top: 1px solid #CAC4D0; margin: 24px 0;" />
-        <p style="color: #CAC4D0; font-size: 11px; text-align: center;">
-          © ${new Date().getFullYear()} Banaras Hindu University — Computer Centre
-        </p>
       </div>
     `;
 
     try {
       await this.transporter.sendMail({
-        from: `"BHU Email Portal" <${process.env.SMTP_USER}>`,
+        from: '"Computer Centre, BHU" <' + process.env.SMTP_USER + '>',
         to: applicantEmail,
-        subject: `Your BHU Email is Ready: ${bhuEmail} — BHU Email Portal`,
+        subject: \`Action Required: Official BHU Email Account Provisioned [Tracking ID: \${trackingId}]\`,
         html: htmlBody,
       });
-      this.logger.log(`Provisioning notification sent to ${applicantEmail} for ${bhuEmail}`);
+      this.logger.log(\`Provisioning notification sent to \${applicantEmail} for \${bhuEmail}\`);
     } catch (error) {
-      this.logger.error(`Failed to send provisioning notification to ${applicantEmail}`, error);
+      this.logger.error(\`Failed to send provisioning notification to \${applicantEmail}\`, error);
     }
   }
 }

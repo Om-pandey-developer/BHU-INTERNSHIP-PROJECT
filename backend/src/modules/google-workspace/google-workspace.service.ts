@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { ApplicationStatus } from '@prisma/client';
 import { ApplicantCategory } from '../applications/dto/create-application.dto';
+import { MailService } from '../mail/mail.service';
 import * as crypto from 'crypto';
 
 /**
@@ -28,7 +29,10 @@ export class GoogleWorkspaceService {
   private readonly logger = new Logger(GoogleWorkspaceService.name);
   private readonly isMock: boolean;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+  ) {
     this.isMock = process.env.MOCK_GOOGLE_WORKSPACE === 'true';
     if (this.isMock) {
       this.logger.warn(
@@ -87,31 +91,51 @@ export class GoogleWorkspaceService {
     const details = application.applicantDetails as Record<string, unknown>;
     const category = details.category as string;
     const deptCode = (application.department?.code || 'dept').toLowerCase().replace(/[^a-z0-9]/g, '');
-    const year = new Date().getFullYear();
+    
+    // Determine the year to use (Admission Year for students, Date of Joining for staff)
+    let yearToUse = new Date().getFullYear(); // Fallback to current year
 
-    // Generate email based on category per BHU IT Policy Section 3(c)
+    if (
+      category === ApplicantCategory.UNDER_GRADUATE_STUDENT ||
+      category === ApplicantCategory.POST_GRADUATE_STUDENT ||
+      category === ApplicantCategory.RESEARCH_SCHOLAR
+    ) {
+      if (details.admissionYear) {
+        // Handle both YYYY-MM-DD and YYYY formats
+        const parsed = new Date(details.admissionYear as string);
+        yearToUse = !isNaN(parsed.getFullYear()) ? parsed.getFullYear() : parseInt(details.admissionYear as string, 10) || yearToUse;
+      }
+    } else {
+      // For Staff & Officers
+      if (details.dateOfJoining) {
+        const parsed = new Date(details.dateOfJoining as string);
+        yearToUse = !isNaN(parsed.getFullYear()) ? parsed.getFullYear() : parseInt(details.dateOfJoining as string, 10) || yearToUse;
+      }
+    }
+
+    // Generate email based on category per BHU IT Policy
     let bhuEmail: string;
     switch (category) {
       case ApplicantCategory.TEACHING_STAFF:
-        bhuEmail = `${firstName}.${deptCode}@${domain}`;
+        bhuEmail = `${firstName}.${deptCode}.${yearToUse}@${domain}`;
         break;
       case ApplicantCategory.GROUP_A_OFFICER:
-        bhuEmail = `${firstName}.admin@${domain}`;
+        bhuEmail = `${firstName}.admin.${yearToUse}@${domain}`;
         break;
       case ApplicantCategory.NON_TEACHING_STAFF:
-        bhuEmail = `${firstName}.admin@${domain}`;
+        bhuEmail = `${firstName}.admin.${yearToUse}@${domain}`;
         break;
       case ApplicantCategory.RESEARCH_SCHOLAR:
-        bhuEmail = `${firstName}.${deptCode}.${year}@${domain}`;
+        bhuEmail = `${firstName}.${deptCode}.${yearToUse}@${domain}`;
         break;
       case ApplicantCategory.POST_GRADUATE_STUDENT:
-        bhuEmail = `${firstName}.${deptCode}.${year}@${domain}`;
+        bhuEmail = `${firstName}.${deptCode}.${yearToUse}@${domain}`;
         break;
       case ApplicantCategory.UNDER_GRADUATE_STUDENT:
-        bhuEmail = `${firstName}.${deptCode}.${year}@${domain}`;
+        bhuEmail = `${firstName}.${deptCode}.${yearToUse}@${domain}`;
         break;
       default:
-        bhuEmail = `${firstName}.${lastName}@${domain}`;
+        bhuEmail = `${firstName}.${lastName}.${yearToUse}@${domain}`;
     }
 
     // ── Step 3: Generate secure temporary password ──
@@ -198,8 +222,15 @@ export class GoogleWorkspaceService {
       `✅ Application ${application.trackingId} provisioned → ${bhuEmail} (${quotaGB}GB)`,
     );
 
-    // TODO: Send email via Nodemailer with bhuEmail + tempPassword
-    // to application.applicant.alternateEmail
+    // Send the official credentials email
+    await this.mailService.sendProvisioningNotification(
+      application.applicant.alternateEmail,
+      `${application.applicant.firstName} ${application.applicant.lastName}`,
+      bhuEmail,
+      tempPassword,
+      application.trackingId,
+      quotaGB,
+    );
 
     return {
       trackingId: application.trackingId,
