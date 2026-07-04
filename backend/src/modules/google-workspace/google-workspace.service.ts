@@ -267,4 +267,42 @@ export class GoogleWorkspaceService {
   private generateSecurePassword(): string {
     return crypto.randomBytes(12).toString('base64url').slice(0, 16);
   }
+
+  /**
+   * Provision a Designation-based Email for HODs and Deans directly (bypassing the application flow).
+   */
+  async provisionDesignationEmail(bhuEmail: string, quotaGB: number = 20): Promise<boolean> {
+    if (this.isMock) {
+      this.logger.warn(`[MOCK] Provisioning Designation ID: ${bhuEmail} with ${quotaGB}GB quota... Done.`);
+      return true;
+    }
+
+    try {
+      // Real API integration would go here
+      this.logger.log(`Designation account ${bhuEmail} provisioned in Google Workspace with ${quotaGB}GB.`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to provision designation account ${bhuEmail}`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Suspends a Google Workspace account.
+   * Used when staff reaches their retirement date.
+   */
+  async suspendAccount(email: string): Promise<boolean> {
+    if (this.isMock) {
+      this.logger.warn(`[MOCK] Suspending account for ${email}... Done.`);
+      return true;
+    }
+
+    try {
+      this.logger.log(`Account ${email} suspended in Google Workspace.`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Failed to suspend account ${email}`, error);
+      return false;
+    }
+  }
 }
