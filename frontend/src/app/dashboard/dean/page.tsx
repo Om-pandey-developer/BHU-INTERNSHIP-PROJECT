@@ -21,7 +21,7 @@ interface Application {
   signatureStoragePath?: string;
   deanRemarks?: string;
   createdAt: string;
-  hodApprovedAt?: string;
+  deanApprovedAt?: string;
   applicant?: {
     id: string;
     alternateEmail: string;
@@ -672,10 +672,10 @@ export default function DeanDashboard() {
                   const rawEmailChoice = !isReapply ? (item.applicantDetails?.emailChoice1 || item.applicantDetails?.emailChoice || "—") : "—";
                   const requestedEmail = rawEmailChoice !== "—" && !rawEmailChoice.includes("@") ? `${rawEmailChoice}@bhu.ac.in` : rawEmailChoice;
                   const dateApplied = new Date(item.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
-                  const hodReviewedDate = item.hodApprovedAt
-                    ? new Date(item.hodApprovedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+                  const deanReviewedDate = item.deanApprovedAt
+                    ? new Date(item.deanApprovedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
                     : "—";
-                  const reapplyReason = isReapply ? (item.reason?.length > 30 ? item.reason.substring(0, 30) + "…" : item.reason || "—") : hodReviewedDate;
+                  const reapplyReason = isReapply ? (item.reason?.length > 30 ? item.reason.substring(0, 30) + "…" : item.reason || "—") : deanReviewedDate;
                   const serialNo = (safePage - 1) * entriesPerPage + idx + 1;
 
                   return (
