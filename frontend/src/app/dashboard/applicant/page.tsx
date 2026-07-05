@@ -162,13 +162,13 @@ function HorizontalProgressBar({ status, category }: { status: string; category?
         const isLast = i === steps.length - 1;
         const dotColor =
           step.status === "completed" ? "bg-success text-white" :
-          step.status === "active" ? "bg-primary text-white animate-pulse" :
-          step.status === "error" ? "bg-error text-white" :
-          "bg-outline-variant text-outline";
+            step.status === "active" ? "bg-primary text-white animate-pulse" :
+              step.status === "error" ? "bg-error text-white" :
+                "bg-outline-variant text-outline";
         const lineColor =
           step.status === "completed" ? "bg-success" :
-          step.status === "error" ? "bg-error/30" :
-          "bg-outline-variant";
+            step.status === "error" ? "bg-error/30" :
+              "bg-outline-variant";
         return (
           <React.Fragment key={i}>
             <div className="flex flex-col items-center min-w-0">
@@ -177,12 +177,11 @@ function HorizontalProgressBar({ status, category }: { status: string; category?
                   {step.status === "completed" ? "check" : step.status === "error" ? "close" : step.icon}
                 </span>
               </div>
-              <p className={`text-[10px] mt-1 text-center leading-tight max-w-[80px] ${
-                step.status === "completed" ? "text-foreground font-medium" :
-                step.status === "active" ? "text-primary font-semibold" :
-                step.status === "error" ? "text-error font-semibold" :
-                "text-outline"
-              }`}>
+              <p className={`text-[10px] mt-1 text-center leading-tight max-w-[80px] ${step.status === "completed" ? "text-foreground font-medium" :
+                  step.status === "active" ? "text-primary font-semibold" :
+                    step.status === "error" ? "text-error font-semibold" :
+                      "text-outline"
+                }`}>
                 {step.label}
               </p>
               {step.date && (
@@ -241,10 +240,10 @@ export default function ApplicantDashboard() {
   const [isOtherEmployment, setIsOtherEmployment] = useState(false);
   const [tempPhotoUrl, setTempPhotoUrl] = useState<string | null>(null);
   const [cropModalOpen, setCropModalOpen] = useState(false);
-  const [photoDimensions, setPhotoDimensions] = useState<{width: number, height: number} | null>(null);
+  const [photoDimensions, setPhotoDimensions] = useState<{ width: number, height: number } | null>(null);
   const [tempSigUrl, setTempSigUrl] = useState<string | null>(null);
   const [sigCropModalOpen, setSigCropModalOpen] = useState(false);
-  const [sigDimensions, setSigDimensions] = useState<{width: number, height: number} | null>(null);
+  const [sigDimensions, setSigDimensions] = useState<{ width: number, height: number } | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [submittedApp, setSubmittedApp] = useState<any>(null);
   const [dbDepartments, setDbDepartments] = useState<{ id: string, name: string, code: string }[]>([]);
@@ -380,7 +379,7 @@ export default function ApplicantDashboard() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  const handleCropComplete = async (croppedAreaPixels: {width: number, height: number, x: number, y: number}) => {
+  const handleCropComplete = async (croppedAreaPixels: { width: number, height: number, x: number, y: number }) => {
     try {
       if (!tempPhotoUrl) return;
       const croppedFile = await getCroppedImg(tempPhotoUrl, croppedAreaPixels, "photo.jpg");
@@ -416,7 +415,7 @@ export default function ApplicantDashboard() {
     if (signatureInputRef.current) signatureInputRef.current.value = "";
   }
 
-  const handleSigCropComplete = async (croppedAreaPixels: {width: number, height: number, x: number, y: number}) => {
+  const handleSigCropComplete = async (croppedAreaPixels: { width: number, height: number, x: number, y: number }) => {
     try {
       if (!tempSigUrl) return;
       const croppedFile = await getCroppedImg(tempSigUrl, croppedAreaPixels, "signature.png");
@@ -703,8 +702,8 @@ export default function ApplicantDashboard() {
             <h3 className="text-sm font-bold text-orange-700 mb-2 text-[20px]">Steps to Follow</h3>
             <ol className="text-xs space-y-1.5 list-decimal list-inside text-orange-500">
               <li>Fill and submit the application form with required documents.</li>
-              <li>Your application will be forwarded to the Head of Department (HOD) for approval.</li>
-              <li>After HOD approval, CC Admin will provision your email account.</li>
+              <li>Your application will be forwarded to the Dean(for Under-Graduate Students)/ Head of Department (HOD) for other categories for approval.</li>
+              <li>After HOD/Dean approval, CC Admin will provision your email account.</li>
               <li className="text-primary font-medium">
                 You will receive your @bhu.ac.in credentials via email from Google Workspace.
               </li>
@@ -789,26 +788,23 @@ export default function ApplicantDashboard() {
                   <button
                     key={cat.value}
                     onClick={() => handleCategoryClick(cat.value)}
-                    className={`w-full text-left p-5 rounded-xl border-2 transition-all duration-200 cursor-pointer group ${
-                      selectedCategory === cat.value
+                    className={`w-full text-left p-5 rounded-xl border-2 transition-all duration-200 cursor-pointer group ${selectedCategory === cat.value
                         ? "border-primary bg-primary-container/30 shadow-sm"
                         : "border-outline-variant hover:border-primary/40 hover:bg-primary-container/80"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start gap-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-                        selectedCategory === cat.value
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors ${selectedCategory === cat.value
                           ? "bg-primary text-white"
                           : "bg-surface-variant text-outline group-hover:bg-primary-container group-hover:text-primary"
-                      }`}>
+                        }`}>
                         <span className="material-symbols-rounded text-[24px]">{cat.icon}</span>
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <p className="font-semibold text-foreground">{cat.label}</p>
-                          <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-                            selectedCategory === cat.value ? "bg-primary text-white" : "bg-surface-variant text-outline"
-                          }`}>{cat.quota}</span>
+                          <span className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${selectedCategory === cat.value ? "bg-primary text-white" : "bg-surface-variant text-outline"
+                            }`}>{cat.quota}</span>
                         </div>
                         <p className="text-xs text-outline mt-1">{cat.desc}</p>
                       </div>
@@ -849,9 +845,8 @@ export default function ApplicantDashboard() {
                 <div className="flex items-center gap-2">
                   {[1, 2, 3].map((s) => (
                     <React.Fragment key={s}>
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                        (formStep - 1) >= s ? "bg-primary text-white" : "bg-surface-variant text-outline"
-                      }`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${(formStep - 1) >= s ? "bg-primary text-white" : "bg-surface-variant text-outline"
+                        }`}>
                         {(formStep - 1) > s ? <span className="material-symbols-rounded text-[16px]">check</span> : s}
                       </div>
                       {s < 3 && <div className={`flex-1 h-0.5 rounded-full transition-colors ${(formStep - 1) > s ? "bg-primary" : "bg-outline-variant"}`} />}
@@ -874,7 +869,7 @@ export default function ApplicantDashboard() {
                     onChange={(val) => {
                       setDepartmentId(val);
                       if (fieldErrors["departmentId"]) {
-                        setFieldErrors(prev => { const n = {...prev}; delete n["departmentId"]; return n; });
+                        setFieldErrors(prev => { const n = { ...prev }; delete n["departmentId"]; return n; });
                       }
                     }}
                     disabled={!!user?.departmentId}
@@ -1044,10 +1039,9 @@ export default function ApplicantDashboard() {
                   <p className="text-sm font-semibold text-foreground mb-2">Certified Photograph *</p>
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${
-                      fieldErrors["photo"] ? "border-error bg-error-container/5" :
-                      photo ? "border-success bg-success-container/10" : "border-outline-variant hover:border-primary hover:bg-primary/3"
-                    }`}
+                    className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${fieldErrors["photo"] ? "border-error bg-error-container/5" :
+                        photo ? "border-success bg-success-container/10" : "border-outline-variant hover:border-primary hover:bg-primary/3"
+                      }`}
                   >
                     <input ref={fileInputRef} type="file" accept="image/jpeg,image/jpg,image/png" className="hidden" onChange={handlePhotoChange} />
                     {photoPreview ? (
@@ -1092,10 +1086,9 @@ export default function ApplicantDashboard() {
                   {signatureMode === "upload" ? (
                     <div
                       onClick={() => signatureInputRef.current?.click()}
-                      className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${
-                        fieldErrors["signature"] ? "border-error bg-error-container/5" :
-                        signature ? "border-success bg-success-container/10" : "border-outline-variant hover:border-primary hover:bg-primary/3"
-                      }`}
+                      className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${fieldErrors["signature"] ? "border-error bg-error-container/5" :
+                          signature ? "border-success bg-success-container/10" : "border-outline-variant hover:border-primary hover:bg-primary/3"
+                        }`}
                     >
                       <input ref={signatureInputRef} type="file" accept="image/jpeg,image/jpg,image/png" className="hidden" onChange={handleSignatureChange} />
                       {signaturePreview ? (
@@ -1490,7 +1483,7 @@ export default function ApplicantDashboard() {
                     {/* Details Grid */}
                     <div>
                       <h4 className="text-sm font-semibold text-foreground mb-3">Application Details</h4>
-                      
+
                       {(app.deanRemarks || app.hodRemarks) && (
                         <div className="mb-4 bg-surface p-3 rounded-lg border border-outline-variant/30">
                           <p className="text-xs text-outline font-semibold uppercase tracking-wider mb-1">{(app.applicantDetails as any)?.category === "UNDER_GRADUATE_STUDENT" ? "Dean" : "HOD"} Remarks</p>
@@ -1592,11 +1585,10 @@ export default function ApplicantDashboard() {
                           <p className="text-sm font-semibold text-foreground">Ref: {app.trackingId}</p>
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-error-container text-error">REJECTED</span>
                           {existingReq && (
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                              existingReq.status === "PENDING" ? "bg-warning-container text-warning"
-                              : existingReq.status === "APPROVED" ? "bg-success-container text-success"
-                              : "bg-error-container text-error"
-                            }`}>Request: {existingReq.status}</span>
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${existingReq.status === "PENDING" ? "bg-warning-container text-warning"
+                                : existingReq.status === "APPROVED" ? "bg-success-container text-success"
+                                  : "bg-error-container text-error"
+                              }`}>Request: {existingReq.status}</span>
                           )}
                         </div>
                         <p className="text-xs text-outline">
@@ -1614,11 +1606,10 @@ export default function ApplicantDashboard() {
                       </Button>
                     )}
                     {existingReq && (
-                      <span className={`material-symbols-rounded text-[22px] shrink-0 ${
-                        existingReq.status === "PENDING" ? "text-warning"
-                        : existingReq.status === "APPROVED" ? "text-success"
-                        : "text-error"
-                      }`}>
+                      <span className={`material-symbols-rounded text-[22px] shrink-0 ${existingReq.status === "PENDING" ? "text-warning"
+                          : existingReq.status === "APPROVED" ? "text-success"
+                            : "text-error"
+                        }`}>
                         {existingReq.status === "PENDING" ? "hourglass_top" : existingReq.status === "APPROVED" ? "check_circle" : "cancel"}
                       </span>
                     )}
