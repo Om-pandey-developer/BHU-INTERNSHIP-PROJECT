@@ -22,7 +22,7 @@ export default function ManageHodsAndDeansPage() {
   const { addToast } = useToastStore();
   const [officials, setOfficials] = useState<Official[]>([]);
   const [loading, setLoading] = useState(true);
-  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
+  const [departments, setDepartments] = useState<{ id: string; name: string; code: string }[]>([]);
 
   // Modals state
   const [addModalOpen, setAddModalOpen] = useState(false);

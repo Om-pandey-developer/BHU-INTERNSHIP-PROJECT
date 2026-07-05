@@ -15,9 +15,10 @@ interface DepartmentSelectProps {
   placeholder?: string;
   disabled?: boolean;
   small?: boolean;
+  required?: boolean;
 }
 
-export default function DepartmentSelect({ departments, value, onChange, placeholder = "Select Department *", disabled = false, small = false }: DepartmentSelectProps) {
+export default function DepartmentSelect({ departments, value, onChange, placeholder = "Select Department *", disabled = false, small = false, required = false }: DepartmentSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);

@@ -11,7 +11,7 @@ export class TasksService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly workspaceService: GoogleWorkspaceService,
-  ) {}
+  ) { }
 
   /**
    * Runs every day at midnight (server time)
@@ -54,7 +54,7 @@ export class TasksService {
         if (staff.bhuEmail) {
           // Suspend in Google Workspace
           const suspended = await this.workspaceService.suspendAccount(staff.bhuEmail);
-          
+
           if (suspended) {
             // Mark all their provisioned applications as ARCHIVED
             await this.prisma.application.updateMany({
