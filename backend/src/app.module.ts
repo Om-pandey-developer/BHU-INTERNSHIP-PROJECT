@@ -12,6 +12,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { ReapplyModule } from './modules/reapply/reapply.module';
 import { DatabaseExplorerModule } from './modules/database-explorer/database-explorer.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { TasksModule } from './modules/tasks/tasks.module';
 
 /**
  * AppModule — Root module of the BHU Email Portal backend.
@@ -49,6 +50,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     ReapplyModule,
     DatabaseExplorerModule,
     ScheduleModule.forRoot(),
+    TasksModule,
   ],
   providers: [
     // Apply ThrottlerGuard globally to all routes

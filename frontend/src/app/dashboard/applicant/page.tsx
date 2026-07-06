@@ -519,6 +519,18 @@ export default function ApplicantDashboard() {
     } else {
       // Validation for staff
       const appointmentDateStr = details["dateOfAppointment"];
+      const retirementDateStr = details["dateOfRetirement"];
+      
+      if (appointmentDateStr && retirementDateStr) {
+        const apptDate = new Date(appointmentDateStr);
+        const retDate = new Date(retirementDateStr);
+        if (!isNaN(apptDate.getTime()) && !isNaN(retDate.getTime())) {
+          if (retDate <= apptDate) {
+            errors["dateOfRetirement"] = "Date of retirement must be after the date of appointment";
+          }
+        }
+      }
+
       if (dobStr && appointmentDateStr) {
         const dob = new Date(dobStr);
         const apptDate = new Date(appointmentDateStr);
