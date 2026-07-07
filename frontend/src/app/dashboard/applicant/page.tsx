@@ -671,7 +671,7 @@ export default function ApplicantDashboard() {
     }
   }
 
-  const maxDOB = new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0];
+  const maxDOB = new Date(new Date().setFullYear(new Date().getFullYear() - 16)).toISOString().split('T')[0];
 
   /* ═══════════════════════════════════════════════════════════════
      RENDER
@@ -1031,7 +1031,7 @@ export default function ApplicantDashboard() {
                   else if (field === "programEnrolled") onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[^a-zA-Z\s.]/g, ""));
                   else if (field === "dateOfBirth") onChangeHandler = (e) => {
                     const val = e.target.value;
-                    if (val && val > maxDOB) { addToast({ message: "Age must be older than 18 years", variant: "warning" }); handleDetailChange(field, ""); }
+                    if (val && val > maxDOB) { addToast({ message: "Age must be at least 16 years", variant: "warning" }); handleDetailChange(field, ""); }
                     else handleDetailChange(field, val);
                   };
 
