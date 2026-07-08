@@ -224,7 +224,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <div className={`grid grid-cols-1 ${user?.role === "HOD" || user?.role === "DEAN" ? "md:grid-cols-2" : ""} gap-8 items-start`>
+      <div className={`grid grid-cols-1 ${user?.role === "HOD" || user?.role === "DEAN" ? "md:grid-cols-2" : ""} gap-8 items-start`}>
       {/* ══════════════════════════════════════
           HOD SIGNATURE UPLOAD CARD
          ══════════════════════════════════════ */}
