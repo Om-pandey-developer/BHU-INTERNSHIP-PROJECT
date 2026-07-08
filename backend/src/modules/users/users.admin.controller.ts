@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards, BadRequestException, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
@@ -106,5 +107,112 @@ export class UsersAdminController {
     );
 
     return { message: 'Password reset link sent successfully to personal email.' };
+  }
+
+  // ════════════════════════════════════════════
+  // BULK UPLOAD HOD/DEAN VIA CSV
+  // ════════════════════════════════════════════
+
+  /**
+   * POST /api/v1/admin/users/hod-dean/bulk-upload
+   * Upload a CSV file to create multiple HOD/Dean accounts at once.
+   *
+   * CSV Format (columns):
+   *   firstName, lastName, personalEmail, designationEmail, role, departmentCode, roleExpiryDate
+   *
+   * Example row:
+   *   Rajesh,Kumar,rajesh.kumar@gmail.com,hod.physics@bhu.ac.in,HOD,PHYSICS,2028-06-30
+   */
+  @Post('bulk-upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async bulkUpload(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('CSV file is required.');
+    }
+
+    const csvContent = file.buffer.toString('utf-8');
+    const lines = csvContent.split(/\r?\n/).filter((line) => line.trim());
+
+    if (lines.length < 2) {
+      throw new BadRequestException('CSV must contain a header row and at least one data row.');
+    }
+
+    // Parse header
+    const header = lines[0].split(',').map((h) => h.trim().toLowerCase());
+    const requiredColumns = ['firstname', 'lastname', 'personalemail', 'role', 'departmentcode'];
+    for (const col of requiredColumns) {
+      if (!header.includes(col)) {
+        throw new BadRequestException(`CSV is missing required column: "${col}". Required: ${requiredColumns.join(', ')}`);
+      }
+    }
+
+    const results: { row: number; email: string; status: string; error?: string }[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map((v) => v.trim());
+      const row: Record<string, string> = {};
+      header.forEach((key, idx) => {
+        row[key] = values[idx] || '';
+      });
+
+      try {
+        // Validate role
+        const role = row['role']?.toUpperCase();
+        if (role !== 'HOD' && role !== 'DEAN') {
+          throw new Error(`Invalid role "${row['role']}". Must be HOD or DEAN.`);
+        }
+
+        // Find department by code
+        const { PrismaService } = await import('../../prisma/prisma.service');
+        const dept = await this.usersService['prisma'].department.findUnique({
+          where: { code: row['departmentcode'].toUpperCase() },
+        });
+        if (!dept) {
+          throw new Error(`Department with code "${row['departmentcode']}" not found.`);
+        }
+
+        // Create user with dummy password and requiresPasswordChange = true
+        const newUser = await this.usersService.createAdminUser({
+          firstName: row['firstname'],
+          lastName: row['lastname'],
+          alternateEmail: row['personalemail'],
+          bhuEmail: row['designationemail'] || null,
+          role: role as Role,
+          departmentId: dept.id,
+          roleExpiryDate: row['roleexpirydate'] ? new Date(row['roleexpirydate']) : null,
+        });
+
+        // Generate reset token and send welcome email
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        await this.usersService.savePasswordResetToken(newUser.id, resetToken);
+
+        try {
+          await this.mailService.sendHodWelcomeMail(
+            row['personalemail'],
+            `${row['firstname']} ${row['lastname']}`,
+            row['designationemail'] || 'N/A',
+            resetToken,
+            role as Role,
+          );
+        } catch {
+          // Email failure shouldn't block account creation
+        }
+
+        results.push({ row: i + 1, email: row['personalemail'], status: 'SUCCESS' });
+      } catch (err: any) {
+        results.push({ row: i + 1, email: row['personalemail'] || 'N/A', status: 'FAILED', error: err.message });
+      }
+    }
+
+    const successCount = results.filter((r) => r.status === 'SUCCESS').length;
+    const failCount = results.filter((r) => r.status === 'FAILED').length;
+
+    return {
+      message: `Bulk upload completed. ${successCount} created, ${failCount} failed.`,
+      total: lines.length - 1,
+      success: successCount,
+      failed: failCount,
+      details: results,
+    };
   }
 }

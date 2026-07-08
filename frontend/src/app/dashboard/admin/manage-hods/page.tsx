@@ -29,6 +29,10 @@ export default function ManageHodsAndDeansPage() {
   const [editModal, setEditModal] = useState<Official | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [bulkResults, setBulkResults] = useState<any>(null);
+
   // Form states
   const [formData, setFormData] = useState({
     firstName: "",
@@ -115,6 +119,31 @@ export default function ManageHodsAndDeansPage() {
     }
   };
 
+  const handleBulkUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!csvFile) {
+      addToast({ message: "Please select a CSV file.", variant: "error" });
+      return;
+    }
+
+    setActionLoading(true);
+    const fd = new FormData();
+    fd.append("file", csvFile);
+
+    try {
+      const { data } = await api.post("/api/v1/admin/users/hod-dean/bulk-upload", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setBulkResults(data);
+      addToast({ message: "Bulk upload processed.", variant: "success" });
+      fetchOfficials();
+    } catch (err: any) {
+      addToast({ message: err.response?.data?.message || "Bulk upload failed.", variant: "error" });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const openEditModal = (off: Official) => {
     setFormData({
       firstName: off.firstName,
@@ -142,12 +171,21 @@ export default function ManageHodsAndDeansPage() {
           </h1>
           <p className="text-sm text-amber-600 mt-1">Provision and manage official accounts</p>
         </div>
-        <Button icon="add" variant="filled" onClick={() => {
-          setFormData({ firstName: "", lastName: "", designationEmail: "", personalEmail: "", role: "HOD", departmentId: "", roleExpiryDate: "" });
-          setAddModalOpen(true);
-        }}>
-          Provision New Official
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button icon="upload_file" variant="outlined" onClick={() => {
+            setCsvFile(null);
+            setBulkResults(null);
+            setBulkModalOpen(true);
+          }}>
+            Bulk Upload
+          </Button>
+          <Button icon="add" variant="filled" onClick={() => {
+            setFormData({ firstName: "", lastName: "", designationEmail: "", personalEmail: "", role: "HOD", departmentId: "", roleExpiryDate: "" });
+            setAddModalOpen(true);
+          }}>
+            Provision New Official
+          </Button>
+        </div>
       </div>
 
       {/* Table */}
@@ -282,6 +320,87 @@ export default function ManageHodsAndDeansPage() {
           </div>
         </form>
       </Modal>
+
+      {/* Bulk Upload Modal */}
+      <Modal isOpen={bulkModalOpen} onClose={() => !actionLoading && setBulkModalOpen(false)} title="Bulk Upload Officials">
+        {!bulkResults ? (
+          <form onSubmit={handleBulkUploadSubmit} className="space-y-4">
+            <div className="p-4 bg-primary-container/10 border border-primary-container rounded-xl">
+              <h4 className="text-sm font-bold text-primary mb-2">CSV Format Requirements:</h4>
+              <p className="text-xs text-outline mb-2">
+                Your CSV file must contain a header row with exactly these columns (case-insensitive):<br />
+                <code className="bg-surface px-1 py-0.5 rounded text-foreground font-mono">firstName, lastName, personalEmail, designationEmail, role, departmentCode, roleExpiryDate</code>
+              </p>
+              <p className="text-xs text-outline">
+                <strong>role</strong> must be HOD or DEAN.<br />
+                <strong>departmentCode</strong> must match an existing department code.
+              </p>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1">Upload CSV File</label>
+              <input 
+                type="file" 
+                accept=".csv" 
+                onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+                className="w-full bg-surface border border-outline-variant rounded-xl px-3 py-2 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" 
+                required 
+              />
+            </div>
+            
+            <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant">
+              <Button variant="text" onClick={() => setBulkModalOpen(false)} disabled={actionLoading}>Cancel</Button>
+              <Button variant="filled" type="submit" loading={actionLoading} disabled={!csvFile}>Upload & Process</Button>
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-4">
+            <div className={`p-4 rounded-xl border ${bulkResults.failed === 0 ? 'bg-success-container/10 border-success' : 'bg-warning-container/10 border-warning'}`}>
+              <h4 className="text-sm font-bold text-foreground">Upload Complete</h4>
+              <p className="text-sm mt-1">Processed {bulkResults.total} rows.</p>
+              <div className="flex gap-4 mt-2">
+                <span className="text-sm font-medium text-success">{bulkResults.success} created</span>
+                <span className="text-sm font-medium text-error">{bulkResults.failed} failed</span>
+              </div>
+            </div>
+            
+            <div className="max-h-64 overflow-y-auto border border-outline-variant rounded-xl">
+              <table className="w-full text-left text-sm border-collapse">
+                <thead className="bg-surface-variant/50 sticky top-0">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">Row</th>
+                    <th className="px-3 py-2 font-medium">Email</th>
+                    <th className="px-3 py-2 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bulkResults.details.map((res: any, idx: number) => (
+                    <tr key={idx} className="border-t border-outline-variant">
+                      <td className="px-3 py-2 text-outline">{res.row}</td>
+                      <td className="px-3 py-2">{res.email}</td>
+                      <td className="px-3 py-2">
+                        {res.status === 'SUCCESS' ? (
+                          <span className="text-success text-xs font-bold flex items-center gap-1"><span className="material-symbols-rounded text-[14px]">check_circle</span> SUCCESS</span>
+                        ) : (
+                          <div className="text-error">
+                            <span className="text-xs font-bold flex items-center gap-1"><span className="material-symbols-rounded text-[14px]">error</span> FAILED</span>
+                            <span className="text-xs opacity-80">{res.error}</span>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="flex justify-end pt-4 border-t border-outline-variant">
+              <Button variant="filled" onClick={() => setBulkModalOpen(false)}>Close</Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
+

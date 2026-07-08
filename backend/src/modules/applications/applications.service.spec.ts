@@ -70,6 +70,9 @@ describe('ApplicationsService', () => {
           hod: {
             select: { firstName: true, lastName: true },
           },
+          dean: {
+            select: { firstName: true, lastName: true },
+          },
         },
       });
     });

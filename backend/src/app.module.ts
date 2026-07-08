@@ -26,21 +26,19 @@ import { TasksModule } from './modules/tasks/tasks.module';
  * - GoogleWorkspaceModule: Account provisioning via Google Admin SDK
  * - AnalyticsModule: CC Admin dashboard metrics
  */
+import { MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { ChaosMiddleware } from './core/middlewares/chaos.middleware';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    // ── Rate Limiting: 10 requests per 60 seconds per IP ──
     ThrottlerModule.forRoot([
       {
         ttl: parseInt(process.env.THROTTLE_TTL || '60', 10) * 1000,
         limit: parseInt(process.env.THROTTLE_LIMIT || '10', 10),
       },
     ]),
-
-    // ── Database ──
     PrismaModule,
-
-    // ── Feature Modules ──
     AuthModule,
     UsersModule,
     DepartmentsModule,
@@ -53,11 +51,15 @@ import { TasksModule } from './modules/tasks/tasks.module';
     TasksModule,
   ],
   providers: [
-    // Apply ThrottlerGuard globally to all routes
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(ChaosMiddleware).forRoutes('*');
+  }
+}
+

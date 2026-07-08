@@ -220,6 +220,7 @@ export class UsersService {
         departmentId: data.departmentId,
         roleExpiryDate: data.roleExpiryDate,
         passwordHash,
+        requiresPasswordChange: true,
       },
     });
   }

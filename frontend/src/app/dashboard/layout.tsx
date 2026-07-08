@@ -27,6 +27,8 @@ const adminNav: NavItem[] = [
   { label: "Dashboard", icon: "dashboard", href: "/dashboard/admin" },
   { label: "History", icon: "history", href: "/dashboard/admin/history" },
   { label: "Database", icon: "database", href: "/dashboard/admin/database" },
+  { label: "Manage HODs", icon: "manage_accounts", href: "/dashboard/admin/manage-hods" },
+  { label: "Departments", icon: "apartment", href: "/dashboard/admin/departments" },
   { label: "Settings", icon: "settings", href: "/dashboard/settings" },
 ];
 
