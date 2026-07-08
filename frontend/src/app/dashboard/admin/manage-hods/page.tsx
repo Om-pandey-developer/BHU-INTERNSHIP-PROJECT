@@ -44,7 +44,7 @@ export default function ManageHodsAndDeansPage() {
     setLoading(true);
     try {
       const { data } = await api.get("/api/v1/admin/users/hod-dean");
-      setOfficials(data);
+      setOfficials(Array.isArray(data) ? data : data?.data || []);
     } catch (err) {
       console.error(err);
       addToast({ message: "Failed to load officials.", variant: "error" });

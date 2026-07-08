@@ -126,6 +126,7 @@ async function main() {
           applicantDetails.employeeId = `EMP${1000 + i}`;
         }
 
+        const isHodProcessed = status === 'APPROVED_HOD' || status === 'REJECTED_HOD' || status === 'PROVISIONED';
         const app = await prisma.application.create({
           data: {
             applicantId: user.id,
@@ -134,6 +135,8 @@ async function main() {
             applicantDetails,
             photoStoragePath: '/dummy/photo.jpg',
             signatureStoragePath: '/dummy/signature.jpg',
+            hodId: isHodProcessed ? hod.id : null,
+            hodApprovedAt: isHodProcessed ? new Date(Date.now() - 5000000000) : null,
             createdAt: new Date(Date.now() - Math.random() * 10000000000), // Random past date
           }
         });

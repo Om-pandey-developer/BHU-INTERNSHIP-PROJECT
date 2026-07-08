@@ -669,7 +669,7 @@ export default function ApplicantDashboard() {
     }
   }
 
-  const maxDOB = new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0];
+  const maxDOB = new Date(new Date().setFullYear(new Date().getFullYear() - 16)).toISOString().split('T')[0];
 
   /* ═══════════════════════════════════════════════════════════════
      RENDER
@@ -713,7 +713,7 @@ export default function ApplicantDashboard() {
             <h3 className="text-sm font-bold text-orange-700 mb-2 text-[22px]">Steps to Follow</h3>
             <ol className="text-md space-y-1.5 list-decimal list-inside text-orange-500">
               <li>Fill and submit the application form with required documents.</li>
-              <li>Your application will be forwarded to the Head of Department (HOD)/to the Dean for UG for approval.</li>
+              <li>Your application will be forwarded to the Dean(for Under-Graduate Students)/ Head of Department (HOD) for other categories for approval.</li>
               <li>After HOD/Dean approval, CC Admin will provision your email account.</li>
               <li className="text-primary font-medium">
                 You will receive your @bhu.ac.in credentials via email from Google Workspace.
@@ -1029,7 +1029,7 @@ export default function ApplicantDashboard() {
                   else if (field === "programEnrolled") onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[^a-zA-Z\s.]/g, ""));
                   else if (field === "dateOfBirth") onChangeHandler = (e) => {
                     const val = e.target.value;
-                    if (val && val > maxDOB) { addToast({ message: "Age must be older than 18 years", variant: "warning" }); handleDetailChange(field, ""); }
+                    if (val && val > maxDOB) { addToast({ message: "Age must be at least 16 years", variant: "warning" }); handleDetailChange(field, ""); }
                     else handleDetailChange(field, val);
                   };
 
@@ -1467,7 +1467,7 @@ export default function ApplicantDashboard() {
                     {/* Details Grid */}
                     <div>
                       <h4 className="text-sm font-semibold text-foreground mb-3">Application Details</h4>
-                      
+
                       {(app.deanRemarks || app.hodRemarks) && (
                         <div className="mb-4 bg-surface p-3 rounded-lg border border-outline-variant/30">
                           <p className="text-xs text-outline font-semibold uppercase tracking-wider mb-1">{(app.applicantDetails as any)?.category === "UNDER_GRADUATE_STUDENT" ? "Dean" : "HOD"} Remarks</p>
