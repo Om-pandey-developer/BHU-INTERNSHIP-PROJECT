@@ -57,6 +57,13 @@ export default function DashboardLayout({
     }
   }, [isLoading, isAuthenticated, router]);
 
+  // ── Force password change on first login (admin-provisioned accounts) ──
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user?.requiresPasswordChange && pathname !== "/dashboard/settings") {
+      router.replace("/dashboard/settings");
+    }
+  }, [isLoading, isAuthenticated, user?.requiresPasswordChange, pathname, router]);
+
   if (isLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">

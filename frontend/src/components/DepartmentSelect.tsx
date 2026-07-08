@@ -16,11 +16,19 @@ interface DepartmentSelectProps {
   disabled?: boolean;
   small?: boolean;
   required?: boolean;
+  /** Called when user types a custom department name via "Others" */
+  onOtherDepartment?: (name: string) => void;
+  /** Pre-filled custom department name (when "Others" was previously selected) */
+  otherDepartmentName?: string;
 }
 
-export default function DepartmentSelect({ departments, value, onChange, placeholder = "Select Department *", disabled = false, small = false, required = false }: DepartmentSelectProps) {
+const OTHERS_SENTINEL = "__OTHERS__";
+
+export default function DepartmentSelect({ departments, value, onChange, placeholder = "Select Department *", disabled = false, small = false, required = false, onOtherDepartment, otherDepartmentName = "" }: DepartmentSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [isOthersSelected, setIsOthersSelected] = useState(value === OTHERS_SENTINEL);
+  const [customName, setCustomName] = useState(otherDepartmentName);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,12 +41,23 @@ export default function DepartmentSelect({ departments, value, onChange, placeho
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Sync external value changes
+  useEffect(() => {
+    setIsOthersSelected(value === OTHERS_SENTINEL);
+  }, [value]);
+
   const safeDepartments = Array.isArray(departments) ? departments : [];
   const selectedDept = safeDepartments.find((d) => d.id === value);
   
   const filteredDepartments = safeDepartments.filter((d) => 
     d.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  const displayLabel = isOthersSelected
+    ? (customName ? `Others: ${customName}` : "Others (Please specify)")
+    : selectedDept
+      ? selectedDept.name
+      : placeholder;
 
   return (
     <div className={`relative w-full ${disabled ? "pointer-events-none opacity-60" : ""}`} ref={containerRef}>
@@ -51,8 +70,8 @@ export default function DepartmentSelect({ departments, value, onChange, placeho
             apartment
           </span>
         )}
-        <span className={selectedDept ? "text-foreground" : "text-outline"}>
-          {selectedDept ? selectedDept.name : placeholder}
+        <span className={selectedDept || isOthersSelected ? "text-foreground" : "text-outline"}>
+          {displayLabel}
         </span>
         <span className="material-symbols-rounded text-[20px] text-outline pointer-events-none">
           expand_more
@@ -85,6 +104,8 @@ export default function DepartmentSelect({ departments, value, onChange, placeho
                   }`}
                   onClick={() => {
                     onChange(d.id);
+                    setIsOthersSelected(false);
+                    setCustomName("");
                     setIsOpen(false);
                     setSearch("");
                   }}
@@ -97,7 +118,49 @@ export default function DepartmentSelect({ departments, value, onChange, placeho
                 No departments found
               </div>
             )}
+
+            {/* ── "Others" option ── */}
+            <div
+              className={`px-4 py-3 text-sm cursor-pointer hover:bg-surface-variant transition-colors border-t border-outline-variant ${
+                isOthersSelected ? "bg-primary/10 text-primary font-semibold" : "text-foreground"
+              }`}
+              onClick={() => {
+                onChange(OTHERS_SENTINEL);
+                setIsOthersSelected(true);
+                setIsOpen(false);
+                setSearch("");
+              }}
+            >
+              <span className="flex items-center gap-2">
+                <span className="material-symbols-rounded text-[18px]">add_circle_outline</span>
+                Others (Not in the list)
+              </span>
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Custom department text input (shown when "Others" selected) ── */}
+      {isOthersSelected && (
+        <div className="mt-2 animate-fade-in">
+          <div className="relative">
+            <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-outline">edit</span>
+            <input
+              type="text"
+              placeholder="Please specify your department name"
+              value={customName}
+              onChange={(e) => {
+                const val = e.target.value;
+                setCustomName(val);
+                onOtherDepartment?.(val);
+              }}
+              className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-3 text-sm text-foreground pl-11 hover:border-outline focus:border-primary focus:outline-none transition-colors"
+              autoFocus
+            />
+          </div>
+          <p className="text-xs text-outline mt-1">
+            This will be sent to the Admin for approval before being added to the system.
+          </p>
         </div>
       )}
     </div>

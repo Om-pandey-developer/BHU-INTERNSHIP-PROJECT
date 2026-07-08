@@ -193,9 +193,38 @@ export default function SettingsPage() {
         <p className="text-outline">
           Manage your account settings and security preferences.
         </p>
+        {/* ── Back to Dashboard button for HOD / Dean ── */}
+        {(user?.role === "HOD" || user?.role === "DEAN") && (
+          <button
+            onClick={() =>
+              router.push(
+                user.role === "HOD"
+                  ? "/dashboard/hod"
+                  : "/dashboard/dean"
+              )
+            }
+            className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer"
+          >
+            <span className="material-symbols-rounded text-[18px]">arrow_back</span>
+            Back to Dashboard
+          </button>
+        )}
       </div>
 
-      <div className={`grid grid-cols-1 ${user?.role === "HOD" || user?.role === "DEAN" ? "md:grid-cols-2" : ""} gap-8 items-start`}>
+      {/* ── Force password change banner ── */}
+      {user?.requiresPasswordChange && (
+        <div className="flex items-start gap-3 rounded-xl border-2 border-warning bg-warning-container/30 px-5 py-4 animate-fade-in">
+          <span className="material-symbols-rounded text-[24px] text-warning mt-0.5">warning</span>
+          <div>
+            <p className="text-sm font-bold text-warning">Password Change Required</p>
+            <p className="text-xs text-foreground/70 mt-1">
+              Your account was created by an administrator with a temporary password. For security reasons, you must create a new personal password before you can access any other features. Please change your password below.
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className={`grid grid-cols-1 ${user?.role === "HOD" || user?.role === "DEAN" ? "md:grid-cols-2" : ""} gap-8 items-start`>
       {/* ══════════════════════════════════════
           HOD SIGNATURE UPLOAD CARD
          ══════════════════════════════════════ */}

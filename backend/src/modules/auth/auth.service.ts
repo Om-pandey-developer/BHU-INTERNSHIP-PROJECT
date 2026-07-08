@@ -83,6 +83,7 @@ export class AuthService {
         lastName: user.lastName,
         role: user.role,
         departmentId: user.departmentId,
+        requiresPasswordChange: user.requiresPasswordChange,
       },
     };
   }
@@ -172,6 +173,7 @@ export class AuthService {
       data: {
         passwordHash,
         refreshToken: null, // Force re-login
+        requiresPasswordChange: false,
       },
     });
 
@@ -217,6 +219,7 @@ export class AuthService {
       data: {
         passwordHash,
         refreshToken: null, // Force re-login
+        requiresPasswordChange: false,
       },
     });
 
@@ -246,7 +249,7 @@ export class AuthService {
 
     // expiresIn must be a number (seconds) for @nestjs/jwt v11+
     const accessExpiry = parseInt(process.env.JWT_ACCESS_EXPIRY_SECONDS || '900', 10); // 15 minutes
-    const refreshExpiry = parseInt(process.env.JWT_REFRESH_EXPIRY_SECONDS || '604800', 10); // 7 days
+    const refreshExpiry = parseInt(process.env.JWT_REFRESH_EXPIRY_SECONDS || '7200', 10); // 2 hours
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {

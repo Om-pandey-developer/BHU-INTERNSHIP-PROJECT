@@ -8,6 +8,7 @@ export interface User {
   lastName: string;
   role: "APPLICANT" | "HOD" | "CC_ADMIN" | "DEAN";
   departmentId?: string;
+  requiresPasswordChange?: boolean;
 }
 
 interface AuthState {

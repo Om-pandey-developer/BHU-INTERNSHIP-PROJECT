@@ -14,7 +14,6 @@ import Input from "@/components/Input";
 import CountryCodeSelect from "@/components/CountryCodeSelect";
 import DepartmentSelect from "@/components/DepartmentSelect";
 import NationalitySelect from "@/components/NationalitySelect";
-import SignaturePad from "@/components/SignaturePad";
 import ImageCropper from "@/components/ImageCropper";
 import getCroppedImg from "@/lib/getCroppedImg";
 import { countryCodes } from "@/lib/countryCodes";
@@ -236,7 +235,6 @@ export default function ApplicantDashboard() {
   const [error, setError] = useState("");
   const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [signatureModalOpen, setSignatureModalOpen] = useState(false);
-  const [signatureMode, setSignatureMode] = useState<"upload" | "draw">("upload");
   const [isOtherEmployment, setIsOtherEmployment] = useState(false);
   const [tempPhotoUrl, setTempPhotoUrl] = useState<string | null>(null);
   const [cropModalOpen, setCropModalOpen] = useState(false);
@@ -1086,21 +1084,12 @@ export default function ApplicantDashboard() {
                   {fieldErrors["photo"] && <p className="text-xs text-error mt-1 font-medium animate-fade-in">{fieldErrors["photo"]}</p>}
                 </div>
 
-                {/* Signature Upload / Draw */}
+                {/* Signature Upload */}
                 <div id="field-signature">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-sm font-semibold text-foreground">Certified Signature *</p>
-                    <div className="flex items-center bg-surface-variant rounded-lg p-0.5">
-                      <button type="button" onClick={() => setSignatureMode("upload")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${signatureMode === "upload" ? "bg-primary text-white shadow-sm" : "text-outline hover:text-foreground"}`}>
-                        <span className="material-symbols-rounded text-[14px]">upload_file</span>Upload
-                      </button>
-                      <button type="button" onClick={() => setSignatureMode("draw")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all cursor-pointer ${signatureMode === "draw" ? "bg-primary text-white shadow-sm" : "text-outline hover:text-foreground"}`}>
-                        <span className="material-symbols-rounded text-[14px]">draw</span>Draw
-                      </button>
-                    </div>
                   </div>
 
-                  {signatureMode === "upload" ? (
                     <div
                       onClick={() => signatureInputRef.current?.click()}
                       className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${fieldErrors["signature"] ? "border-error bg-error-container/5" :
@@ -1130,29 +1119,6 @@ export default function ApplicantDashboard() {
                         </>
                       )}
                     </div>
-                  ) : (
-                    <div>
-                      {signaturePreview ? (
-                        <div className="border-2 border-success rounded-xl p-4 bg-success-container/10">
-                          <div className="flex items-center gap-4">
-                            <img src={signaturePreview} alt="Drawn Signature" className="w-24 h-16 rounded-lg object-contain border border-outline-variant bg-white" />
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
-                                <span className="material-symbols-rounded text-[16px] text-success">check_circle</span>Signature captured
-                              </p>
-                              <p className="text-xs text-outline mt-0.5">{signature ? `${((signature.size || 0) / 1024).toFixed(0)} KB` : ""}</p>
-                            </div>
-                            <button type="button" onClick={() => { setSignature(null); setSignaturePreview(null); }} className="text-xs text-error font-medium hover:underline cursor-pointer">Re-draw</button>
-                          </div>
-                        </div>
-                      ) : (
-                        <SignaturePad
-                          onSignatureCapture={(file, previewUrl) => { setSignature(file); setSignaturePreview(previewUrl); }}
-                          onClear={() => { setSignature(null); setSignaturePreview(null); }}
-                        />
-                      )}
-                    </div>
-                  )}
                   {fieldErrors["signature"] && <p className="text-xs text-error mt-1 font-medium animate-fade-in">{fieldErrors["signature"]}</p>}
                 </div>
 

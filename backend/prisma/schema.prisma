@@ -53,11 +53,13 @@ model User {
   firstName      String
   lastName       String
   role           Role          @default(APPLICANT)
+  requiresPasswordChange Boolean @default(false) /// Used for admin-provisioned accounts (HOD/Dean)
   signatureStoragePath String?   /// Disk path to HOD's uploaded signature image
 
   // Relations
   departmentId   String?
   department     Department?   @relation(fields: [departmentId], references: [id])
+  departmentRequests DepartmentRequest[] @relation("ApplicantDepartmentRequests")
 
   // Application relations
   applications     Application[] @relation("ApplicantApplications")
@@ -222,5 +224,23 @@ model ReapplyRequest {
   @@index([applicantId])
   @@index([applicationId])
   @@index([status])
+}
+
+/// Request for adding a new department not currently in the system ("Others" option).
+model DepartmentRequest {
+  id            String        @id @default(uuid())
+  requestedName String        /// The custom department name entered by the user
+  
+  applicantId   String
+  applicant     User          @relation("ApplicantDepartmentRequests", fields: [applicantId], references: [id], onDelete: Cascade)
+  
+  status        RequestStatus @default(PENDING)
+  adminRemarks  String?       /// Remarks from CC Admin upon approval or rejection
+  
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([status])
+  @@index([applicantId])
 }
 
