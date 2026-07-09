@@ -90,8 +90,8 @@ export class ReapplyService {
         applicationId: dto.applicationId,
         applicantId,
         reason: dto.reason,
-        rollNumber: dto.rollNumber,
-        studentName: dto.studentName,
+        rollEmployeeId: dto.rollEmployeeId,
+        applicantName: dto.applicantName,
         status: RequestStatus.PENDING,
       },
       include: {

@@ -16,15 +16,15 @@ export class CreateReapplyRequestDto {
   @MaxLength(1000)
   reason: string;
 
-  @ApiProperty({ description: 'Student roll number or enrollment number' })
+  @ApiProperty({ description: 'Roll/Enrollment No. for students, Employee ID for staff' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
-  rollNumber: string;
+  rollEmployeeId: string;
 
-  @ApiProperty({ description: 'Full name of the student' })
+  @ApiProperty({ description: 'Full name of the applicant' })
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
-  studentName: string;
+  applicantName: string;
 }

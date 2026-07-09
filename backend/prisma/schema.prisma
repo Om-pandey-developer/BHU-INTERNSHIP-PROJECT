@@ -211,8 +211,8 @@ model ReapplyRequest {
 
   /// Reason for re-applying
   reason         String
-  rollNumber     String
-  studentName    String
+  rollEmployeeId     String        /// Roll/Enrollment No. for students, Employee ID for staff
+  applicantName  String        /// Full name of the applicant
 
   status         RequestStatus @default(PENDING)
   hodRemarks     String?       /// Optional remarks from HOD on approval/rejection

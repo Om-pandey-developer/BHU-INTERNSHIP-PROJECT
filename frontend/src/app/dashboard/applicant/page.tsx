@@ -44,8 +44,8 @@ interface ReapplyRequest {
   id: string;
   applicationId: string;
   reason: string;
-  rollNumber: string;
-  studentName: string;
+  rollEmployeeId: string;
+  applicantName: string;
   status: string;
   hodRemarks?: string;
   deanRemarks?: string;
@@ -217,7 +217,7 @@ export default function ApplicantDashboard() {
   // ── Reapply state ──
   const [reapplyRequests, setReapplyRequests] = useState<ReapplyRequest[]>([]);
   const [showReapplyModal, setShowReapplyModal] = useState(false);
-  const [reapplyForm, setReapplyForm] = useState({ reason: "", rollNumber: "", studentName: "" });
+  const [reapplyForm, setReapplyForm] = useState({ reason: "", rollEmployeeId: "", applicantName: "" });
   const [reapplySubmitting, setReapplySubmitting] = useState(false);
   const [selectedRejectedAppId, setSelectedRejectedAppId] = useState<string | null>(null);
 
@@ -644,7 +644,7 @@ export default function ApplicantDashboard() {
   /* ── Reapply handler ── */
   async function handleSubmitReapplyRequest() {
     if (!selectedRejectedAppId) return;
-    if (!reapplyForm.reason.trim() || !reapplyForm.rollNumber.trim() || !reapplyForm.studentName.trim()) {
+    if (!reapplyForm.reason.trim() || !reapplyForm.rollEmployeeId.trim() || !reapplyForm.applicantName.trim()) {
       addToast({ message: "Please fill in all fields.", variant: "warning" });
       return;
     }
@@ -653,13 +653,13 @@ export default function ApplicantDashboard() {
       await api.post("/reapply", {
         applicationId: selectedRejectedAppId,
         reason: reapplyForm.reason.trim(),
-        rollNumber: reapplyForm.rollNumber.trim(),
-        studentName: reapplyForm.studentName.trim(),
+        rollEmployeeId: reapplyForm.rollEmployeeId.trim(),
+        applicantName: reapplyForm.applicantName.trim(),
       });
       addToast({ message: "Reapply request submitted successfully! Your HOD will review it.", variant: "success" });
       setShowReapplyModal(false);
       setSelectedRejectedAppId(null);
-      setReapplyForm({ reason: "", rollNumber: "", studentName: "" });
+      setReapplyForm({ reason: "", rollEmployeeId: "", applicantName: "" });
       fetchData();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
@@ -1645,28 +1645,35 @@ export default function ApplicantDashboard() {
 
       {/* Reapply Request Modal */}
       <Modal isOpen={showReapplyModal} onClose={() => setShowReapplyModal(false)} title="Request Re-apply Permission" size="md">
+        {(() => {
+          const rejectedApp = applications.find(a => a.id === selectedRejectedAppId);
+          const rejectedCategory = (rejectedApp?.applicantDetails as any)?.category || "";
+          const isStudent = ["PHD_PG_STUDENT", "UNDER_GRADUATE_STUDENT"].includes(rejectedCategory);
+          const idLabel = isStudent ? "Roll / Enrollment Number" : "Employee ID";
+          const idPlaceholder = isStudent ? "e.g., 21012345" : "e.g., EMP-12345";
+          return (
         <div className="space-y-5">
           <div className="bg-primary-container/20 rounded-xl px-4 py-3">
             <p className="text-xs text-outline">This request will be sent to your department's HOD or Dean. Once approved, you can submit a new application.</p>
             <p className="text-[11px] text-outline/60 mt-1">Requests used: {reapplyRequests.length} / 5</p>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-foreground mb-1.5">Student Name <span className="text-error">*</span></label>
+            <label className="block text-sm font-semibold text-foreground mb-1.5">Full Name <span className="text-error">*</span></label>
             <input
               type="text"
-              value={reapplyForm.studentName}
-              onChange={(e) => setReapplyForm((f) => ({ ...f, studentName: e.target.value }))}
+              value={reapplyForm.applicantName}
+              onChange={(e) => setReapplyForm((f) => ({ ...f, applicantName: e.target.value }))}
               placeholder="Enter your full name"
               className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-2.5 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-foreground mb-1.5">Roll / Enrollment Number <span className="text-error">*</span></label>
+            <label className="block text-sm font-semibold text-foreground mb-1.5">{idLabel} <span className="text-error">*</span></label>
             <input
               type="text"
-              value={reapplyForm.rollNumber}
-              onChange={(e) => setReapplyForm((f) => ({ ...f, rollNumber: e.target.value }))}
-              placeholder="e.g., 21012345"
+              value={reapplyForm.rollEmployeeId}
+              onChange={(e) => setReapplyForm((f) => ({ ...f, rollEmployeeId: e.target.value }))}
+              placeholder={idPlaceholder}
               className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-2.5 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors"
             />
           </div>
@@ -1685,6 +1692,8 @@ export default function ApplicantDashboard() {
             <Button icon="send" loading={reapplySubmitting} onClick={handleSubmitReapplyRequest}>Submit Request</Button>
           </div>
         </div>
+          );
+        })()}
       </Modal>
     </div>
   );

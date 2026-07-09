@@ -132,7 +132,7 @@ async function main() {
             applicantId: user.id,
             departmentId: 'dept-cs',
             status,
-            applicantDetails,
+            applicantDetails, trackingId: "DEAN-APP-$($i)-$($Math.random())", 
             photoStoragePath: '/dummy/photo.jpg',
             signatureStoragePath: '/dummy/signature.jpg',
             hodId: isHodProcessed ? hod.id : null,
@@ -147,8 +147,8 @@ async function main() {
               applicationId: app.id,
               applicantId: user.id,
               reason: 'Mistake in form, please allow reapply.',
-              rollNumber: applicantDetails.employeeId || applicantDetails.enrollmentNo || 'N/A',
-              studentName: `${user.firstName} ${user.lastName}`,
+              rollEmployeeId: applicantDetails.employeeId || applicantDetails.enrollmentNo || 'N/A',
+              applicantName: `${user.firstName} ${user.lastName}`,
               status: i % 2 === 0 ? 'PENDING' : 'APPROVED',
             }
           });
@@ -213,7 +213,7 @@ async function main() {
             applicantId: user.id,
             departmentId: 'dept-cs',
             status,
-            applicantDetails,
+            applicantDetails, trackingId: "DEAN-APP-$($i)-$($Math.random())", 
             photoStoragePath: '/dummy/photo.jpg',
             signatureStoragePath: '/dummy/signature.jpg',
             // It's a Dean (UG) application, so it only goes to Dean.

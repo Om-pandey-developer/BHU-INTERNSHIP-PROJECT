@@ -85,7 +85,7 @@ export class DatabaseExplorerService {
         icon: 'replay',
         description: 'Re-application requests after HOD rejection',
         count: reapplyCount,
-        columns: ['id', 'applicationId', 'applicantId', 'reason', 'rollNumber', 'studentName', 'status', 'hodRemarks', 'deanRemarks', 'createdAt', 'updatedAt'],
+        columns: ['id', 'applicationId', 'applicantId', 'reason', 'rollEmployeeId', 'applicantName', 'status', 'hodRemarks', 'deanRemarks', 'createdAt', 'updatedAt'],
       },
     ];
   }
@@ -293,8 +293,8 @@ export class DatabaseExplorerService {
         const reapplyWhere = search
           ? {
               OR: [
-                { studentName: { contains: search, mode: 'insensitive' as const } },
-                { rollNumber: { contains: search, mode: 'insensitive' as const } },
+                { applicantName: { contains: search, mode: 'insensitive' as const } },
+                { rollEmployeeId: { contains: search, mode: 'insensitive' as const } },
                 { reason: { contains: search, mode: 'insensitive' as const } },
               ],
             }

@@ -39,8 +39,8 @@ interface ReapplyRequest {
   id: string;
   applicationId: string;
   reason: string;
-  rollNumber: string;
-  studentName: string;
+  rollEmployeeId: string;
+  applicantName: string;
   status: string;
   deanRemarks?: string;
   createdAt: string;
@@ -212,10 +212,10 @@ export default function DeanDashboard() {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       data = data.filter(item => {
-        const name = activeTab === "reapply" ? item.studentName : `${item.applicant?.firstName} ${item.applicant?.lastName}`;
+        const name = activeTab === "reapply" ? item.applicantName : `${item.applicant?.firstName} ${item.applicant?.lastName}`;
         const email = (item.applicant?.alternateEmail || "").toLowerCase();
         const id = activeTab === "reapply" ? item.application?.trackingId : item.trackingId;
-        const roll = activeTab === "reapply" ? item.rollNumber : "";
+        const roll = activeTab === "reapply" ? item.rollEmployeeId : "";
         return name?.toLowerCase().includes(q) || email?.toLowerCase().includes(q) || id?.toLowerCase().includes(q) || roll?.toLowerCase().includes(q);
       });
     }
@@ -648,7 +648,7 @@ export default function DeanDashboard() {
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Department</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Category</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Type/Program</th>
-                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">{activeTab === "reapply" ? "Roll No." : "Designation"}</th>
+                  <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">{activeTab === "reapply" ? "Roll No / Emp ID" : "Designation"}</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Requested Email</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">Date Applied</th>
                   <th className="px-3 py-3 font-semibold text-xs uppercase tracking-wider">{activeTab === "reapply" ? "Reapply Reason" : "Dean Reviewed"}</th>
@@ -660,12 +660,12 @@ export default function DeanDashboard() {
                 {paginatedData.map((item, idx) => {
                   const isExpanded = expandedRows.has(item.id);
                   const isReapply = activeTab === "reapply";
-                  const name = isReapply ? item.studentName : `${item.applicant?.firstName} ${item.applicant?.lastName}`;
+                  const name = isReapply ? item.applicantName : `${item.applicant?.firstName} ${item.applicant?.lastName}`;
                   const email = (isReapply ? item.applicant?.alternateEmail : item.applicant?.alternateEmail || "").toLowerCase();
                   const trackId = isReapply ? item.application?.trackingId : item.trackingId;
                   const department = isReapply ? item.application?.department?.name : item.department?.name;
                   const category = !isReapply ? (item.applicantDetails?.category || "—") : "—";
-                  const designation = !isReapply ? (item.applicantDetails?.designation || item.applicantDetails?.post || "—") : item.rollNumber || "—";
+                  const designation = !isReapply ? (item.applicantDetails?.designation || item.applicantDetails?.post || "—") : item.rollEmployeeId || "—";
                   const mobileNo = !isReapply ? (item.applicantDetails?.mobileNo || "—") : "—";
                   const faculty = !isReapply ? (item.applicantDetails?.facultyInstituteCentre || "—") : "—";
                   const typeProgram = !isReapply ? (item.applicantDetails?.typeOfEmployment || item.applicantDetails?.programEnrolled || "—") : "—";

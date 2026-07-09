@@ -1,8 +1,11 @@
 -- CreateEnum
-CREATE TYPE "Role" AS ENUM ('APPLICANT', 'HOD', 'CC_ADMIN');
+CREATE TYPE "Role" AS ENUM ('APPLICANT', 'HOD', 'DEAN', 'CC_ADMIN');
 
 -- CreateEnum
-CREATE TYPE "ApplicationStatus" AS ENUM ('DRAFT', 'PENDING_HOD', 'APPROVED_HOD', 'REJECTED_HOD', 'PENDING_CC', 'PROVISIONED', 'FAILED_PROVISIONING');
+CREATE TYPE "ApplicationStatus" AS ENUM ('DRAFT', 'PENDING_HOD', 'APPROVED_HOD', 'REJECTED_HOD', 'PENDING_DEAN', 'APPROVED_DEAN', 'REJECTED_DEAN', 'PENDING_CC', 'PROVISIONED', 'FAILED_PROVISIONING', 'REJECTED_CC', 'SUSPENDED', 'ARCHIVED');
+
+-- CreateEnum
+CREATE TYPE "RequestStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -14,9 +17,13 @@ CREATE TABLE "User" (
     "firstName" TEXT NOT NULL,
     "lastName" TEXT NOT NULL,
     "role" "Role" NOT NULL DEFAULT 'APPLICANT',
+    "requiresPasswordChange" BOOLEAN NOT NULL DEFAULT false,
+    "signatureStoragePath" TEXT,
     "departmentId" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "roleExpiryDate" TIMESTAMP(3),
+    "retirementDate" TIMESTAMP(3),
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -27,6 +34,7 @@ CREATE TABLE "Department" (
     "code" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "hodId" TEXT,
+    "deanId" TEXT,
 
     CONSTRAINT "Department_pkey" PRIMARY KEY ("id")
 );
@@ -40,14 +48,21 @@ CREATE TABLE "Application" (
     "status" "ApplicationStatus" NOT NULL DEFAULT 'PENDING_HOD',
     "applicantDetails" JSONB NOT NULL,
     "photoStoragePath" TEXT NOT NULL,
+    "signatureStoragePath" TEXT,
     "hodId" TEXT,
     "hodRemarks" TEXT,
     "hodApprovedAt" TIMESTAMP(3),
+    "deanId" TEXT,
+    "deanRemarks" TEXT,
+    "deanApprovedAt" TIMESTAMP(3),
+    "digitalSignatureHash" TEXT,
+    "approvedPdfPath" TEXT,
     "ccAdminRemarks" TEXT,
     "provisionedAt" TIMESTAMP(3),
     "quotaAssignedGB" INTEGER,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "expectedExpiryDate" TIMESTAMP(3),
 
     CONSTRAINT "Application_pkey" PRIMARY KEY ("id")
 );
@@ -76,6 +91,36 @@ CREATE TABLE "OtpVerification" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "OtpVerification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ReapplyRequest" (
+    "id" TEXT NOT NULL,
+    "applicationId" TEXT NOT NULL,
+    "applicantId" TEXT NOT NULL,
+    "reason" TEXT NOT NULL,
+    "rollEmployeeId" TEXT NOT NULL,
+    "applicantName" TEXT NOT NULL,
+    "status" "RequestStatus" NOT NULL DEFAULT 'PENDING',
+    "hodRemarks" TEXT,
+    "deanRemarks" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ReapplyRequest_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DepartmentRequest" (
+    "id" TEXT NOT NULL,
+    "requestedName" TEXT NOT NULL,
+    "applicantId" TEXT NOT NULL,
+    "status" "RequestStatus" NOT NULL DEFAULT 'PENDING',
+    "adminRemarks" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DepartmentRequest_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -123,6 +168,21 @@ CREATE INDEX "OtpVerification_email_idx" ON "OtpVerification"("email");
 -- CreateIndex
 CREATE INDEX "OtpVerification_expiresAt_idx" ON "OtpVerification"("expiresAt");
 
+-- CreateIndex
+CREATE INDEX "ReapplyRequest_applicantId_idx" ON "ReapplyRequest"("applicantId");
+
+-- CreateIndex
+CREATE INDEX "ReapplyRequest_applicationId_idx" ON "ReapplyRequest"("applicationId");
+
+-- CreateIndex
+CREATE INDEX "ReapplyRequest_status_idx" ON "ReapplyRequest"("status");
+
+-- CreateIndex
+CREATE INDEX "DepartmentRequest_status_idx" ON "DepartmentRequest"("status");
+
+-- CreateIndex
+CREATE INDEX "DepartmentRequest_applicantId_idx" ON "DepartmentRequest"("applicantId");
+
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_departmentId_fkey" FOREIGN KEY ("departmentId") REFERENCES "Department"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -134,3 +194,15 @@ ALTER TABLE "Application" ADD CONSTRAINT "Application_departmentId_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "Application" ADD CONSTRAINT "Application_hodId_fkey" FOREIGN KEY ("hodId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Application" ADD CONSTRAINT "Application_deanId_fkey" FOREIGN KEY ("deanId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ReapplyRequest" ADD CONSTRAINT "ReapplyRequest_applicationId_fkey" FOREIGN KEY ("applicationId") REFERENCES "Application"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ReapplyRequest" ADD CONSTRAINT "ReapplyRequest_applicantId_fkey" FOREIGN KEY ("applicantId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "DepartmentRequest" ADD CONSTRAINT "DepartmentRequest_applicantId_fkey" FOREIGN KEY ("applicantId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
