@@ -1,7 +1,0 @@
-# BHU Email PDF Generator — Task Tracker
-
-- [ ] Copy BHU logo to `pdf-generator` folder
-- [ ] Create `index.html` — user input form + hidden PDF template
-- [ ] Create `style.css` — modern UI + strict PDF template styling
-- [ ] Create `script.js` — data binding + html2pdf generation
-- [ ] Verify by opening in browser and testing PDF generation
