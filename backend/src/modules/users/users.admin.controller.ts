@@ -47,8 +47,8 @@ export class UsersAdminController {
       alternateEmail: body.personalEmail,
       bhuEmail: body.designationEmail,
       role: body.role,
-      departmentId: body.departmentId,
-      roleExpiryDate: new Date(body.roleExpiryDate),
+      departmentId: body.departmentId || null,
+      roleExpiryDate: body.roleExpiryDate || null,
     });
 
     // 2. Provision Designation Email in Workspace (20GB)
@@ -84,7 +84,9 @@ export class UsersAdminController {
     if (body.firstName) data.firstName = body.firstName;
     if (body.lastName) data.lastName = body.lastName;
     if (body.personalEmail) data.alternateEmail = body.personalEmail;
-    if (body.roleExpiryDate) data.roleExpiryDate = new Date(body.roleExpiryDate);
+    if (body.roleExpiryDate !== undefined) {
+      data.roleExpiryDate = body.roleExpiryDate ? new Date(body.roleExpiryDate) : null;
+    }
 
     const updatedUser = await this.usersService.updateUser(id, data);
     return { message: 'Details updated successfully.', user: updatedUser };

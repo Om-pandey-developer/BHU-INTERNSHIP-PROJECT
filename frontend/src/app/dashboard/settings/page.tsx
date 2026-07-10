@@ -193,14 +193,16 @@ export default function SettingsPage() {
         <p className="text-outline">
           Manage your account settings and security preferences.
         </p>
-        {/* ── Back to Dashboard button for HOD / Dean ── */}
-        {(user?.role === "HOD" || user?.role === "DEAN") && (
+        {/* ── Back to Dashboard button for HOD / Dean / CC Admin ── */}
+        {(user?.role === "HOD" || user?.role === "DEAN" || user?.role === "CC_ADMIN") && (
           <button
             onClick={() =>
               router.push(
                 user.role === "HOD"
                   ? "/dashboard/hod"
-                  : "/dashboard/dean"
+                  : user.role === "DEAN"
+                  ? "/dashboard/dean"
+                  : "/dashboard/admin"
               )
             }
             className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer"

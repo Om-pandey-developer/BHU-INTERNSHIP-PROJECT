@@ -78,6 +78,16 @@ export default function DepartmentSelect({ departments, value, onChange, placeho
         </span>
       </div>
 
+      {/* Hidden input to enable HTML5 required validation */}
+      <input
+        type="text"
+        required={required}
+        value={value}
+        onChange={() => {}}
+        className="absolute opacity-0 pointer-events-none inset-0 w-full h-full z-[-1]"
+        tabIndex={-1}
+      />
+
       {isOpen && (
         <div className="absolute z-50 mt-1 w-full max-h-72 overflow-hidden flex flex-col rounded-lg border border-outline-variant bg-surface shadow-lg">
           <div className="p-2 border-b border-outline-variant sticky top-0 bg-surface">
