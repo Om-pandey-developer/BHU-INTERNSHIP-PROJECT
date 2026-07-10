@@ -153,6 +153,7 @@ POSTGRES_PASSWORD=BhU_SeCuRe_2026_PaSsWoRd
 POSTGRES_DB=bhu_email_prod_db
 
 # Google API Credentials (Workspace Integration के लिए)
+# (नोट: कुंजियाँ प्राप्त करने के लिए नीचे 'सेक्शन 6' देखें)
 MOCK_GOOGLE_WORKSPACE=false
 GOOGLE_DOMAIN=bhu.ac.in
 GOOGLE_ADMIN_EMAIL=admin@bhu.ac.in
@@ -166,6 +167,7 @@ SMTP_USER=noreply@bhu.ac.in
 SMTP_PASS=your_smtp_app_password
 
 # Turnstile Captcha
+# (नोट: कुंजियाँ प्राप्त करने के लिए नीचे 'सेक्शन 7' देखें)
 TURNSTILE_SECRET_KEY=your_cloudflare_turnstile_secret
 TURNSTILE_SITE_KEY=your_cloudflare_turnstile_site_key
 
@@ -225,8 +227,26 @@ GRANT ALL PRIVILEGES ON DATABASE bhu_email_portal TO bhu_admin;
 ```
 
 #### Step 2.3: बैकएंड कॉन्फ़िगर और रन करें (PM2 के साथ)
-1. `backend/.env` फ़ाइल बनाएं और डेटाबेस यूआरएल भरें:
-   `DATABASE_URL="postgresql://bhu_admin:bhu_secure_password_2026@localhost:5432/bhu_email_portal?schema=public"`
+1. `backend/.env` फ़ाइल बनाएं और डेटाबेस यूआरएल व अन्य कुंजियाँ भरें:
+   ```env
+   DATABASE_URL="postgresql://bhu_admin:bhu_secure_password_2026@localhost:5432/bhu_email_portal?schema=public"
+   
+   # Google Workspace (देखें सेक्शन 6)
+   MOCK_GOOGLE_WORKSPACE=false
+   GOOGLE_CLIENT_EMAIL="your-service-account@..."
+   GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n..."
+   
+   # Cloudflare Turnstile (देखें सेक्शन 7)
+   TURNSTILE_SECRET_KEY="your_secret"
+   TURNSTILE_SITE_KEY="your_site_key"
+   
+   # JWT & SMTP
+   JWT_ACCESS_SECRET="your_access_secret"
+   JWT_REFRESH_SECRET="your_refresh_secret"
+   SMTP_HOST="smtp.gmail.com"
+   SMTP_USER="noreply@bhu.ac.in"
+   SMTP_PASS="your_app_password"
+   ```
 2. बैकएंड डायरेक्टरी में जाकर इंस्टॉल और रन करें:
    ```bash
    cd /opt/bhu-portal/backend
@@ -313,7 +333,27 @@ sudo systemctl restart nginx
 
 ---
 
-## 7. Security Hardening Checklist (डिप्लॉयमेंट सुरक्षा जांच सूची)
+## 7. Cloudflare Turnstile Setup (बोट/स्पैम सुरक्षा एकीकरण)
+
+वेबसाइट को स्वचालित बोट्स और स्पैम सबमिशन से बचाने के लिए Cloudflare Turnstile का उपयोग किया गया है। उत्पादन (Production) में इसे सक्रिय करने के लिए:
+
+1. **Cloudflare Dashboard** (`dash.cloudflare.com`) में लॉगिन करें।
+2. बायीं ओर के मेनू से **Turnstile** चुनें।
+3. **Add Site** बटन पर क्लिक करें:
+   - **Site Name:** BHU Email Portal
+   - **Domain:** `emailportal.bhu.ac.in` (और यदि आवश्यक हो तो `localhost` परीक्षण के लिए)
+   - **Widget Mode:** Managed (अनुशंसित)
+4. सबमिट करने के बाद, आपको **Site Key** और **Secret Key** मिलेगी।
+5. इन कुंजियों को अपनी `.env` फ़ाइल में अपडेट करें:
+   ```env
+   TURNSTILE_SITE_KEY=your_cloudflare_turnstile_site_key
+   TURNSTILE_SECRET_KEY=your_cloudflare_turnstile_secret
+   ```
+*(नोट: स्थानीय विकास के दौरान यदि आप इन कुंजियों को खाली छोड़ देते हैं, तो बैकएंड सत्यापन को छोड़ देगा)*
+
+---
+
+## 8. Security Hardening Checklist (डिप्लॉयमेंट सुरक्षा जांच सूची)
 
 उत्पादन डिप्लॉयमेंट से पहले सुरक्षा ऑडिट रिपोर्ट के आधार पर इन बातों का विशेष ध्यान रखें:
 
@@ -324,7 +364,7 @@ sudo systemctl restart nginx
 
 ---
 
-## 8. Summary of Advantages (निष्कर्ष)
+## 9. Summary of Advantages (निष्कर्ष)
 
 हमारा यह वेब पोर्टल बीएचयू की आईटी अवसंरचना को निम्नलिखित लाभ पहुँचाएगा:
 1. **0% मैन्युअल काम:** कंप्यूटर सेंटर ऑपरेटरों को छात्रों की जानकारी देखकर ईमेल बनाने की आवश्यकता नहीं है; सब कुछ बैकग्राउंड में एपीआई द्वारा तुरंत होता है।

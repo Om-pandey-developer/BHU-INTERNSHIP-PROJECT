@@ -502,10 +502,10 @@ export default function HodDashboard() {
               }`}
           >
             {tab.label}
-            {tab.count > 0 && (
+            {tab.count > 0 && (tab.id === "pending" || tab.id === "reapply") && (
               <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${activeTab === tab.id ? "bg-primary-container text-primary" : "bg-surface-variant text-outline"
                 }`}>
-                {tab.count}
+                {tab.count > 99 ? "99+" : tab.count}
               </span>
             )}
           </button>

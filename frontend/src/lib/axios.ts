@@ -14,6 +14,8 @@ const api = axios.create({
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true",
+    "Bypass-Tunnel-Reminder": "true",
   },
 });
 

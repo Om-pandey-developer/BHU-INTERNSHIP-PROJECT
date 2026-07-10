@@ -19,8 +19,9 @@ export class MailService {
     const nodeEnv = process.env.NODE_ENV || 'development';
 
     // Dev mode: skip real email if credentials are placeholders
+    // Removed strict 'nodeEnv === development' check so you can test real emails locally
+    // just by providing actual SMTP credentials in .env.
     this.isDev =
-      nodeEnv === 'development' ||
       smtpUser === 'noreply@bhu.ac.in' ||
       smtpPass === 'your-smtp-password' ||
       !smtpUser ||

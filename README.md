@@ -54,8 +54,38 @@ cd backend
 npm install
 
 # Configure Environment Variables
-# Create a .env file in the backend directory and add your database connection string and JWT secret
-# Example: DATABASE_URL="postgresql://user:password@localhost:5432/bhudb"
+# Create a .env file in the backend directory and copy the contents from .env.example (if available) or refer to the required variables below:
+# 
+# Required core variables:
+# DATABASE_URL="postgresql://user:password@localhost:5432/bhudb"
+# JWT_ACCESS_SECRET="your-access-secret"
+# JWT_REFRESH_SECRET="your-refresh-secret"
+#
+# --- Google Workspace Admin SDK ---
+# Set MOCK_GOOGLE_WORKSPACE=true for local development to bypass real Google API calls.
+# For production (MOCK_GOOGLE_WORKSPACE=false), you need:
+# 1. Go to Google Cloud Console, create a project, and enable Admin SDK API.
+# 2. Create a Service Account and download the JSON key.
+# 3. Go to Google Workspace Admin Console -> Security -> API controls -> Manage Domain-Wide Delegation.
+# 4. Add the Service Account Client ID and grant `https://www.googleapis.com/auth/admin.directory.user` scope.
+# GOOGLE_CLIENT_EMAIL="your-service-account@project.iam.gserviceaccount.com"
+# GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
+# GOOGLE_ADMIN_EMAIL="admin@yourdomain.com"
+# GOOGLE_DOMAIN="yourdomain.com"
+#
+# --- Cloudflare Turnstile ---
+# Protects the application from bots.
+# 1. Get keys from https://dash.cloudflare.com/turnstile
+# 2. Leave empty in development to skip verification.
+# TURNSTILE_SECRET_KEY="your-secret-key"
+# TURNSTILE_SITE_KEY="your-site-key"
+#
+# --- SMTP (Nodemailer) ---
+# Required for sending automated emails.
+# SMTP_HOST="smtp.gmail.com"
+# SMTP_PORT=587
+# SMTP_USER="noreply@yourdomain.com"
+# SMTP_PASS="your-app-password"
 
 # Run database migrations
 npx prisma migrate dev
