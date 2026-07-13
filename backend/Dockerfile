@@ -5,7 +5,7 @@ WORKDIR /app
 # Install dependencies
 COPY package*.json ./
 COPY prisma ./prisma/
-RUN npm ci
+RUN npm install
 
 # Copy source code and build
 COPY . .
@@ -25,7 +25,7 @@ COPY --chown=nodejs:nodejs package*.json ./
 COPY --chown=nodejs:nodejs prisma ./prisma/
 
 # Install only production dependencies
-RUN npm ci --only=production
+RUN npm install --only=production
 RUN npx prisma generate
 
 # Copy built application from builder
