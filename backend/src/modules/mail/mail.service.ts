@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
-
+import { bhuVerificationEmail } from './emailTemplate';
 /**
  * MailService handles sending emails via SMTP (Brevo or any SMTP provider).
  *
@@ -50,40 +50,7 @@ export class MailService {
       return;
     }
 
-    const htmlBody = `
-      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #FFFBFE; border-radius: 16px; border: 1px solid #CAC4D0;">
-        <div style="text-align: center; margin-bottom: 24px;">
-          <div style="display: inline-block; padding: 12px 16px; background: #6750A4; border-radius: 12px;">
-            <span style="color: white; font-size: 24px; font-weight: 700;">BHU</span>
-          </div>
-        </div>
-
-        <h2 style="color: #1C1B1F; font-size: 20px; text-align: center; margin-bottom: 8px;">
-          Email Verification
-        </h2>
-        <p style="color: #79747E; font-size: 14px; text-align: center; margin-bottom: 24px;">
-          Use the code below to verify your email address for the BHU Email Portal.
-        </p>
-
-        <div style="background: #EADDFF; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px;">
-          <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #21005D;">
-            ${otp}
-          </span>
-        </div>
-
-        <p style="color: #79747E; font-size: 12px; text-align: center; margin-bottom: 4px;">
-          This code expires in <strong>5 minutes</strong>.
-        </p>
-        <p style="color: #79747E; font-size: 12px; text-align: center;">
-          If you did not request this code, please ignore this email.
-        </p>
-
-        <hr style="border: none; border-top: 1px solid #CAC4D0; margin: 24px 0;" />
-        <p style="color: #CAC4D0; font-size: 11px; text-align: center;">
-          © ${new Date().getFullYear()} Banaras Hindu University — Computer Centre
-        </p>
-      </div>
-    `;
+    const htmlBody = bhuVerificationEmail({ otp, expiryMinutes: 5 });
 
     try {
       await this.transporter.sendMail({
@@ -112,40 +79,7 @@ export class MailService {
       return;
     }
 
-    const htmlBody = `
-      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #FFFBFE; border-radius: 16px; border: 1px solid #CAC4D0;">
-        <div style="text-align: center; margin-bottom: 24px;">
-          <div style="display: inline-block; padding: 12px 16px; background: #6750A4; border-radius: 12px;">
-            <span style="color: white; font-size: 24px; font-weight: 700;">BHU</span>
-          </div>
-        </div>
-
-        <h2 style="color: #1C1B1F; font-size: 20px; text-align: center; margin-bottom: 8px;">
-          Password Reset Request
-        </h2>
-        <p style="color: #79747E; font-size: 14px; text-align: center; margin-bottom: 24px;">
-          Use the code below to reset your password for the BHU Email Portal. If you did not request this, please ignore this email.
-        </p>
-
-        <div style="background: #EADDFF; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 24px;">
-          <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #21005D;">
-            ${otp}
-          </span>
-        </div>
-
-        <p style="color: #79747E; font-size: 12px; text-align: center; margin-bottom: 4px;">
-          This code expires in <strong>5 minutes</strong>.
-        </p>
-        <p style="color: #79747E; font-size: 12px; text-align: center;">
-          If you did not request a password reset, your account is safe — no action is needed.
-        </p>
-
-        <hr style="border: none; border-top: 1px solid #CAC4D0; margin: 24px 0;" />
-        <p style="color: #CAC4D0; font-size: 11px; text-align: center;">
-          © ${new Date().getFullYear()} Banaras Hindu University — Computer Centre
-        </p>
-      </div>
-    `;
+    const htmlBody = bhuVerificationEmail({ otp, expiryMinutes: 5 });
 
     try {
       await this.transporter.sendMail({
