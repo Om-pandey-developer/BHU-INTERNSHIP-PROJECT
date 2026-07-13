@@ -19,7 +19,7 @@ FROM node:20-alpine AS production
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
 WORKDIR /app
-
+RUN chown -R nodejs:nodejs /app
 # Copy package and prisma files
 COPY --chown=nodejs:nodejs package*.json ./
 COPY --chown=nodejs:nodejs prisma ./prisma/

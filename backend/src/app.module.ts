@@ -28,6 +28,7 @@ import { TasksModule } from './modules/tasks/tasks.module';
  */
 import { MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ChaosMiddleware } from './core/middlewares/chaos.middleware';
+import { AppController } from './app.controller';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { ChaosMiddleware } from './core/middlewares/chaos.middleware';
     ScheduleModule.forRoot(),
     TasksModule,
   ],
+  controllers: [AppController],
   providers: [
     {
       provide: APP_GUARD,
@@ -62,4 +64,5 @@ export class AppModule implements NestModule {
     consumer.apply(ChaosMiddleware).forRoutes('*');
   }
 }
+
 
