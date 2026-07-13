@@ -35,18 +35,8 @@ export class UsersService {
     const { alternateEmail, password, firstName, lastName, role, otp } =
       createUserDto;
 
-    // Normalize departmentId: empty string or __OTHERS__ sentinel → undefined (stored as null)
-    const OTHERS_SENTINEL = '__OTHERS__';
-    let departmentId = createUserDto.departmentId?.trim() || undefined;
-    const isOthers = departmentId === OTHERS_SENTINEL;
-    if (isOthers) {
-      departmentId = undefined; // User selected "Others" — no real department yet
-    }
-
-    // Normalize custom department name to UPPERCASE (prevents case duplicates)
-    const otherDepartmentName = isOthers
-      ? createUserDto.otherDepartmentName?.trim().toUpperCase() || undefined
-      : undefined;
+    // Normalize departmentId: empty string → undefined (stored as null)
+    const departmentId = createUserDto.departmentId?.trim() || undefined;
 
     // ── Step 1: Verify OTP ──
     await this.otpService.verify(alternateEmail, otp);
@@ -93,29 +83,6 @@ export class UsersService {
         createdAt: true,
       },
     });
-
-    // ── Step 5: Create DepartmentRequest if "Others" was selected ──
-    if (otherDepartmentName) {
-      // Deduplication: only create a new request if no PENDING request with the same name exists
-      const existingRequest = await this.prisma.departmentRequest.findFirst({
-        where: {
-          requestedName: otherDepartmentName,
-          status: 'PENDING',
-        },
-      });
-
-      if (!existingRequest) {
-        await this.prisma.departmentRequest.create({
-          data: {
-            requestedName: otherDepartmentName,
-            applicantId: user.id,
-          },
-        });
-        this.logger.log(`New department request created: "${otherDepartmentName}" by ${alternateEmail}`);
-      } else {
-        this.logger.log(`Department request for "${otherDepartmentName}" already exists (PENDING) — skipped duplicate`);
-      }
-    }
 
     this.logger.log(`New user registered: ${alternateEmail} (${user.role})`);
     return user;

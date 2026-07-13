@@ -113,9 +113,7 @@ export class DepartmentsService {
   }
 
   /**
-   * Approve a department request — creates the department, marks ALL matching
-   * PENDING requests as APPROVED, and auto-assigns the new departmentId to
-   * all users who requested it.
+   * Approve a department request — creates the department and updates request status.
    */
   async approveRequest(requestId: string, code: string, remarks?: string) {
     const request = await this.prisma.departmentRequest.findUnique({ where: { id: requestId } });
@@ -126,38 +124,11 @@ export class DepartmentsService {
       data: { name: request.requestedName, code },
     });
 
-    // Find ALL PENDING requests with the same requestedName (deduplication-aware)
-    const allMatchingRequests = await this.prisma.departmentRequest.findMany({
-      where: {
-        requestedName: request.requestedName,
-        status: 'PENDING',
-      },
-      select: { id: true, applicantId: true },
-    });
-
-    // Collect unique applicant IDs from all matching requests
-    const applicantIds = [...new Set(allMatchingRequests.map(r => r.applicantId))];
-
-    // Mark ALL matching PENDING requests as APPROVED
-    await this.prisma.departmentRequest.updateMany({
-      where: {
-        requestedName: request.requestedName,
-        status: 'PENDING',
-      },
+    // Update the request status
+    await this.prisma.departmentRequest.update({
+      where: { id: requestId },
       data: { status: 'APPROVED', adminRemarks: remarks || `Approved as ${code}` },
     });
-
-    // Auto-assign the new department to all users who requested it (only if they have no department yet)
-    if (applicantIds.length > 0) {
-      await this.prisma.user.updateMany({
-        where: {
-          id: { in: applicantIds },
-          departmentId: null, // Only update users who still don't have a department
-        },
-        data: { departmentId: dept.id },
-      });
-      this.logger.log(`Auto-assigned department "${request.requestedName}" to ${applicantIds.length} user(s)`);
-    }
 
     this.logger.log(`Department request approved: "${request.requestedName}" → ${code}`);
     return { message: `Department "${request.requestedName}" approved and created.`, department: dept };

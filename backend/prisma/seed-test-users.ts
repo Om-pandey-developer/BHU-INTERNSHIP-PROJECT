@@ -132,7 +132,7 @@ async function main() {
             applicantId: user.id,
             departmentId: 'dept-cs',
             status,
-            applicantDetails, trackingId: "DEAN-APP-$($i)-$($Math.random())", 
+            applicantDetails, trackingId: `DEAN-APP-${i}-${Math.floor(10000 + Math.random() * 90000)}`, 
             photoStoragePath: '/dummy/photo.jpg',
             signatureStoragePath: '/dummy/signature.jpg',
             hodId: isHodProcessed ? hod.id : null,
@@ -213,7 +213,7 @@ async function main() {
             applicantId: user.id,
             departmentId: 'dept-cs',
             status,
-            applicantDetails, trackingId: "DEAN-APP-$($i)-$($Math.random())", 
+            applicantDetails, trackingId: `DEAN-APP-${i}-${Math.floor(10000 + Math.random() * 90000)}`, 
             photoStoragePath: '/dummy/photo.jpg',
             signatureStoragePath: '/dummy/signature.jpg',
             // It's a Dean (UG) application, so it only goes to Dean.

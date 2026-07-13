@@ -310,6 +310,47 @@ export default function AdminDashboard() {
     }
   }
 
+  async function handleBulkCsvDownload() {
+    setActionLoading("bulk_csv");
+    try {
+      const ids = Array.from(selectedIds);
+      if (ids.length === 0) return;
+
+      let csvContent = "First Name [Required],Last Name [Required],Email Address [Required],Password [Required],Org Unit Path [Required],Recovery Email\n";
+
+      for (const id of ids) {
+        const app = pendingApps.find(a => a.id === id) || activeApps.find(a => a.id === id) || suspendedApps.find(a => a.id === id) || archivedApps.find(a => a.id === id);
+        if (!app || !app.applicant) continue;
+
+        const firstName = `"${app.applicant.firstName.replace(/"/g, '""')}"`;
+        const lastName = `"${app.applicant.lastName.replace(/"/g, '""')}"`;
+        const email = `"${app.applicant.bhuEmail || (app.applicant.firstName.toLowerCase() + '.' + app.applicant.lastName.toLowerCase() + '@bhu.ac.in')}"`;
+        const password = `"Bhu@${app.trackingId}"`;
+        const orgUnit = `"/Students"`;
+        const recoveryEmail = `"${app.applicant.alternateEmail}"`;
+
+        csvContent += `${firstName},${lastName},${email},${password},${orgUnit},${recoveryEmail}\n`;
+      }
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `Google_Workspace_Bulk_Upload_${ids.length}_Users.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      addToast({ message: `✅ Downloaded CSV for ${ids.length} users.`, variant: "success" });
+    } catch (err) {
+      console.error("Bulk CSV download error:", err);
+      addToast({ message: "Failed to create bulk CSV download.", variant: "error" });
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   async function handleBulkProvision() {
     setActionLoading("bulk_provision");
     let successCount = 0;
@@ -691,7 +732,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-          {selectedIds.size > 0 && (activeTab === "active" || activeTab === "suspended" || activeTab === "pending") && (
+          {selectedIds.size > 0 && (activeTab === "active" || activeTab === "suspended" || activeTab === "pending" || activeTab === "archived") && (
             <div className="flex items-center gap-2 bg-primary-container/20 border border-primary/20 rounded-xl px-3 py-1.5 shadow-sm mr-2 animate-fade-in">
               <span className="text-sm font-semibold text-primary mr-2 bg-primary-container px-2 py-0.5 rounded-md">{selectedIds.size} selected</span>
               
@@ -703,13 +744,20 @@ export default function AdminDashboard() {
                 </>
               )}
               {activeTab === "active" && (
-                <Button icon="pause_circle" variant="outlined" size="sm" onClick={() => setRemarksModal({ action: "suspend", ids: Array.from(selectedIds) })}>Bulk Suspend</Button>
+                <>
+                  <Button icon="pause_circle" variant="outlined" size="sm" onClick={() => setRemarksModal({ action: "suspend", ids: Array.from(selectedIds) })}>Bulk Suspend</Button>
+                  <Button icon="download" variant="filled" size="sm" loading={actionLoading === "bulk_csv"} onClick={handleBulkCsvDownload}>Download CSV</Button>
+                </>
               )}
               {activeTab === "suspended" && (
                 <>
                   <Button icon="play_circle" variant="outlined" size="sm" onClick={() => handleAction("reactivate", Array.from(selectedIds), "Bulk reactivated")}>Bulk Reactivate</Button>
                   <Button icon="inventory_2" variant="outlined" size="sm" onClick={() => setRemarksModal({ action: "archive", ids: Array.from(selectedIds) })}>Bulk Archive</Button>
+                  <Button icon="download" variant="filled" size="sm" loading={actionLoading === "bulk_csv"} onClick={handleBulkCsvDownload}>Download CSV</Button>
                 </>
+              )}
+              {activeTab === "archived" && (
+                <Button icon="download" variant="filled" size="sm" loading={actionLoading === "bulk_csv"} onClick={handleBulkCsvDownload}>Download CSV</Button>
               )}
               
               <Button variant="text" size="sm" onClick={() => setSelectedIds(new Set())} className="ml-1 !text-outline hover:!text-foreground">Clear</Button>

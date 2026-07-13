@@ -38,7 +38,6 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
     departmentId: "",
-    otherDepartmentName: "",
   });
   const [departments, setDepartments] = useState<
     { id: string; name: string; code: string }[]
@@ -124,7 +123,6 @@ export default function RegisterPage() {
   }
 
   // Check if form is complete enough to send OTP
-  const isOthersSelected = form.departmentId === "__OTHERS__";
   const canSendOtp =
     form.firstName.trim() &&
     form.lastName.trim() &&
@@ -134,9 +132,7 @@ export default function RegisterPage() {
     form.password === form.confirmPassword &&
     passwordValid &&
     captchaToken &&
-    !honeypot &&
-    // If "Others" is selected, require a custom department name
-    (!isOthersSelected || form.otherDepartmentName.trim());
+    !honeypot;
 
   // ── Phase 1: Send OTP ──
   async function handleSendOtp(e: React.FormEvent) {
@@ -255,10 +251,6 @@ export default function RegisterPage() {
         alternateEmail: form.alternateEmail,
         password: form.password,
         departmentId: form.departmentId || undefined,
-        // Send custom department name when "Others" is selected
-        ...(isOthersSelected && form.otherDepartmentName.trim()
-          ? { otherDepartmentName: form.otherDepartmentName.trim() }
-          : {}),
         otp,
       });
 
@@ -410,10 +402,6 @@ export default function RegisterPage() {
                     setForm((prev) => ({ ...prev, departmentId: val }));
                     setError("");
                   }}
-                  onOtherDepartment={(name) => {
-                    setForm((prev) => ({ ...prev, otherDepartmentName: name }));
-                  }}
-                  otherDepartmentName={form.otherDepartmentName}
                   placeholder="Select Department (Optional)"
                 />
 

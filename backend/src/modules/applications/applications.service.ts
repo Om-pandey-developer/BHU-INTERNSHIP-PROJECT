@@ -1051,9 +1051,10 @@ export class ApplicationsService {
     try {
       await this.mailService.sendProvisioningNotification(
         app.applicant.alternateEmail,
-        app.trackingId,
-        app.applicant.bhuEmail,
-        newTempPassword
+        `${app.applicant.firstName} ${app.applicant.lastName}`,
+        app.applicant.bhuEmail!,
+        newTempPassword,
+        app.trackingId
       );
     } catch (error) {
       this.logger.error(`Failed to send password reset email to ${app.applicant.alternateEmail}`, error);

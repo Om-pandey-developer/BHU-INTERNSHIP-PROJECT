@@ -11,6 +11,8 @@ services:
       - "5433:5432"
     volumes:
       - bhu_postgres_data:/var/lib/postgresql/data
+    networks:
+      - bhu_network
 
   pgadmin:
     image: dpage/pgadmin4
@@ -23,6 +25,50 @@ services:
       - "5050:80"
     depends_on:
       - db
+    networks:
+      - bhu_network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bhu_backend
+    restart: always
+    ports:
+      - "4000:4000"
+    env_file:
+      - ./backend/.env
+    environment:
+      # Override DATABASE_URL to use the internal docker network instead of localhost
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-bhu_admin}:${POSTGRES_PASSWORD:-bhu_secure_password_2024}@db:5432/${POSTGRES_DB:-bhu_email_portal}?schema=public
+    depends_on:
+      - db
+    volumes:
+      - ./backend/uploads:/app/uploads
+    networks:
+      - bhu_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://api.bhu.ac.in/api/v1
+        - NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4AAAAAADwd2MRkwzf_c792
+    container_name: bhu_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./frontend/.env
+    depends_on:
+      - backend
+    networks:
+      - bhu_network
+
+networks:
+  bhu_network:
+    driver: bridge
 
 volumes:
   bhu_postgres_data:

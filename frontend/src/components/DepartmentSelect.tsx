@@ -157,14 +157,14 @@ export default function DepartmentSelect({ departments, value, onChange, placeho
             <span className="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-[20px] text-outline">edit</span>
             <input
               type="text"
-              placeholder="ENTER DEPARTMENT NAME IN UPPERCASE"
+              placeholder="Please specify your department name"
               value={customName}
               onChange={(e) => {
-                const val = e.target.value.toUpperCase().replace(/[^A-Z\s\-&]/g, "");
+                const val = e.target.value;
                 setCustomName(val);
                 onOtherDepartment?.(val);
               }}
-              className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-3 text-sm text-foreground pl-11 hover:border-outline focus:border-primary focus:outline-none transition-colors uppercase"
+              className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-3 text-sm text-foreground pl-11 hover:border-outline focus:border-primary focus:outline-none transition-colors"
               autoFocus
             />
           </div>

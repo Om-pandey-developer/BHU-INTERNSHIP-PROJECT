@@ -38,9 +38,14 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
 
-    // Find user by alternate email
-    const user = await this.prisma.user.findUnique({
-      where: { alternateEmail: email },
+    // Find user by alternate email or BHU email
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { alternateEmail: email },
+          { bhuEmail: email }
+        ]
+      },
     });
 
     if (!user) {
