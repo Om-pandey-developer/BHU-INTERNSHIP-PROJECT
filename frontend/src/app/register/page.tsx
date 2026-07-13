@@ -502,7 +502,6 @@ export default function RegisterPage() {
                   Send Verification Code
                 </Button>
                 <div className="text-center mt-3">
-                  <p className="text-sm font-semibold text-error">Note: Please check your Spam/Junk folder if you don't receive the OTP.</p>
                 </div>
               </form>
 
@@ -587,7 +586,6 @@ export default function RegisterPage() {
                       {otpSending ? "Sending..." : "Resend verification code"}
                     </button>
                   )}
-                  <p className="text-sm font-semibold text-error mt-2">Note: Please check your Spam/Junk folder if you don't receive the OTP.</p>
                 </div>
 
                 {error && (

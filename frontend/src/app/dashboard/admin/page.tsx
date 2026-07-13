@@ -573,7 +573,7 @@ export default function AdminDashboard() {
       app.applicant?.lastName || "",
       app.applicant?.alternateEmail || (app.applicantDetails as any)?.alternateEmail || "",
       app.applicant?.bhuEmail || "",
-      (app.applicantDetails as any)?.mobileNo || "",
+      (() => { const m = (app.applicantDetails as any)?.mobileNo; return m ? (m.startsWith("+") ? `'${m}` : `'+91-${m}`) : ""; })(),
       (app.applicantDetails as any)?.facultyInstituteCentre || "",
       app.department?.name || "",
       (app.applicantDetails as any)?.category || "",

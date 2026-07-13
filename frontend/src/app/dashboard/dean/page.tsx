@@ -293,7 +293,7 @@ export default function DeanDashboard() {
         applicant.lastName || "",
         applicant.alternateEmail || appDetails.alternateEmail || "",
         applicant.bhuEmail || "",
-        appDetails.mobileNo || "",
+        appDetails.mobileNo ? (appDetails.mobileNo.startsWith("+") ? `${appDetails.mobileNo}` : `+91-${appDetails.mobileNo}`) : "",
         appDetails.facultyInstituteCentre || "",
         dept.name || "",
         appDetails.category || "",
@@ -669,7 +669,7 @@ export default function DeanDashboard() {
               </select>
               <span>entries</span>
             </div>
-            
+
             <div className="flex items-center gap-2 text-sm text-outline">
               <span>Go to</span>
               <input
@@ -740,7 +740,7 @@ export default function DeanDashboard() {
         ) : (
           <div className="overflow-x-auto">
             <table className={`w-full text-left border-collapse min-w-[2400px] ${zoomLevel === 'sm' ? '[&_span:not(.material-symbols-rounded)]:text-[11px] [&_th]:text-[10px] [&_td]:text-[11px]' :
-                zoomLevel === 'lg' ? '[&_span:not(.material-symbols-rounded)]:text-[14px] [&_th]:text-[13px] [&_td]:text-[14px]' : ''
+              zoomLevel === 'lg' ? '[&_span:not(.material-symbols-rounded)]:text-[14px] [&_th]:text-[13px] [&_td]:text-[14px]' : ''
               }`}>
               <thead>
                 <tr className="bg-surface-variant/50 text-outline text-left">
