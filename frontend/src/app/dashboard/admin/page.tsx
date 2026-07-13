@@ -795,10 +795,16 @@ export default function AdminDashboard() {
           </h1>
           <p className="text-xs sm:text-[13px] text-amber-600 mt-1">User Lifecycle Management — Provisioning, Monitoring & Administration</p>
         </div>
-        <a href="/dashboard/admin/manage-hods" className="flex items-center gap-2 bg-amber-800 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-md hover:bg-amber-900 transition shrink-0">
-          <span className="material-symbols-rounded text-[20px]">admin_panel_settings</span>
-          Manage HODs & Deans
-        </a>
+        <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+          <a href="/dashboard/admin/departments" className="flex items-center justify-center gap-2 bg-amber-800 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-md hover:bg-amber-900 transition">
+            <span className="material-symbols-rounded text-[20px]">apartment</span>
+            Manage Departments
+          </a>
+          <a href="/dashboard/admin/manage-hods" className="flex items-center justify-center gap-2 bg-amber-800 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-md hover:bg-amber-900 transition">
+            <span className="material-symbols-rounded text-[20px]">admin_panel_settings</span>
+            Manage HODs & Deans
+          </a>
+        </div>
       </div>
 
       {/* Tab Navigation */}

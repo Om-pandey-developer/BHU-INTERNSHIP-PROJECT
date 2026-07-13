@@ -25,11 +25,14 @@ async function bootstrap() {
   app.use(helmet());
 
   // ── Security: CORS ──
+  // In production, FRONTEND_URL must be set to the deployed frontend domain.
+  // e.g. FRONTEND_URL="https://emailportal.bhu.ac.in"
+  const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+  ].filter(Boolean);
+
   app.enableCors({
-    origin: [
-      process.env.FRONTEND_URL || 'http://localhost:3000',
-      'http://localhost:3001'
-    ],
+    origin: allowedOrigins,
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   });
@@ -58,30 +61,30 @@ async function bootstrap() {
   app.useGlobalInterceptors(new TransformInterceptor());
 
   // ── Swagger API Documentation ──
-  const config = new DocumentBuilder()
-    .setTitle('BHU Email Portal API')
-    .setDescription(
-      'API documentation for the BHU Email Registration & Auto-Provisioning Portal',
-    )
-    .setVersion('1.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        description: 'Enter your JWT access token',
-      },
-      'JWT-auth',
-    )
-    .addTag('Auth', 'Authentication & session management')
-    .addTag('Applications', 'Email account application lifecycle')
-    .addTag('Users', 'User management')
-    .addTag('Workspace', 'Google Workspace provisioning')
-    .addTag('Analytics', 'CC Admin dashboard metrics')
-    .build();
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('BHU Email Portal API')
+      .setDescription('API documentation for the BHU Email Registration & Auto-Provisioning Portal')
+      .setVersion('1.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          description: 'Enter your JWT access token',
+        },
+        'JWT-auth',
+      )
+      .addTag('Auth', 'Authentication & session management')
+      .addTag('Applications', 'Email account application lifecycle')
+      .addTag('Users', 'User management')
+      .addTag('Workspace', 'Google Workspace provisioning')
+      .addTag('Analytics', 'CC Admin dashboard metrics')
+      .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   // ── Start Server ──
   const port = process.env.PORT || 4000;

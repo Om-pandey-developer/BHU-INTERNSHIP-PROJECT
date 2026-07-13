@@ -37,7 +37,7 @@ services:
       dockerfile: Dockerfile
     container_name: bhu_email_portal_uat_frontend
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:3001/api/v1
+      - NEXT_PUBLIC_API_URL=https://staging-api.bhu.ac.in/api/v1
     ports:
       - '3000:3000'
     depends_on:

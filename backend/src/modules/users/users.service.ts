@@ -207,6 +207,23 @@ export class UsersService {
    * Create an admin user (HOD/Dean) directly.
    */
   async createAdminUser(data: any) {
+    // ── Step 1: Check for duplicate emails ──
+    const existingAlternate = await this.prisma.user.findUnique({
+      where: { alternateEmail: data.alternateEmail },
+    });
+    if (existingAlternate) {
+      throw new ConflictException(`An account with alternate email ${data.alternateEmail} already exists.`);
+    }
+
+    if (data.bhuEmail) {
+      const existingBhu = await this.prisma.user.findUnique({
+        where: { bhuEmail: data.bhuEmail },
+      });
+      if (existingBhu) {
+        throw new ConflictException(`An account with BHU email ${data.bhuEmail} already exists.`);
+      }
+    }
+
     // Generate a random temporary password hash since they will reset it via the token
     const passwordHash = await argon2.hash(Math.random().toString(36).slice(-8));
 

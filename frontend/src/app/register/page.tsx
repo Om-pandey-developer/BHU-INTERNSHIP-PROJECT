@@ -11,9 +11,14 @@ import Input from "@/components/Input";
 import PasswordStrength from "@/components/PasswordStrength";
 import DepartmentSelect from "@/components/DepartmentSelect";
 
+const isProd = process.env.NODE_ENV === "production";
 const TURNSTILE_SITE_KEY =
   process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
-  "1x00000000000000000000AA"; // Cloudflare test key (always passes)
+  (isProd ? "" : "1x00000000000000000000AA"); // Fallback to test key ONLY in development
+
+if (isProd && !process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
+  console.error("CRITICAL SECURITY ERROR: NEXT_PUBLIC_TURNSTILE_SITE_KEY is missing in production.");
+}
 
 /**
  * Registration page with 2-phase flow:
@@ -454,16 +459,22 @@ export default function RegisterPage() {
 
                 {/* Cloudflare Turnstile CAPTCHA */}
                 <div className="flex justify-center opacity-[0.6]">
-                  <Turnstile
-                    siteKey={TURNSTILE_SITE_KEY}
-                    onSuccess={(token) => setCaptchaToken(token)}
-                    onError={() => setCaptchaToken(null)}
-                    onExpire={() => setCaptchaToken(null)}
-                    options={{
-                      theme: "light",
-                      size: "normal",
-                    }}
-                  />
+                  {TURNSTILE_SITE_KEY ? (
+                    <Turnstile
+                      siteKey={TURNSTILE_SITE_KEY}
+                      onSuccess={(token) => setCaptchaToken(token)}
+                      onError={() => setCaptchaToken(null)}
+                      onExpire={() => setCaptchaToken(null)}
+                      options={{
+                        theme: "light",
+                        size: "normal",
+                      }}
+                    />
+                  ) : (
+                    <div className="text-error text-sm p-3 border border-error rounded-md bg-error-container">
+                      Security Configuration Error: CAPTCHA is missing. Registration disabled.
+                    </div>
+                  )}
                 </div>
 
                 {error && (

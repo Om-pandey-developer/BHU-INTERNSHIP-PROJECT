@@ -1047,12 +1047,22 @@ export class ApplicationsService {
       },
     });
 
-    // TODO: Send email via Nodemailer with new password to alternate email
+    // Send email via Nodemailer with new password to alternate email
+    try {
+      await this.mailService.sendProvisioningNotification(
+        app.applicant.alternateEmail,
+        app.trackingId,
+        app.applicant.bhuEmail,
+        newTempPassword
+      );
+    } catch (error) {
+      this.logger.error(`Failed to send password reset email to ${app.applicant.alternateEmail}`, error);
+    }
+
     return {
-      message: 'Password reset successfully. New credentials will be sent to alternate email.',
+      message: 'Password reset successfully. New credentials have been sent to alternate email.',
       alternateEmail: app.applicant.alternateEmail,
       bhuEmail: app.applicant.bhuEmail,
-      tempPassword: newTempPassword, // Only returned in mock mode
     };
   }
 

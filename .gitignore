@@ -27,36 +27,27 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# Dependencies
-node_modules/
-.pnp
-.pnp.js
-
-# Build outputs
-dist/
-build/
-.next/
-out/
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# OS files
-.DS_Store
-Thumbs.db
-
 # IDE files
 .vscode/
 .idea/
- 
+
+# File uploads (user data — never commit)
+uploads/
+
+# ── Tunneling (dev-only) ──
+# Scripts
+auto-tunnels.js
+setup-tunnels.js
+test-tunnels.js
+get-ngrok.js
+hybrid-tunnels.js
+ngrok.yml
+
+# Tunnel URL output files
+tunnel_urls.txt
+tunnel_hybrid_urls.txt
+urls.txt
+
+# Root-level package files (only needed for localtunnel dep)
+/package.json
+/package-lock.json
