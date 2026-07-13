@@ -446,6 +446,8 @@ export default function AdminDashboard() {
   }
 
   const [departmentFilter, setDepartmentFilter] = useState("ALL");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   function filterApps(apps: Application[]): Application[] {
     let result = apps;
@@ -456,6 +458,26 @@ export default function AdminDashboard() {
 
     if (departmentFilter !== "ALL") {
       result = result.filter(a => a.department?.id === departmentFilter);
+    }
+
+    if (startDate || endDate) {
+      result = result.filter(a => {
+        const d = new Date(a.createdAt);
+        d.setHours(0, 0, 0, 0);
+
+        let match = true;
+        if (startDate) {
+          const s = new Date(startDate);
+          s.setHours(0, 0, 0, 0);
+          if (d < s) match = false;
+        }
+        if (endDate) {
+          const e = new Date(endDate);
+          e.setHours(0, 0, 0, 0);
+          if (d > e) match = false;
+        }
+        return match;
+      });
     }
 
     if (!searchQuery.trim()) return result;
@@ -476,6 +498,66 @@ export default function AdminDashboard() {
   const totalPages = Math.max(1, Math.ceil(currentActiveData.length / entriesPerPage));
   const safePage = typeof currentPage === "number" ? currentPage : 1;
   const paginatedData = currentActiveData.slice((safePage - 1) * entriesPerPage, safePage * entriesPerPage);
+
+  function handleExportCSV() {
+    let dataToExport = currentActiveData;
+    if (selectedIds.size > 0) {
+      dataToExport = dataToExport.filter(app => selectedIds.has(app.id));
+    }
+
+    if (!dataToExport || dataToExport.length === 0) {
+      addToast({ message: "No data to export.", variant: "warning" });
+      return;
+    }
+
+    const headers = [
+      "Tracking ID",
+      "First Name",
+      "Last Name",
+      "Alternate Email",
+      "BHU Email",
+      "Mobile No",
+      "Faculty/Institute",
+      "Department",
+      "Category",
+      "Type/Program",
+      "Designation",
+      "Status",
+      "Created At"
+    ];
+
+    const rows = dataToExport.map(app => [
+      app.trackingId,
+      app.applicant?.firstName || "",
+      app.applicant?.lastName || "",
+      app.applicant?.alternateEmail || (app.applicantDetails as any)?.alternateEmail || "",
+      app.applicant?.bhuEmail || "",
+      (app.applicantDetails as any)?.mobileNo || "",
+      (app.applicantDetails as any)?.facultyInstituteCentre || "",
+      app.department?.name || "",
+      (app.applicantDetails as any)?.category || "",
+      (app.applicantDetails as any)?.programEnrolled || (app.applicantDetails as any)?.staffType || "",
+      (app.applicantDetails as any)?.designation || (app.applicantDetails as any)?.courseName || "",
+      app.status,
+      new Date(app.createdAt).toISOString()
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `Applications_${activeTab}_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    addToast({ message: "Exported CSV successfully.", variant: "success" });
+  }
 
   function formatDate(d: string | undefined) {
     if (!d) return "—";
@@ -513,6 +595,7 @@ export default function AdminDashboard() {
             </div>
             
             <div className="flex flex-wrap items-center gap-4 shrink-0">
+              <Button icon="download" variant="filled" size="sm" onClick={handleExportCSV}>Export CSV</Button>
               <div className="flex items-center gap-2 text-sm text-outline">
                 <span>Show</span>
                 <select
@@ -578,6 +661,23 @@ export default function AdminDashboard() {
                   <option value="UNDER_GRADUATE_STUDENT">UG Student</option>
                 </select>
                 <span className="material-symbols-rounded absolute right-2 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
+              </div>
+
+              <div className="flex items-center gap-2 shadow-sm rounded-xl bg-white border border-outline-variant px-2 py-1.5 h-9">
+                <span className="text-[10px] uppercase font-bold text-outline">From</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-transparent text-sm font-medium focus:outline-none cursor-pointer w-[110px]"
+                />
+                <span className="text-[10px] uppercase font-bold text-outline border-l border-outline-variant pl-2">To</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="bg-transparent text-sm font-medium focus:outline-none cursor-pointer w-[110px]"
+                />
               </div>
 
               <div className="relative shadow-sm rounded-xl min-w-[280px]">
@@ -981,67 +1081,103 @@ export default function AdminDashboard() {
       {/* ═══════════════════ TAB: QUOTA & USAGE ═══════════════════ */}
       {activeTab === "quota" && (
         <div className="space-y-6">
-          {/* Organization Capacity Overview */}
+
+          {/* ── Row 1: Summary Stats ── */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Total Accounts */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4 shadow-sm">
+              <div className="w-11 h-11 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-rounded text-indigo-600 text-[22px]">group</span>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Accounts</p>
+                <p className="text-2xl font-bold text-gray-900">{quotaStats?.totalAccounts || 0}</p>
+              </div>
+            </div>
+            {/* Total Allocated */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4 shadow-sm">
+              <div className="w-11 h-11 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-rounded text-emerald-600 text-[22px]">hard_drive</span>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Allocated</p>
+                <p className="text-2xl font-bold text-gray-900">{quotaStats?.totalQuotaGB || 0} <span className="text-sm font-medium text-gray-400">GB</span></p>
+              </div>
+            </div>
+            {/* Unallocated Pool */}
+            <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4 shadow-sm">
+              <div className="w-11 h-11 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-rounded text-amber-600 text-[22px]">cloud_off</span>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Unallocated Pool</p>
+                <p className="text-2xl font-bold text-gray-900">{TOTAL_ORG_CAPACITY_GB - (quotaStats?.totalQuotaGB || 0)} <span className="text-sm font-medium text-gray-400">GB</span></p>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Row 2: Organization Storage Capacity ── */}
           {(() => {
             const totalAllocated = quotaStats?.totalQuotaGB || 0;
             const orgUsagePct = Math.min((totalAllocated / TOTAL_ORG_CAPACITY_GB) * 100, 100);
-            // Mock total used across org
             const totalUsedMock = Math.round(totalAllocated * 0.58);
             const totalFreeMock = totalAllocated - totalUsedMock;
+            const unallocated = TOTAL_ORG_CAPACITY_GB - totalAllocated;
+
             return (
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200">
-                <div className="flex items-center gap-2 mb-5">
-                  <span className="material-symbols-rounded text-[22px] text-primary">cloud</span>
-                  <h3 className="text-base font-bold text-foreground">Organization Storage Capacity</h3>
+              <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 shadow-sm">
+                <div className="flex items-center gap-2.5 mb-5">
+                  <span className="material-symbols-rounded text-gray-700 text-[20px]">cloud</span>
+                  <h3 className="text-sm font-semibold text-gray-900">Organization Storage Capacity</h3>
                 </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
-                  <div className="bg-gray-100 rounded-xl px-4 py-3 text-center border border-gray-300 hover:shadow-[0_0_9px_rgba(0,0,0,0.3)]">
-                    <p className="text-[12px] font-bold uppercase tracking-wider text-black font-medium">Pool Size</p>
-                    <p className="text-xl font-bold text-foreground">{TOTAL_ORG_CAPACITY_GB.toLocaleString()} GB</p>
+
+                {/* Capacity Metrics */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                  <div className="bg-gray-50 rounded-lg px-4 py-3 border border-gray-100">
+                    <p className="text-[11px] text-gray-500 font-medium mb-0.5">Pool Size</p>
+                    <p className="text-lg font-bold text-gray-900">{TOTAL_ORG_CAPACITY_GB.toLocaleString()} GB</p>
                   </div>
-                  <div className="bg-blue-100/80 rounded-xl px-4 py-3 text-center border border-blue-300 hover:shadow-[0_0_9px_rgba(0,0,0,0.3)]">
-                    <p className="text-[12px] font-bold uppercase tracking-wider text-black font-medium">Allocated</p>
-                    <p className="text-xl font-bold text-primary">{totalAllocated} GB</p>
+                  <div className="bg-blue-50/60 rounded-lg px-4 py-3 border border-blue-100">
+                    <p className="text-[11px] text-blue-600 font-medium mb-0.5">Allocated</p>
+                    <p className="text-lg font-bold text-blue-700">{totalAllocated} GB</p>
                   </div>
-                  <div className="bg-orange-100/80 rounded-xl px-4 py-3 text-center border border-orange-500/30 hover:shadow-[0_0_9px_rgba(0,0,0,0.3)]">
-                    <p className="text-[12px] font-bold uppercase tracking-wider text-black font-medium">Used (Est.)</p>
-                    <p className="text-xl font-bold text-warning">{totalUsedMock} GB</p>
+                  <div className="bg-amber-50/60 rounded-lg px-4 py-3 border border-amber-100">
+                    <p className="text-[11px] text-amber-600 font-medium mb-0.5">Used (Est.)</p>
+                    <p className="text-lg font-bold text-amber-700">{totalUsedMock} GB</p>
                   </div>
-                  <div className="bg-green-100 rounded-xl px-4 py-3 text-center border border-green-500/30 hover:shadow-[0_0_9px_rgba(0,0,0,0.3)]">
-                    <p className="text-[12px] font-bold uppercase tracking-wider text-black  font-medium">Free</p>
-                    <p className="text-xl font-bold text-success">{TOTAL_ORG_CAPACITY_GB - totalAllocated} GB</p>
+                  <div className="bg-emerald-50/60 rounded-lg px-4 py-3 border border-emerald-100">
+                    <p className="text-[11px] text-emerald-600 font-medium mb-0.5">Free</p>
+                    <p className="text-lg font-bold text-emerald-700">{unallocated} GB</p>
                   </div>
                 </div>
-                {/* Large progress bar */}
+
+                {/* Progress Bar */}
                 <div>
-                  <div className="flex flex-col sm:flex-row justify-between text-xs sm:text-sm font-medium text-black mb-1.5 gap-0.5">
-                    <span>Allocated: {totalAllocated} GB / {TOTAL_ORG_CAPACITY_GB.toLocaleString()} GB</span>
-                    <span className="font-semibold">{orgUsagePct.toFixed(1)}% allocated</span>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs font-medium text-gray-500">Capacity Breakdown</span>
+                    <span className="text-xs font-semibold text-gray-700">{orgUsagePct.toFixed(1)}% Allocated</span>
                   </div>
-                  {/* <div className="w-full bg-surface-variant rounded-full h-4 overflow-hidden">
-                    Used portion
-                    <div className="h-full rounded-full flex overflow-hidden">
-                      <div
-                        className="h-full bg-primary transition-all duration-700"
-                        style={{ width: `${(totalUsedMock / TOTAL_ORG_CAPACITY_GB) * 100}%` }}
-                        title={`Used: ${totalUsedMock} GB`}
-                      />
-                      <div
-                        className="h-full bg-primary/30 transition-all duration-700"
-                        style={{ width: `${(totalFreeMock / TOTAL_ORG_CAPACITY_GB) * 100}%` }}
-                        title={`Allocated but unused: ${totalFreeMock} GB`}
-                      />
-                    </div>
-                  </div> */}
-                  <div className="flex flex-wrap gap-3 sm:gap-4 mt-2">
-                    <span className="flex items-center gap-1.5 text-[10px] text-on-primary-container">
-                      <span className="w-2.5 h-2.5 rounded-full bg-primary inline-block" /> Used (Est.)
+                  <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden flex">
+                    <div
+                      className="h-full bg-amber-400 rounded-l-full"
+                      style={{ width: `${(totalUsedMock / TOTAL_ORG_CAPACITY_GB) * 100}%` }}
+                      title={`Used: ${totalUsedMock} GB`}
+                    />
+                    <div
+                      className="h-full bg-blue-400"
+                      style={{ width: `${(totalFreeMock / TOTAL_ORG_CAPACITY_GB) * 100}%` }}
+                      title={`Allocated (unused): ${totalFreeMock} GB`}
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-4 mt-2.5">
+                    <span className="flex items-center gap-1.5 text-[11px] text-gray-600">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-400" /> Used (Est.)
                     </span>
-                    <span className="flex items-center gap-1.5 text-[10px] text-on-primary-container">
-                      <span className="w-2.5 h-2.5 rounded-full bg-primary/30 inline-block" /> Allocated (Unused)
+                    <span className="flex items-center gap-1.5 text-[11px] text-gray-600">
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-400" /> Allocated (Unused)
                     </span>
-                    <span className="flex items-center gap-1.5 text-[10px] text-on-primary-container">
-                      <span className="w-2.5 h-2.5 rounded-full bg-surface-variant inline-block" /> Unallocated
+                    <span className="flex items-center gap-1.5 text-[11px] text-gray-600">
+                      <span className="w-2.5 h-2.5 rounded-full bg-gray-200" /> Unallocated
                     </span>
                   </div>
                 </div>
@@ -1049,85 +1185,104 @@ export default function AdminDashboard() {
             );
           })()}
 
-          {/* Category Policy Limits Reference */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="material-symbols-rounded text-[22px] text-secondary">policy</span>
-              <h3 className="text-sm sm:text-base font-bold text-foreground">Category Policy Limits (BHU IT Rules)</h3>
+          {/* ── Row 3: Category Policy Limits (Table) ── */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100">
+              <span className="material-symbols-rounded text-gray-700 text-[20px]">policy</span>
+              <h3 className="text-sm font-semibold text-gray-900">Category Policy Limits (BHU IT Rules)</h3>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              {Object.entries(quotaMap).map(([cat, gb]) => {
-                const catData = quotaStats?.categoryBreakdown?.[cat];
-                return (
-                  <div key={cat} className="bg-gray-50 rounded-xl px-4 py-3 text-center border border-gray-500 hover:shadow-[0_0_5px_rgba(0,0,0,0.3)]">
-                    <p className="text-[11px] uppercase tracking-wider text-outline font-medium mb-1">{categoryLabels[cat] || cat}</p>
-                    <p className="text-2xl font-bold text-foreground">{gb} <span className="text-xs font-normal text-outline">GB</span></p>
-                    <p className="text-[11px] text-outline mt-1">{catData?.count || 0} users active</p>
-                  </div>
-                );
-              })}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 text-left">
+                    <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Category</th>
+                    <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Quota / User</th>
+                    <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Active Users</th>
+                    <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Total Allocated</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {Object.entries(quotaMap).map(([cat, gb]) => {
+                    const catData = quotaStats?.categoryBreakdown?.[cat];
+                    const userCount = catData?.count || 0;
+                    const totalAllocatedCat = catData?.totalGB || 0;
+                    return (
+                      <tr key={cat} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="px-5 py-3.5 text-sm font-medium text-gray-900">{categoryLabels[cat] || cat}</td>
+                        <td className="px-5 py-3.5 text-sm text-gray-700 text-right font-semibold">{gb} GB</td>
+                        <td className="px-5 py-3.5 text-right">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${userCount > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                            {userCount > 0 && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                            {userCount}
+                          </span>
+                        </td>
+                        <td className="px-5 py-3.5 text-sm text-gray-700 text-right font-semibold">{totalAllocatedCat} GB</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          {/* Stacked Category Chart — Used vs Unused Allocation */}
+          {/* ── Row 4: Category-wise Allocation & Usage (Horizontal Bars) ── */}
           {quotaStats && (() => {
             const entries = Object.entries(quotaStats.categoryBreakdown);
             const maxGB = Math.max(...entries.map(([, v]) => v.totalGB), 1);
-            const colors = [
-              { used: "#6366f1", unused: "#6366f133" },
-              { used: "#22c55e", unused: "#22c55e33" },
-              { used: "#f59e0b", unused: "#f59e0b33" },
-              { used: "#ef4444", unused: "#ef444433" },
-              { used: "#06b6d4", unused: "#06b6d433" },
-              { used: "#8b5cf6", unused: "#8b5cf633" },
+            const barColors = [
+              { used: "#4f46e5", unused: "#e0e7ff" },   // Indigo
+              { used: "#059669", unused: "#d1fae5" },   // Emerald
+              { used: "#d97706", unused: "#fef3c7" },   // Amber
+              { used: "#e11d48", unused: "#ffe4e6" },   // Rose
+              { used: "#0284c7", unused: "#e0f2fe" },   // Sky
             ];
 
             return (
-              <div className="bg-white rounded-2xl border border-gray-200 p-4 sm:p-6 shadow-[0_0_9px_rgba(0,0,0,0.3)] hover:shadow-md hover:border-primary/20 transition-all duration-200">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-5 gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-rounded text-[22px] text-primary">bar_chart</span>
-                    <h3 className="text-sm sm:text-base font-bold text-foreground">Category-wise Allocation & Usage</h3>
+              <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                  <div className="flex items-center gap-2.5">
+                    <span className="material-symbols-rounded text-gray-700 text-[20px]">bar_chart</span>
+                    <h3 className="text-sm font-semibold text-gray-900">Category-wise Allocation & Usage</h3>
                   </div>
-                  <div className="flex gap-3">
-                    <span className="flex items-center gap-1.5 text-[10px] text-outline">
-                      <span className="w-2.5 h-2.5 rounded-sm bg-primary inline-block" /> Used (Est.)
+                  <div className="flex gap-4">
+                    <span className="flex items-center gap-1.5 text-[11px] text-gray-600 font-medium">
+                      <span className="w-2.5 h-2.5 rounded bg-gray-700" /> Used (Est.)
                     </span>
-                    <span className="flex items-center gap-1.5 text-[10px] text-outline">
-                      <span className="w-2.5 h-2.5 rounded-sm bg-primary/20 inline-block" /> Allocated (Unused)
+                    <span className="flex items-center gap-1.5 text-[11px] text-gray-600 font-medium">
+                      <span className="w-2.5 h-2.5 rounded bg-gray-200" /> Allocated (Unused)
                     </span>
                   </div>
                 </div>
-                <div className="space-y-4">
+
+                <div className="space-y-5">
                   {entries.map(([cat, val], i) => {
                     const mockUsedGB = Math.round(val.totalGB * (0.4 + (i * 0.1) % 0.5));
                     const unusedGB = val.totalGB - mockUsedGB;
-                    const colorSet = colors[i % colors.length];
+                    const color = barColors[i % barColors.length];
+
                     return (
                       <div key={cat}>
-                        <div className="flex justify-between text-xs text-outline mb-1.5">
-                          <span className="font-medium text-foreground">{categoryLabels[cat] || cat}</span>
-                          <span>
-                            <span className="font-semibold text-foreground">{mockUsedGB} GB</span>
-                            <span className="text-outline"> used of </span>
-                            <span className="font-semibold text-foreground">{val.totalGB} GB</span>
-                            <span className="text-outline"> allocated · </span>
-                            <span className="font-medium">{val.count} users</span>
+                        <div className="flex justify-between items-baseline mb-1.5">
+                          <span className="text-sm font-medium text-gray-800">{categoryLabels[cat] || cat}</span>
+                          <span className="text-xs text-gray-500">
+                            <span className="font-semibold text-gray-800">{mockUsedGB}</span> / {val.totalGB} GB
+                            <span className="text-gray-400 mx-1">·</span>
+                            {val.count} users
                           </span>
                         </div>
-                        <div className="w-full bg-surface-variant rounded-full h-4 overflow-hidden flex">
+                        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden flex">
                           <div
                             className="h-full rounded-l-full transition-all duration-500"
                             style={{
-                              width: `${Math.max((mockUsedGB / maxGB) * 100, 2)}%`,
-                              backgroundColor: colorSet.used,
+                              width: `${Math.max((mockUsedGB / maxGB) * 100, 1)}%`,
+                              backgroundColor: color.used,
                             }}
                           />
                           <div
                             className="h-full transition-all duration-500"
                             style={{
-                              width: `${Math.max((unusedGB / maxGB) * 100, 1)}%`,
-                              backgroundColor: colorSet.unused,
+                              width: `${Math.max((unusedGB / maxGB) * 100, 0.5)}%`,
+                              backgroundColor: color.unused,
                             }}
                           />
                         </div>
@@ -1139,12 +1294,6 @@ export default function AdminDashboard() {
             );
           })()}
 
-          {/* Total Accounts Summary */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            <StatsCard icon="group" label="Total Accounts" value={quotaStats?.totalAccounts || 0} variant="primary" subtitle="Provisioned accounts" />
-            <StatsCard icon="storage" label="Total Allocated" value={`${quotaStats?.totalQuotaGB || 0} GB`} variant="success" subtitle="Across all categories" />
-            <StatsCard icon="cloud_off" label="Unallocated Pool" value={`${TOTAL_ORG_CAPACITY_GB - (quotaStats?.totalQuotaGB || 0)} GB`} variant="warning" subtitle={`of ${TOTAL_ORG_CAPACITY_GB.toLocaleString()} GB total`} />
-          </div>
         </div>
       )}
 

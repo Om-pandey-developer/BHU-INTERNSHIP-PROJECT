@@ -425,6 +425,11 @@ export default function RegisterPage() {
                     onChange={handleChange}
                     required
                     autoComplete="new-password"
+                    error={
+                      form.confirmPassword && form.password !== form.confirmPassword
+                        ? "Passwords do not match"
+                        : undefined
+                    }
                   />
                 </div>
 

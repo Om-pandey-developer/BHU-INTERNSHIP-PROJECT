@@ -134,7 +134,7 @@ export class PdfService {
     const mobile = details.mobileNo || '';
     const alternateEmail = details.alternateEmail || application.applicant.alternateEmail || '';
     const applicantDate = application.createdAt ? this.formatDate(application.createdAt) : (this.formatDate(new Date()) || '');
-    const applicantPlace = details.applicantPlace || '';
+    const applicantPlace = details.applicantPlace || 'Varanasi';
     const approvalDate = this.formatDate(approvalTimestamp) || '';
     const hashDisplay = digitalHash.substring(0, 16).toUpperCase();
 
@@ -396,7 +396,7 @@ export class PdfService {
   <div class="signature-container">
     <div class="sig-left">
       <p>Date: <span class="fill-blank-small">${approvalDate}</span></p>
-      <p>Place: <span class="fill-blank-small">&nbsp;</span></p>
+      <p>Place: <span class="fill-blank-small">Varanasi</span></p>
     </div>
     <div class="sig-middle">
       <div class="digital-stamp">

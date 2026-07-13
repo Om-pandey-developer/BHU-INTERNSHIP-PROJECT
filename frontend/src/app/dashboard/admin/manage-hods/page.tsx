@@ -246,43 +246,43 @@ export default function ManageHodsAndDeansPage() {
       </div>
 
       {/* Add Modal */}
-      <Modal isOpen={addModalOpen} onClose={() => !actionLoading && setAddModalOpen(false)} title="Provision New Official">
+      <Modal size="lg" isOpen={addModalOpen} onClose={() => !actionLoading && setAddModalOpen(false)} title="Provision New Official">
         <form onSubmit={handleAddSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">First Name</label>
+              <label className="block text-sm font-medium text-foreground mb-1">First Name *</label>
               <input required type="text" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="w-full bg-surface border border-outline-variant rounded-xl px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Last Name</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Last Name *</label>
               <input required type="text" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="w-full bg-surface border border-outline-variant rounded-xl px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30" />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Role</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Role *</label>
               <select required value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })} className="w-full bg-surface border border-outline-variant rounded-xl px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30">
                 <option value="HOD">Head of Department (HOD)</option>
                 <option value="DEAN">Dean</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Department</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Department *</label>
               <DepartmentSelect departments={departments} value={formData.departmentId} onChange={(val) => setFormData({ ...formData, departmentId: val })} required />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Designation Email (e.g. hod.cs@bhu.ac.in)</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Designation Email (e.g. hod.cs@bhu.ac.in) *</label>
             <input required type="email" value={formData.designationEmail} onChange={(e) => setFormData({ ...formData, designationEmail: e.target.value })} className="w-full bg-surface border border-outline-variant rounded-xl px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30" />
             <p className="text-xs text-outline mt-1">This email will be provisioned in Google Workspace with a 20GB quota.</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Personal Email (e.g. current personal bhu.ac.in or gmail.com)</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Personal Email (e.g. current personal bhu.ac.in or gmail.com) *</label>
             <input required type="email" value={formData.personalEmail} onChange={(e) => setFormData({ ...formData, personalEmail: e.target.value })} className="w-full bg-surface border border-outline-variant rounded-xl px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30" />
             <p className="text-xs text-outline mt-1">Welcome email and password reset links will be sent here.</p>
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Tenure Expiry Date</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Tenure Expiry Date *</label>
             <input required type="date" value={formData.roleExpiryDate} onChange={(e) => setFormData({ ...formData, roleExpiryDate: e.target.value })} className="w-full bg-surface border border-outline-variant rounded-xl px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30" />
             <p className="text-xs text-outline mt-1">On this date, the system will automatically remove the HOD/Dean role and convert them back to Applicant.</p>
           </div>
@@ -294,24 +294,24 @@ export default function ManageHodsAndDeansPage() {
       </Modal>
 
       {/* Edit Modal */}
-      <Modal isOpen={!!editModal} onClose={() => !actionLoading && setEditModal(null)} title="Edit Official Details">
+      <Modal size="lg" isOpen={!!editModal} onClose={() => !actionLoading && setEditModal(null)} title="Edit Official Details">
         <form onSubmit={handleEditSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">First Name</label>
+              <label className="block text-sm font-medium text-foreground mb-1">First Name *</label>
               <input required type="text" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} className="w-full bg-surface border border-outline-variant rounded-xl px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1">Last Name</label>
+              <label className="block text-sm font-medium text-foreground mb-1">Last Name *</label>
               <input required type="text" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} className="w-full bg-surface border border-outline-variant rounded-xl px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30" />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Personal Email</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Personal Email *</label>
             <input required type="email" value={formData.personalEmail} onChange={(e) => setFormData({ ...formData, personalEmail: e.target.value })} className="w-full bg-surface border border-outline-variant rounded-xl px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30" />
           </div>
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Tenure Expiry Date</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Tenure Expiry Date *</label>
             <input required type="date" value={formData.roleExpiryDate} onChange={(e) => setFormData({ ...formData, roleExpiryDate: e.target.value })} className="w-full bg-surface border border-outline-variant rounded-xl px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary/30" />
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant">

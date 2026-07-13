@@ -127,6 +127,8 @@ export default function DeanDashboard() {
   const [activeTab, setActiveTab] = useState<"pending" | "reviewed" | "reapply" | "provisioned">("pending");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState<number | "">(1);
   const [entriesPerPage, setEntriesPerPage] = useState(10);
   const [zoomLevel, setZoomLevel] = useState<"sm" | "md" | "lg">("md");
@@ -168,7 +170,7 @@ export default function DeanDashboard() {
     setCurrentPage(1);
     setSelectedIds(new Set());
     setExpandedRows(new Set());
-  }, [activeTab, searchQuery, categoryFilter, entriesPerPage]);
+  }, [activeTab, searchQuery, categoryFilter, startDate, endDate, entriesPerPage]);
 
   async function checkSignatureStatus() {
     try {
@@ -224,13 +226,100 @@ export default function DeanDashboard() {
       data = data.filter(item => item.applicantDetails?.programEnrolled === categoryFilter);
     }
 
+    if (startDate || endDate) {
+      data = data.filter(item => {
+        const d = new Date(item.createdAt);
+        d.setHours(0, 0, 0, 0);
+
+        let match = true;
+        if (startDate) {
+          const s = new Date(startDate);
+          s.setHours(0, 0, 0, 0);
+          if (d < s) match = false;
+        }
+        if (endDate) {
+          const e = new Date(endDate);
+          e.setHours(0, 0, 0, 0);
+          if (d > e) match = false;
+        }
+        return match;
+      });
+    }
+
     return data;
-  }, [activeTab, pendingApps, reviewedApps, provisionedApps, reapplyRequests, searchQuery, categoryFilter]);
+  }, [activeTab, pendingApps, reviewedApps, provisionedApps, reapplyRequests, searchQuery, categoryFilter, startDate, endDate]);
 
   // Pagination
   const totalPages = Math.ceil(activeData.length / entriesPerPage);
   const safePage = typeof currentPage === "number" ? currentPage : 1;
   const paginatedData = activeData.slice((safePage - 1) * entriesPerPage, safePage * entriesPerPage);
+
+  function handleExportCSV() {
+    let dataToExport = activeData;
+    if (selectedIds.size > 0) {
+      dataToExport = dataToExport.filter(app => selectedIds.has(app.id || (app as any).application?.id));
+    }
+
+    if (!dataToExport || dataToExport.length === 0) {
+      addToast({ message: "No data to export.", variant: "warning" });
+      return;
+    }
+
+    const headers = [
+      "Tracking ID",
+      "First Name",
+      "Last Name",
+      "Alternate Email",
+      "BHU Email",
+      "Mobile No",
+      "Faculty/Institute",
+      "Department",
+      "Category",
+      "Type/Program",
+      "Designation",
+      "Status",
+      "Created At"
+    ];
+
+    const rows = dataToExport.map(item => {
+      const app = activeTab === "reapply" ? (item.application || {}) : item;
+      const applicant = activeTab === "reapply" ? (item.application?.applicant || {}) : (item.applicant || {});
+      const appDetails = activeTab === "reapply" ? (item.application?.applicantDetails || {}) : (item.applicantDetails || {});
+      const dept = activeTab === "reapply" ? (item.application?.department || {}) : (item.department || {});
+
+      return [
+        app.trackingId || "",
+        applicant.firstName || "",
+        applicant.lastName || "",
+        applicant.alternateEmail || appDetails.alternateEmail || "",
+        applicant.bhuEmail || "",
+        appDetails.mobileNo || "",
+        appDetails.facultyInstituteCentre || "",
+        dept.name || "",
+        appDetails.category || "",
+        appDetails.programEnrolled || appDetails.staffType || "",
+        appDetails.designation || appDetails.courseName || "",
+        item.status || app.status || "",
+        new Date(item.createdAt).toISOString()
+      ];
+    });
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `Applications_DEAN_${activeTab}_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    addToast({ message: "Exported CSV successfully.", variant: "success" });
+  }
 
   const toggleSelect = (id: string) => {
     setSelectedIds(prev => {
@@ -528,24 +617,43 @@ export default function DeanDashboard() {
           </div>
 
           {/* Filter */}
-          {activeTab !== "reapply" && (
-            <select
-              value={categoryFilter}
-              onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
-              className="px-4 py-2 bg-surface-variant/50 border border-outline-variant rounded-xl text-sm focus:outline-none focus:border-primary transition-all appearance-none cursor-pointer"
-            >
-              <option value="ALL">All Courses</option>
-              <option value="BA_HONS">B.A. (Hons.)</option>
-              <option value="BSC_HONS">B.Sc. (Hons.)</option>
-              <option value="BCOM_HONS">B.Com. (Hons.)</option>
-              <option value="BTECH">B.Tech</option>
-              <option value="BVOC">B.Voc</option>
-              <option value="LLB">LL.B. / B.A. LL.B.</option>
-            </select>
-          )}
+          <div className="flex gap-2 w-full sm:w-auto">
+            {activeTab !== "reapply" && (
+              <select
+                value={categoryFilter}
+                onChange={(e) => { setCategoryFilter(e.target.value); setCurrentPage(1); }}
+                className="px-4 py-2 bg-surface-variant/50 border border-outline-variant rounded-xl text-sm focus:outline-none focus:border-primary transition-all appearance-none cursor-pointer"
+              >
+                <option value="ALL">All Courses</option>
+                <option value="BA_HONS">B.A. (Hons.)</option>
+                <option value="BSC_HONS">B.Sc. (Hons.)</option>
+                <option value="BCOM_HONS">B.Com. (Hons.)</option>
+                <option value="BTECH">B.Tech</option>
+                <option value="BVOC">B.Voc</option>
+                <option value="LLB">LL.B. / B.A. LL.B.</option>
+              </select>
+            )}
+            <div className="flex items-center gap-2 shadow-sm rounded-xl bg-surface-variant/50 border border-outline-variant px-2 py-1.5 h-[38px]">
+              <span className="text-[10px] uppercase font-bold text-outline">From</span>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
+                className="bg-transparent text-sm font-medium focus:outline-none cursor-pointer w-[110px]"
+              />
+              <span className="text-[10px] uppercase font-bold text-outline border-l border-outline-variant pl-2">To</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
+                className="bg-transparent text-sm font-medium focus:outline-none cursor-pointer w-[110px]"
+              />
+            </div>
+          </div>
 
           {/* Entries per page & Go to page */}
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
+            <Button icon="download" variant="filled" size="sm" onClick={handleExportCSV}>Export CSV</Button>
             <div className="flex items-center gap-2 text-sm text-outline">
               <span>Show</span>
               <select
