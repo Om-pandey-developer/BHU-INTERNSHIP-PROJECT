@@ -845,7 +845,6 @@ export class ApplicationsService {
       'First Name [Required]',
       'Last Name [Required]',
       'Email Address [Required]',
-      'Password [Required]',
       'Org Unit Path [Required]',
       'Change Password at Next Sign-In [Upload Only]',
       'New Status [Upload Only]'
@@ -872,7 +871,6 @@ export class ApplicationsService {
         `"${app.applicant.firstName.replace(/"/g, '""')}"`,
         `"${app.applicant.lastName.replace(/"/g, '""')}"`,
         `"${bhuEmail}"`,
-        `"${generateSecurePassword()}"`,
         `"/Students/${app.department.code || 'General'}"`,
         `"True"`,
         `"${newStatus}"`
