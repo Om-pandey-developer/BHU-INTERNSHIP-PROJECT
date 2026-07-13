@@ -45,6 +45,11 @@ export class CreateUserDto {
   @IsOptional()
   departmentId?: string;
 
+  @ApiPropertyOptional({ example: 'SPACE SCIENCES', description: 'Custom department name when "Others" is selected' })
+  @IsString()
+  @IsOptional()
+  otherDepartmentName?: string;
+
   @ApiProperty({ example: '123456', description: 'Email verification OTP' })
   @IsString()
   @IsNotEmpty()
