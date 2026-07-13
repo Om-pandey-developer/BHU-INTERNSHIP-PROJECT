@@ -5,7 +5,7 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PdfService } from '../pdf/pdf.service';
 import { MailService } from '../mail/mail.service';
@@ -139,8 +139,9 @@ export class ApplicationsService {
     );
 
     // ── Send email notification to HOD/Dean (non-blocking) ──
-    this.notifyHodOfNewApplication(application.departmentId, applicantId, application.trackingId, application.department?.name || 'Unknown')
-      .catch(err => this.logger.error('HOD/Dean notification failed', err));
+    // Notification removed per user request: "notify hod hata doo"
+    // this.notifyHodOfNewApplication(application.departmentId, applicantId, application.trackingId, application.department?.name || 'Unknown')
+    //  .catch(err => this.logger.error('Failed to notify HOD', err));
 
     return {
       id: application.id,
@@ -775,6 +776,113 @@ export class ApplicationsService {
   }
 
   /**
+   * CC Admin approves an application.
+   */
+  async approveByCcAdmin(applicationId: string, adminId: string, ipAddress: string) {
+    const application = await this.prisma.application.findUnique({
+      where: { id: applicationId },
+    });
+
+    if (!application) {
+      throw new NotFoundException('Application not found');
+    }
+
+    if (
+      application.status !== ApplicationStatus.APPROVED_HOD &&
+      application.status !== ApplicationStatus.APPROVED_DEAN
+    ) {
+      throw new BadRequestException('Application must be approved by HOD/Dean before CC Admin can approve it.');
+    }
+
+    const updated = await this.prisma.application.update({
+      where: { id: applicationId },
+      data: {
+        status: ApplicationStatus.PROVISIONED,
+      },
+    });
+
+    // Create audit log entry
+    await this.prisma.auditLog.create({
+      data: {
+        entityType: 'APPLICATION',
+        entityId: applicationId,
+        action: 'STATUS_CHANGED_TO_PROVISIONED',
+        performedBy: adminId,
+        ipAddress,
+        payload: {
+          previousStatus: application.status,
+          newStatus: ApplicationStatus.PROVISIONED,
+        },
+      },
+    });
+
+    this.logger.log(`Application ${application.trackingId} provisioned (approved) by CC Admin ${adminId}`);
+
+    // Notify applicant
+    this.notifyApplicantOfStatusChange(application.applicantId, application.trackingId, ApplicationStatus.PROVISIONED)
+      .catch(err => this.logger.error('Applicant notification failed', err));
+
+    return updated;
+  }
+
+  /**
+   * Generate CSV for Google Workspace for the given statuses.
+   */
+  async exportCsvByStatus(statuses: ApplicationStatus[]) {
+    const applications = await this.prisma.application.findMany({
+      where: { status: { in: statuses } },
+      include: {
+        applicant: {
+          select: { firstName: true, lastName: true, alternateEmail: true }
+        },
+        department: {
+          select: { name: true, code: true }
+        }
+      }
+    });
+
+    const headers = [
+      'First Name [Required]',
+      'Last Name [Required]',
+      'Email Address [Required]',
+      'Password [Required]',
+      'Org Unit Path [Required]',
+      'Change Password at Next Sign-In [Upload Only]',
+      'New Status [Upload Only]'
+    ];
+
+    const generateSecurePassword = (): string => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+      let password = '';
+      const bytes = randomBytes(12);
+      for (let i = 0; i < 12; i++) {
+        password += chars[bytes[i] % chars.length];
+      }
+      return password;
+    };
+
+    const rows = applications.map(app => {
+      const bhuEmail = (app.applicantDetails as any)?.requestedEmail || app.applicant.alternateEmail;
+      
+      let newStatus = 'Active';
+      if (app.status === ApplicationStatus.SUSPENDED) newStatus = 'Suspended';
+      if (app.status === ApplicationStatus.ARCHIVED) newStatus = 'Archived'; // Or whatever Workspace expects
+
+      return [
+        `"${app.applicant.firstName.replace(/"/g, '""')}"`,
+        `"${app.applicant.lastName.replace(/"/g, '""')}"`,
+        `"${bhuEmail}"`,
+        `"${generateSecurePassword()}"`,
+        `"/Students/${app.department.code || 'General'}"`,
+        `"True"`,
+        `"${newStatus}"`
+      ].join(',');
+    });
+
+    return [headers.join(','), ...rows].join('\\n');
+  }
+
+  /**
    * CC Admin edits application details.
    */
   async editByCcAdmin(applicationId: string, adminId: string, applicantDetails: any, ipAddress: string) {
@@ -1274,9 +1382,6 @@ export class ApplicationsService {
     );
   }
 
-  /**
-   * Notify the applicant about their application status change.
-   */
   private async notifyApplicantOfStatusChange(
     applicantId: string,
     trackingId: string,
@@ -1291,12 +1396,28 @@ export class ApplicationsService {
     if (!applicant?.alternateEmail) return;
 
     const applicantName = `${applicant.firstName} ${applicant.lastName}`;
-    await this.mailService.sendApplicationStatusNotification(
-      applicant.alternateEmail,
-      applicantName,
-      trackingId,
-      status,
-      remarks,
-    );
+
+    if (status.startsWith('REJECTED_')) {
+      let role = 'Administrator';
+      if (status === 'REJECTED_HOD') role = 'Head of Department';
+      if (status === 'REJECTED_DEAN') role = 'Dean/Director';
+      if (status === 'REJECTED_CC') role = 'Computer Centre Administrator';
+
+      await this.mailService.sendRejectionEmail(
+        applicant.alternateEmail,
+        applicantName,
+        trackingId,
+        remarks || 'No remarks provided.',
+        role
+      );
+    } else {
+      await this.mailService.sendApplicationStatusNotification(
+        applicant.alternateEmail,
+        applicantName,
+        trackingId,
+        status,
+        remarks,
+      );
+    }
   }
 }

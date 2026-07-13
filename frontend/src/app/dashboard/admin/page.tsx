@@ -540,6 +540,38 @@ export default function AdminDashboard() {
   const safePage = typeof currentPage === "number" ? currentPage : 1;
   const paginatedData = currentActiveData.slice((safePage - 1) * entriesPerPage, safePage * entriesPerPage);
 
+  async function handleCcApprove(id: string) {
+    if (!confirm("Are you sure you want to approve this application and move it to the Active Queue?")) return;
+    try {
+      await api.patch(`/applications/${id}/cc-approve`);
+      addToast({ message: "Application approved successfully.", variant: "success" });
+      fetchTabData("pending");
+      fetchTabData("active");
+    } catch (err: any) {
+      addToast({ message: err.response?.data?.message || "Failed to approve application.", variant: "error" });
+    }
+  }
+
+  async function handleExportWorkspaceCSV() {
+    try {
+      let statusParam = "PROVISIONED";
+      if (activeTab === "suspended") statusParam = "SUSPENDED";
+      if (activeTab === "archived") statusParam = "ARCHIVED";
+
+      const res = await api.get(`/applications/admin/export-csv?status=${statusParam}`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `GoogleWorkspace_Export_${statusParam}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      addToast({ message: "Exported Google Workspace CSV successfully.", variant: "success" });
+    } catch (err: any) {
+      addToast({ message: "Failed to export CSV.", variant: "error" });
+    }
+  }
+
   function handleExportCSV() {
     let dataToExport = currentActiveData;
     if (selectedIds.size > 0) {
@@ -636,7 +668,10 @@ export default function AdminDashboard() {
             </div>
             
             <div className="flex flex-wrap items-center gap-4 shrink-0">
-              <Button icon="download" variant="filled" size="sm" onClick={handleExportCSV}>Export CSV</Button>
+              <Button icon="download" variant="outlined" size="sm" onClick={handleExportCSV}>Export CSV</Button>
+              {(activeTab === "active" || activeTab === "suspended" || activeTab === "archived") && (
+                <Button icon="cloud_download" variant="filled" size="sm" onClick={handleExportWorkspaceCSV} className="!bg-primary !text-primary-on">Workspace CSV</Button>
+              )}
               <div className="flex items-center gap-2 text-sm text-outline">
                 <span>Show</span>
                 <select
@@ -989,6 +1024,9 @@ export default function AdminDashboard() {
             <>
               <Button icon="edit" variant="outlined" size="sm" onClick={() => { const details = app.applicantDetails || {}; setEditModal({ id: app.id, details }); const fields: Record<string, string> = {}; Object.entries(details).forEach(([k, v]) => { fields[k] = String(v ?? ''); }); setEditFormFields(fields); }}>
                 Edit
+              </Button>
+              <Button icon="check_circle" variant="filled" size="sm" onClick={() => handleCcApprove(app.id)}>
+                Approve
               </Button>
               <Button icon="cancel" variant="outlined" size="sm" onClick={() => setRemarksModal({ action: "cc-reject", ids: [app.id] })}>
                 Reject

@@ -7,6 +7,15 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { OtpService } from './otp.service';
 import { TurnstileService } from './turnstile.service';
 import { MailModule } from '../mail/mail.module';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const privateKey = fs.existsSync(path.join(process.cwd(), 'keys', 'private.pem'))
+  ? fs.readFileSync(path.join(process.cwd(), 'keys', 'private.pem'), 'utf8')
+  : 'default-secret';
+const publicKey = fs.existsSync(path.join(process.cwd(), 'keys', 'public.pem'))
+  ? fs.readFileSync(path.join(process.cwd(), 'keys', 'public.pem'), 'utf8')
+  : 'default-secret';
 
 /**
  * AuthModule configures:
@@ -21,8 +30,10 @@ import { MailModule } from '../mail/mail.module';
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
-      secret: process.env.JWT_ACCESS_SECRET || 'default-access-secret',
+      privateKey: privateKey,
+      publicKey: publicKey,
       signOptions: {
+        algorithm: 'RS256',
         expiresIn: parseInt(process.env.JWT_ACCESS_EXPIRY_SECONDS || '900', 10), // 15 minutes in seconds
       },
     }),

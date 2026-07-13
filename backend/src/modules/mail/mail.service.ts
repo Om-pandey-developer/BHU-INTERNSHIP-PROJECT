@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
-import { bhuVerificationEmail } from './emailTemplate';
+import { bhuVerificationEmail, bhuRejectionEmail, bhuRejectionEmailText } from './emailTemplate';
 /**
  * MailService handles sending emails via SMTP (Brevo or any SMTP provider).
  *
@@ -190,14 +190,22 @@ export class MailService {
       return;
     }
 
-    const isApproved = status === 'APPROVED_HOD';
-    const statusLabel = isApproved ? 'Approved by HOD' : 'Requires Attention';
+    const isApproved = status === 'APPROVED_HOD' || status === 'APPROVED_DEAN' || status === 'PROVISIONED';
+    let statusLabel = 'Requires Attention';
+    if (status === 'APPROVED_HOD') statusLabel = 'Approved by HOD';
+    if (status === 'APPROVED_DEAN') statusLabel = 'Approved by Dean';
+    if (status === 'PROVISIONED') statusLabel = 'Approved by Admin';
+
     const statusColor = isApproved ? '#1B873E' : '#B3261E';
     const statusIcon = isApproved ? '✅' : '❌';
     const statusBg = isApproved ? '#D4F5DF' : '#F9DEDC';
-    const nextStep = isApproved
-      ? 'Your application has been forwarded to CC Admin for email provisioning. You will be notified once your @bhu.ac.in email is created.'
-      : 'Please review the remarks below and consider re-submitting your application.';
+    
+    let nextStep = 'Please review the remarks below and consider re-submitting your application.';
+    if (status === 'APPROVED_HOD' || status === 'APPROVED_DEAN') {
+      nextStep = 'Your application has been forwarded to the next level for approval. You will be notified of further updates.';
+    } else if (status === 'PROVISIONED') {
+      nextStep = 'Your application has been fully approved! You will soon receive an official email from Google Workspace containing your @bhu.ac.in login ID and password.';
+    }
 
     const htmlBody = `
       <div style="font-family: 'Inter', Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px; background: #FFFBFE; border-radius: 16px; border: 1px solid #CAC4D0;">
@@ -432,6 +440,38 @@ export class MailService {
       this.logger.log(`Welcome notification sent to ${personalEmail} for ${designationEmail}`);
     } catch (error) {
       this.logger.error(`Failed to send welcome notification to ${personalEmail}`, error);
+    }
+  }
+
+  /**
+   * Send rejection email notification to applicant.
+   */
+  async sendRejectionEmail(
+    to: string,
+    applicantName: string,
+    trackingId: string,
+    remarks: string,
+    rejectedByRole: string,
+  ): Promise<void> {
+    if (this.isDev) {
+      this.logger.warn(`[DEV MODE] Rejection Notification -> ${to}: Application ${trackingId} rejected by ${rejectedByRole}. Reason: ${remarks}`);
+      return;
+    }
+
+    const htmlBody = bhuRejectionEmail({ recipientName: applicantName, remarks, rejectedByRole });
+    const textBody = bhuRejectionEmailText({ recipientName: applicantName, remarks, rejectedByRole });
+
+    try {
+      await this.transporter.sendMail({
+        from: '"Computer Centre, BHU" <' + process.env.SMTP_USER + '>',
+        to,
+        subject: `Application Status Update: ${trackingId} — BHU Email Portal`,
+        html: htmlBody,
+        text: textBody,
+      });
+      this.logger.log(`Rejection notification sent to ${to} for ${trackingId}`);
+    } catch (error) {
+      this.logger.error(`Failed to send rejection notification to ${to}`, error);
     }
   }
 }
