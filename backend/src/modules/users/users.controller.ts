@@ -15,6 +15,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { randomBytes } from 'crypto';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery, ApiConsumes } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { UsersService } from './users.service';
@@ -55,7 +56,7 @@ export class UsersController {
         destination: process.env.SIGNATURE_DIR || './uploads/signatures',
         filename: (req, file, cb) => {
           const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
+            Date.now() + '-' + randomBytes(4).toString('hex');
           cb(null, `sig-${uniqueSuffix}${extname(file.originalname)}`);
         },
       }),

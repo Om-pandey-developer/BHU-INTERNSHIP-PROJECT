@@ -19,6 +19,8 @@ import {
 import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import { randomBytes } from 'crypto';
+import * as fs from 'fs';
 import {
   ApiTags,
   ApiBearerAuth,
@@ -61,7 +63,7 @@ export class ApplicationsController {
           destination: process.env.UPLOAD_DIR || './uploads',
           filename: (req, file, cb) => {
             const uniqueSuffix =
-              Date.now() + '-' + Math.round(Math.random() * 1e9);
+              Date.now() + '-' + randomBytes(4).toString('hex');
             const prefix = file.fieldname === 'signature' ? 'sig' : 'photo';
             cb(null, `${prefix}-${uniqueSuffix}${extname(file.originalname)}`);
           },
@@ -90,6 +92,29 @@ export class ApplicationsController {
     
     if (!photoFile) throw new NotFoundException('Photo is required');
     if (!signatureFile) throw new NotFoundException('Signature is required');
+
+    // --- Magic Bytes Validation ---
+    const validateMagicBytes = async (filePath: string) => {
+      const fd = await fs.promises.open(filePath, 'r');
+      const buffer = Buffer.alloc(4);
+      await fd.read(buffer, 0, 4, 0);
+      await fd.close();
+      const hex = buffer.toString('hex').toUpperCase();
+      // Allow JPEG (FFD8FF), PNG (89504E47), WEBP (52494646 - 'RIFF' starting)
+      if (!hex.startsWith('FFD8FF') && !hex.startsWith('89504E47') && !hex.startsWith('52494646')) {
+        await fs.promises.unlink(filePath).catch(() => {});
+        throw new BadRequestException('Invalid file signature. File is not a genuine image.');
+      }
+    };
+
+    try {
+      await validateMagicBytes(photoFile.path);
+      await validateMagicBytes(signatureFile.path);
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw new BadRequestException('Error validating file format.');
+    }
+    // ------------------------------
 
     const ipAddress =
       (req.headers['x-forwarded-for'] as string) || req.ip || 'unknown';
@@ -298,6 +323,29 @@ export class ApplicationsController {
   // ═══════════════════════════════════════════════════════
 
   /**
+   * GET /api/v1/applications/admin/export-csv
+   * Export applications to Google Workspace CSV format based on status.
+   */
+  @Get('admin/export-csv')
+  @Roles(Role.CC_ADMIN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Export applications to CSV for Google Workspace' })
+  async exportCsv(
+    @Req() req: Request & { query: { status?: string } },
+    @Res() res: Response
+  ) {
+    const statusesParam = req.query.status || 'PROVISIONED';
+    // Use any as a cast since ApplicationStatus might not be directly in scope in this way, though it is imported.
+    const statuses = statusesParam.split(',') as any[];
+    
+    const csvData = await this.applicationsService.exportCsvByStatus(statuses);
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="GoogleWorkspace_Export_${statusesParam}.csv"`);
+    res.send(csvData);
+  }
+
+  /**
    * GET /api/v1/applications/admin/active
    * Get all PROVISIONED (Flag 1) users.
    */
@@ -364,6 +412,23 @@ export class ApplicationsController {
       throw new BadRequestException('Remarks are mandatory for rejection');
     }
     return this.applicationsService.rejectByCcAdmin(id, req.user.userId, dto.remarks, ipAddress);
+  }
+
+  /**
+   * PATCH /api/v1/applications/:id/cc-approve
+   * CC Admin approves an application (moves to PROVISIONED queue).
+   * Accessible by: CC_ADMIN
+   */
+  @Patch(':id/cc-approve')
+  @Roles(Role.CC_ADMIN)
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'CC Admin approve an application' })
+  async approveByCcAdmin(
+    @Param('id') id: string,
+    @Req() req: Request & { user: { userId: string } },
+  ) {
+    const ipAddress = (req.headers['x-forwarded-for'] as string) || req.ip || 'unknown';
+    return this.applicationsService.approveByCcAdmin(id, req.user.userId, ipAddress);
   }
 
   /**

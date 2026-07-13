@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import * as argon2 from 'argon2';
+import { randomBytes } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { OtpService } from '../auth/otp.service';
@@ -225,7 +226,7 @@ export class UsersService {
     }
 
     // Generate a random temporary password hash since they will reset it via the token
-    const passwordHash = await argon2.hash(Math.random().toString(36).slice(-8));
+    const passwordHash = await argon2.hash(randomBytes(12).toString('base64'));
 
     return this.prisma.user.create({
       data: {

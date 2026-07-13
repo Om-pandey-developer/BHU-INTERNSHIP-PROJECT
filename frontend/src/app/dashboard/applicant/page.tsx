@@ -1442,6 +1442,18 @@ export default function ApplicantDashboard() {
                       <HorizontalProgressBar status={app.status} category={(app.applicantDetails as any)?.category} />
                     </div>
 
+                    {app.status.startsWith("REJECTED") && (
+                      <div className="bg-[#FFE6E6] border-l-4 border-[#D32F2F] p-4 rounded-r-xl">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="material-symbols-rounded text-[20px] text-[#D32F2F]">cancel</span>
+                          <h4 className="text-sm font-bold text-[#D32F2F]">Application Rejected</h4>
+                        </div>
+                        <p className="text-sm text-[#3A322A] mb-1">
+                          <span className="font-semibold">Reason:</span> {app.ccAdminRemarks || app.deanRemarks || app.hodRemarks || "No remarks provided."}
+                        </p>
+                      </div>
+                    )}
+
                     {/* Digitally Signed Card */}
                     {(app.status === "APPROVED_HOD" || app.status === "APPROVED_DEAN" || app.status === "PENDING_CC" || app.status === "PROVISIONED") && app.digitalSignatureHash && (
                       <div className="bg-gradient-to-r from-success-container/40 to-primary-container/30 rounded-xl px-5 py-4 border border-success/25">

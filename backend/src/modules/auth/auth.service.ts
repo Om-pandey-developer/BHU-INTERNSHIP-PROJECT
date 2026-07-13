@@ -11,6 +11,12 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { OtpService } from './otp.service';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const privateKey = fs.existsSync(path.join(process.cwd(), 'keys', 'private.pem'))
+  ? fs.readFileSync(path.join(process.cwd(), 'keys', 'private.pem'), 'utf8')
+  : 'default-secret';
 
 /**
  * AuthService handles:
@@ -258,11 +264,13 @@ export class AuthService {
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
-        secret: process.env.JWT_ACCESS_SECRET || 'default-access-secret',
+        privateKey: privateKey,
+        algorithm: 'RS256',
         expiresIn: accessExpiry,
       }),
       this.jwtService.signAsync(payload, {
-        secret: process.env.JWT_REFRESH_SECRET || 'default-refresh-secret',
+        privateKey: privateKey,
+        algorithm: 'RS256',
         expiresIn: refreshExpiry,
       }),
     ]);
