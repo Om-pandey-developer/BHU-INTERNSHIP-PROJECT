@@ -13,6 +13,7 @@ services:
     # which should point to your containerized db instance (postgresql://bhu_user:password@db:5432/bhu_db)
     volumes:
       - ./backend/uploads:/app/uploads
+      - ./backend/keys:/app/keys
     depends_on:
       db:
         condition: service_healthy
@@ -55,7 +56,7 @@ services:
       - bhu_network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bhu_user -d bhu_db"]
+      test: [ "CMD-SHELL", "pg_isready -U bhu_user -d bhu_db" ]
       interval: 10s
       timeout: 5s
       retries: 5
