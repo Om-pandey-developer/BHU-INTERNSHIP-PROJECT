@@ -113,17 +113,21 @@ async function main() {
           category: category.cat,
           mobileNo: `98765${Math.floor(10000 + Math.random() * 90000)}`,
           facultyInstituteCentre: 'Computer Science',
-          emailChoice: email,
+          emailChoice1: email.split('@')[0],
           dateOfBirth: '1990-01-01',
         };
         
         if (category.cat === 'RESEARCH_SCHOLAR' || category.cat === 'POST_GRADUATE_STUDENT') {
           applicantDetails.programEnrolled = category.cat === 'RESEARCH_SCHOLAR' ? 'Ph.D.' : 'M.Sc.';
           applicantDetails.enrollmentNo = `EN${1000 + i}`;
+          applicantDetails.admissionAcademicYear = '2023-2024';
+          applicantDetails.courseCompletionYear = '2025';
         } else {
           applicantDetails.typeOfEmployment = 'Permanent';
           applicantDetails.designation = category.cat === 'TEACHING_STAFF' ? 'Assistant Professor' : 'Officer';
           applicantDetails.employeeId = `EMP${1000 + i}`;
+          applicantDetails.dateOfAppointment = '2020-01-01';
+          applicantDetails.dateOfRetirement = '2050-01-01';
         }
 
         const isHodProcessed = status === 'APPROVED_HOD' || status === 'REJECTED_HOD' || status === 'PROVISIONED';
@@ -202,10 +206,12 @@ async function main() {
           category: category.cat,
           mobileNo: `98765${Math.floor(10000 + Math.random() * 90000)}`,
           facultyInstituteCentre: 'Computer Science',
-          emailChoice: email,
+          emailChoice1: email.split('@')[0],
           dateOfBirth: '2004-01-01',
           programEnrolled: 'B.Sc.',
           enrollmentNo: `EN_DEAN${1000 + i}`,
+          admissionAcademicYear: '2023-2024',
+          courseCompletionYear: '2027',
         };
 
         await prisma.application.create({

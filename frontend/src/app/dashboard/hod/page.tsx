@@ -293,7 +293,7 @@ export default function HodDashboard() {
         applicant.lastName || "",
         applicant.alternateEmail || appDetails.alternateEmail || "",
         applicant.bhuEmail || "",
-        appDetails.mobileNo ? (appDetails.mobileNo.startsWith("+") ? `${appDetails.mobileNo}` : `+91-${appDetails.mobileNo}`) : "",
+        appDetails.mobileNo ? (appDetails.mobileNo.startsWith("+") ? ` ${appDetails.mobileNo}` : ` +91-${appDetails.mobileNo}`) : "",
         appDetails.facultyInstituteCentre || "",
         dept.name || "",
         appDetails.category || "",

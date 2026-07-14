@@ -15,6 +15,21 @@ RUN npm run build
 # Production stage
 FROM node:20-alpine AS production
 
+# Install Chromium for Puppeteer PDF generation
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    ttf-freefont \
+    font-noto \
+    font-noto-devanagari
+
+# Tell Puppeteer to skip downloading Chrome — we use the system-installed one
+ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+
 # Add non-root user
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 

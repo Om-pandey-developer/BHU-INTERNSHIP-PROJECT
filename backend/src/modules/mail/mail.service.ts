@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
-import { bhuVerificationEmail, bhuRejectionEmail, bhuRejectionEmailText } from './emailTemplate';
+import { bhuVerificationEmail, bhuRejectionEmail, bhuRejectionEmailText, bhuAdminApprovalEmail } from './emailTemplate';
 /**
  * MailService handles sending emails via SMTP (Brevo or any SMTP provider).
  *
@@ -190,11 +190,26 @@ export class MailService {
       return;
     }
 
-    const isApproved = status === 'APPROVED_HOD' || status === 'APPROVED_DEAN' || status === 'PROVISIONED';
+    if (status === 'PROVISIONED') {
+      const htmlBody = bhuAdminApprovalEmail({ recipientName: applicantName });
+      try {
+        await this.transporter.sendMail({
+          from: `"BHU Email Portal" <${process.env.SMTP_USER}>`,
+          to: applicantEmail,
+          subject: `Application Approved: ${trackingId} — BHU Email Portal`,
+          html: htmlBody,
+        });
+        this.logger.log(`Status notification (Admin Approved) sent to ${applicantEmail} for ${trackingId}`);
+      } catch (error) {
+        this.logger.error(`Failed to send status notification to ${applicantEmail}`, error);
+      }
+      return;
+    }
+
+    const isApproved = status === 'APPROVED_HOD' || status === 'APPROVED_DEAN';
     let statusLabel = 'Requires Attention';
     if (status === 'APPROVED_HOD') statusLabel = 'Approved by HOD';
     if (status === 'APPROVED_DEAN') statusLabel = 'Approved by Dean';
-    if (status === 'PROVISIONED') statusLabel = 'Approved by Admin';
 
     const statusColor = isApproved ? '#1B873E' : '#B3261E';
     const statusIcon = isApproved ? '✅' : '❌';
@@ -203,8 +218,6 @@ export class MailService {
     let nextStep = 'Please review the remarks below and consider re-submitting your application.';
     if (status === 'APPROVED_HOD' || status === 'APPROVED_DEAN') {
       nextStep = 'Your application has been forwarded to the next level for approval. You will be notified of further updates.';
-    } else if (status === 'PROVISIONED') {
-      nextStep = 'Your application has been fully approved! You will soon receive an official email from Google Workspace containing your @bhu.ac.in login ID and password.';
     }
 
     const htmlBody = `

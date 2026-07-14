@@ -420,8 +420,9 @@ export class ApplicationsService {
 
     // ── If approving, verify Dean has uploaded a signature ──
     let digitalSignatureHash: string | null = null;
-    let approvedPdfPath: string | null = null;
     const approvalTimestamp = new Date();
+    let deanSignaturePath: string | null = null;
+    let deanFullName: string = '';
 
     if (newStatus === ApplicationStatus.APPROVED_DEAN) {
       const dean = (await this.prisma.user.findUnique({
@@ -443,28 +444,15 @@ export class ApplicationsService {
         );
       }
 
+      deanSignaturePath = dean.signatureStoragePath;
+      deanFullName = `${dean.firstName} ${dean.lastName}`.trim();
+
       // Generate SHA-256 cryptographic hash
       const hashInput = `${applicationId}|${deanId}|${application.applicantId}|${approvalTimestamp.toISOString()}`;
       digitalSignatureHash = createHash('sha256').update(hashInput).digest('hex');
-
-      // Generate the approved PDF with both signatures and hologram
-      const deanName = `${dean.firstName} ${dean.lastName}`.trim();
-      try {
-        approvedPdfPath = await this.pdfService.generateApprovedPdf(
-          applicationId,
-          dean.signatureStoragePath,
-          deanName,
-          digitalSignatureHash,
-          approvalTimestamp,
-        );
-      } catch (err) {
-        this.logger.error(`PDF generation failed for ${applicationId}`, err);
-        throw new BadRequestException(
-          'Approval succeeded but PDF generation failed. Please try again.',
-        );
-      }
     }
 
+    // ── FIRST: Save the approval to the database ──
     const updated = await this.prisma.application.update({
       where: { id: applicationId },
       data: {
@@ -474,7 +462,6 @@ export class ApplicationsService {
         deanApprovedAt:
           newStatus === ApplicationStatus.APPROVED_DEAN ? approvalTimestamp : null,
         digitalSignatureHash,
-        approvedPdfPath,
       } as unknown as Prisma.ApplicationUpdateInput,
     });
 
@@ -499,9 +486,30 @@ export class ApplicationsService {
       `Application ${application.trackingId} ${newStatus} by Dean ${deanId}`,
     );
 
+    // ── THEN: Try PDF generation (non-blocking — approval is already saved) ──
+    if (newStatus === ApplicationStatus.APPROVED_DEAN && deanSignaturePath && digitalSignatureHash) {
+      this.pdfService.generateApprovedPdf(
+        applicationId,
+        deanSignaturePath,
+        deanFullName,
+        digitalSignatureHash,
+        approvalTimestamp,
+      ).then(async (pdfPath) => {
+        await this.prisma.application.update({
+          where: { id: applicationId },
+          data: { approvedPdfPath: pdfPath } as unknown as Prisma.ApplicationUpdateInput,
+        });
+        this.logger.log(`PDF generated for ${applicationId}: ${pdfPath}`);
+      }).catch(err => {
+        this.logger.warn(`PDF generation failed for ${applicationId}, approval is still saved. Error: ${err?.message}`);
+      });
+    }
+
     // ── Send email notification to applicant (non-blocking) ──
-    this.notifyApplicantOfStatusChange(application.applicantId, application.trackingId, newStatus, dto.remarks)
-      .catch(err => this.logger.error('Applicant notification failed', err));
+    if (newStatus !== ApplicationStatus.APPROVED_DEAN) {
+      this.notifyApplicantOfStatusChange(application.applicantId, application.trackingId, newStatus, dto.remarks)
+        .catch(err => this.logger.error('Applicant notification failed', err));
+    }
 
     return updated;
   }
@@ -547,8 +555,9 @@ export class ApplicationsService {
 
     // ── If approving, verify HOD has uploaded a signature ──
     let digitalSignatureHash: string | null = null;
-    let approvedPdfPath: string | null = null;
     const approvalTimestamp = new Date();
+    let hodSignaturePath: string | null = null;
+    let hodFullName: string = '';
 
     if (dto.status === ApplicationStatus.APPROVED_HOD) {
       const hod = (await this.prisma.user.findUnique({
@@ -570,28 +579,15 @@ export class ApplicationsService {
         );
       }
 
+      hodSignaturePath = hod.signatureStoragePath;
+      hodFullName = `${hod.firstName} ${hod.lastName}`.trim();
+
       // Generate SHA-256 cryptographic hash
       const hashInput = `${applicationId}|${hodId}|${application.applicantId}|${approvalTimestamp.toISOString()}`;
       digitalSignatureHash = createHash('sha256').update(hashInput).digest('hex');
-
-      // Generate the approved PDF with both signatures and hologram
-      const hodName = `${hod.firstName} ${hod.lastName}`.trim();
-      try {
-        approvedPdfPath = await this.pdfService.generateApprovedPdf(
-          applicationId,
-          hod.signatureStoragePath,
-          hodName,
-          digitalSignatureHash,
-          approvalTimestamp,
-        );
-      } catch (err) {
-        this.logger.error(`PDF generation failed for ${applicationId}`, err);
-        throw new BadRequestException(
-          'Approval succeeded but PDF generation failed. Please try again.',
-        );
-      }
     }
 
+    // ── FIRST: Save the approval to the database ──
     const updated = await this.prisma.application.update({
       where: { id: applicationId },
       data: {
@@ -601,7 +597,6 @@ export class ApplicationsService {
         hodApprovedAt:
           dto.status === ApplicationStatus.APPROVED_HOD ? approvalTimestamp : null,
         digitalSignatureHash,
-        approvedPdfPath,
       } as unknown as Prisma.ApplicationUpdateInput,
     });
 
@@ -626,9 +621,30 @@ export class ApplicationsService {
       `Application ${application.trackingId} ${dto.status} by HOD ${hodId}`,
     );
 
+    // ── THEN: Try PDF generation (non-blocking — approval is already saved) ──
+    if (dto.status === ApplicationStatus.APPROVED_HOD && hodSignaturePath && digitalSignatureHash) {
+      this.pdfService.generateApprovedPdf(
+        applicationId,
+        hodSignaturePath,
+        hodFullName,
+        digitalSignatureHash,
+        approvalTimestamp,
+      ).then(async (pdfPath) => {
+        await this.prisma.application.update({
+          where: { id: applicationId },
+          data: { approvedPdfPath: pdfPath } as unknown as Prisma.ApplicationUpdateInput,
+        });
+        this.logger.log(`PDF generated for ${applicationId}: ${pdfPath}`);
+      }).catch(err => {
+        this.logger.warn(`PDF generation failed for ${applicationId}, approval is still saved. Error: ${err?.message}`);
+      });
+    }
+
     // ── Send email notification to applicant (non-blocking) ──
-    this.notifyApplicantOfStatusChange(application.applicantId, application.trackingId, dto.status, dto.remarks)
-      .catch(err => this.logger.error('Applicant notification failed', err));
+    if (dto.status !== ApplicationStatus.APPROVED_HOD) {
+      this.notifyApplicantOfStatusChange(application.applicantId, application.trackingId, dto.status, dto.remarks)
+        .catch(err => this.logger.error('Applicant notification failed', err));
+    }
 
     return updated;
   }
@@ -877,7 +893,7 @@ export class ApplicationsService {
       ].join(',');
     });
 
-    return [headers.join(','), ...rows].join('\\n');
+    return [headers.join(','), ...rows].join('\n');
   }
 
   /**

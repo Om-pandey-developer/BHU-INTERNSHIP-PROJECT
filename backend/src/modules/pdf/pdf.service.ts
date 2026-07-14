@@ -431,10 +431,26 @@ export class PdfService {
 
     // Launch Puppeteer and generate PDF
     const puppeteer = await import('puppeteer');
-    const browser = await puppeteer.default.launch({
+    const puppeteerApp = puppeteer.default || puppeteer;
+    let browser: any;
+    const launchOptions: any = {
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    };
+    // In Docker (Alpine), use the system-installed Chromium via env var
+    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+      launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
+    } else {
+      // On local Windows/Mac, use installed Chrome
+      launchOptions.channel = 'chrome';
+    }
+    try {
+      browser = await puppeteerApp.launch(launchOptions);
+    } catch (launchErr: any) {
+      this.logger.error('Puppeteer launch failed', launchErr);
+      require('fs').writeFileSync('pdf-error.log', 'Launch Error: ' + (launchErr.stack || launchErr.message));
+      throw launchErr;
+    }
 
     try {
       const page = await browser.newPage();
@@ -453,8 +469,12 @@ export class PdfService {
 
       this.logger.log(`Generated approved PDF: ${pdfPath}`);
       return pdfPath;
+    } catch (error: any) {
+      this.logger.error('Puppeteer generation error', error);
+      require('fs').writeFileSync('pdf-error.log', error.stack || error.message);
+      throw error;
     } finally {
-      await browser.close();
+      if (browser) await browser.close();
     }
   }
 }

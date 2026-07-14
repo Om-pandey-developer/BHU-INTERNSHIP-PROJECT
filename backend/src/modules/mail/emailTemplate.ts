@@ -393,3 +393,133 @@ You can log in to your BHU Email Portal dashboard to view your status or submit 
 — Computer Centre, Banaras Hindu University, Varanasi 221005
 This is an automated message. Please do not reply.`;
 }
+
+export function bhuAdminApprovalEmail({ recipientName = '' }: { recipientName?: string }) {
+  const year = new Date().getFullYear();
+
+  return `<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<title>Application Approved — Banaras Hindu University</title>
+<style>
+  body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+  table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+  img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+  body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; background-color: #EDE7DC; }
+  a[x-apple-data-detectors] { color: inherit !important; text-decoration: none !important; }
+
+  @media only screen and (max-width: 600px) {
+    .bhu-container { width: 100% !important; }
+    .bhu-pad { padding-left: 20px !important; padding-right: 20px !important; }
+    .bhu-crest { width: 64px !important; height: 64px !important; }
+    .bhu-h1 { font-size: 20px !important; }
+  }
+</style>
+</head>
+<body style="margin:0; padding:0; background-color:#EDE7DC;">
+<div style="display:none; max-height:0; overflow:hidden; mso-hide:all; font-size:1px; line-height:1px; color:#EDE7DC;">
+  Your application is approved. You will soon get your email.
+  &nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;
+</div>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#EDE7DC;">
+  <tr>
+    <td align="center" style="padding: 40px 16px;">
+
+      <table role="presentation" class="bhu-container" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px; max-width:600px;">
+        <tr>
+          <td style="background-color:#FFFFFF; border:1px solid #C9A24B; padding:3px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid #C9A24B;">
+              <tr>
+                <td>
+
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#7A1F2B;">
+                    <tr>
+                      <td align="center" style="padding: 28px 24px 22px 24px;">
+
+                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" class="bhu-crest" style="width:72px; height:72px;">
+                          <tr>
+                            <td align="center" valign="middle" style="width:72px; height:72px; border-radius:50%; border:2px solid #E8C97A; background-color:#8C2431; font-family: Georgia, 'Times New Roman', serif;">
+                              <span style="display:block; color:#F3E3B3; font-size:22px; font-weight:700; letter-spacing:1px; line-height:1;">BHU</span>
+                              <span style="display:block; color:#D9B876; font-size:7px; letter-spacing:1.5px; margin-top:3px; text-transform:uppercase;">Est. 1916</span>
+                            </td>
+                          </tr>
+                        </table>
+
+                        <div style="height:14px; line-height:14px; font-size:1px;">&nbsp;</div>
+
+                        <div class="bhu-h1" style="font-family: Georgia, 'Times New Roman', serif; font-size:22px; line-height:28px; color:#FFFFFF; font-weight:700; letter-spacing:0.3px;">
+                          Banaras Hindu University
+                        </div>
+                        <div style="font-family: Georgia, 'Times New Roman', serif; font-size:12.5px; line-height:18px; color:#E3C68A; font-style:italic; letter-spacing:0.4px; margin-top:2px;">
+                          काशी हिन्दू विश्वविद्यालय &nbsp;•&nbsp; Varanasi
+                        </div>
+
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="background-color:#C9A24B; height:3px; line-height:3px; font-size:1px;">&nbsp;</td>
+                    </tr>
+                  </table>
+
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td class="bhu-pad" style="padding: 36px 44px 8px 44px;">
+                        <div style="font-family: Georgia, 'Times New Roman', serif; font-size:12px; letter-spacing:2.5px; text-transform:uppercase; color:#9A7B2E; font-weight:700;">
+                          Application Approved
+                        </div>
+                        <div style="height:6px; line-height:6px; font-size:1px;">&nbsp;</div>
+                        <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; font-size:15px; line-height:24px; color:#3A322A;">
+                          ${recipientName ? `Dear ${escapeHtml(recipientName)},` : 'Dear Applicant,'}
+                        </div>
+                        <div style="height:10px; line-height:10px; font-size:1px;">&nbsp;</div>
+                        <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; font-size:15px; line-height:24px; color:#5C5348;">
+                          Your application is approved you will soon get your email.
+                        </div>
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td class="bhu-pad" style="padding: 34px 44px 34px 44px;">
+                        <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; font-size:13px; line-height:21px; color:#9A9184;">
+                          Please keep an eye on your inbox for further instructions from the Computer Centre.
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F7F3EC; border-top:1px solid #E9E2D3;">
+                    <tr>
+                      <td align="center" style="padding: 22px 24px;">
+                        <div style="font-family: Georgia, 'Times New Roman', serif; font-size:11.5px; color:#8A7F6D; letter-spacing:0.3px;">
+                          Computer Centre &nbsp;•&nbsp; Banaras Hindu University &nbsp;•&nbsp; Varanasi, Uttar Pradesh 221005
+                        </div>
+                        <div style="height:6px; line-height:6px; font-size:1px;">&nbsp;</div>
+                        <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; font-size:11px; color:#B0A895;">
+                          &copy; ${year} Banaras Hindu University. This is an automated message — please do not reply.
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      <div style="height:24px; line-height:24px; font-size:1px;">&nbsp;</div>
+      <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; font-size:11.5px; color:#A79E8C; max-width:600px;">
+        Bhartiya Institute of Higher Learning &nbsp;|&nbsp; bhu.ac.in
+      </div>
+
+    </td>
+  </tr>
+</table>
+</body>
+</html>`;
+}

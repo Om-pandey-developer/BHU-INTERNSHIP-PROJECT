@@ -50,6 +50,8 @@ services:
       - POSTGRES_USER=bhu_user
       - POSTGRES_PASSWORD=securepassword
       - POSTGRES_DB=bhu_db
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:

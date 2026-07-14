@@ -87,7 +87,6 @@ const tabs: { id: TabId; label: string; icon: string }[] = [
   { id: "archived", label: "Archived", icon: "inventory_2" },
   { id: "analytics", label: "Analytics", icon: "analytics" },
   { id: "database", label: "Database", icon: "database" },
-  { id: "quota", label: "Quota & Usage", icon: "storage" },
   { id: "audit", label: "Audit Logs", icon: "history" },
 ];
 
@@ -552,26 +551,6 @@ export default function AdminDashboard() {
     }
   }
 
-  async function handleExportWorkspaceCSV() {
-    try {
-      let statusParam = "PROVISIONED";
-      if (activeTab === "suspended") statusParam = "SUSPENDED";
-      if (activeTab === "archived") statusParam = "ARCHIVED";
-
-      const res = await api.get(`/applications/admin/export-csv?status=${statusParam}`, { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `GoogleWorkspace_Export_${statusParam}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode?.removeChild(link);
-      addToast({ message: "Exported Google Workspace CSV successfully.", variant: "success" });
-    } catch (err: any) {
-      addToast({ message: "Failed to export CSV.", variant: "error" });
-    }
-  }
-
   function handleExportCSV() {
     let dataToExport = currentActiveData;
     if (selectedIds.size > 0) {
@@ -584,36 +563,44 @@ export default function AdminDashboard() {
     }
 
     const headers = [
-      "Tracking ID",
-      "First Name",
-      "Last Name",
-      "Alternate Email",
-      "BHU Email",
-      "Mobile No",
-      "Faculty/Institute",
-      "Department",
-      "Category",
-      "Type/Program",
-      "Designation",
-      "Status",
-      "Created At"
+      "First Name [Required]",
+      "Last Name [Required]",
+      "Email Address [Required]",
+      "Password [Required]",
+      "Org Unit Path [Required]",
+      "Change Password at Next Sign-In [Upload Only]",
+      "New Status [Upload Only]"
     ];
 
-    const rows = dataToExport.map(app => [
-      app.trackingId,
-      app.applicant?.firstName || "",
-      app.applicant?.lastName || "",
-      app.applicant?.alternateEmail || (app.applicantDetails as any)?.alternateEmail || "",
-      app.applicant?.bhuEmail || "",
-      (() => { const m = (app.applicantDetails as any)?.mobileNo; return m ? (m.startsWith("+") ? `'${m}` : `'+91-${m}`) : ""; })(),
-      (app.applicantDetails as any)?.facultyInstituteCentre || "",
-      app.department?.name || "",
-      (app.applicantDetails as any)?.category || "",
-      (app.applicantDetails as any)?.programEnrolled || (app.applicantDetails as any)?.staffType || "",
-      (app.applicantDetails as any)?.designation || (app.applicantDetails as any)?.courseName || "",
-      app.status,
-      new Date(app.createdAt).toISOString()
-    ]);
+    const generateSecurePassword = () => {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+      let password = '';
+      const array = new Uint8Array(12);
+      window.crypto.getRandomValues(array);
+      for (let i = 0; i < 12; i++) {
+        password += chars[array[i] % chars.length];
+      }
+      return password;
+    };
+
+    const rows = dataToExport.map(app => {
+      let orgUnit = "/";
+      if (app.department?.name) {
+        orgUnit = `/${app.department.name.replace(/\//g, "-")}`;
+      }
+      const bhuEmail = app.applicant?.bhuEmail || (app.applicantDetails as any)?.bhuEmail || "";
+      const emailToUse = bhuEmail && bhuEmail.includes("@") ? bhuEmail : `${app.applicant?.firstName?.toLowerCase() || 'user'}@bhu.ac.in`;
+      
+      return [
+        app.applicant?.firstName || "Unknown",
+        app.applicant?.lastName || "Unknown",
+        emailToUse,
+        generateSecurePassword(),
+        orgUnit,
+        "True",
+        app.status === 'SUSPENDED' ? 'Suspended' : 'Active'
+      ];
+    });
 
     const csvContent = [
       headers.join(","),
@@ -669,9 +656,6 @@ export default function AdminDashboard() {
             
             <div className="flex flex-wrap items-center gap-4 shrink-0">
               <Button icon="download" variant="outlined" size="sm" onClick={handleExportCSV}>Export CSV</Button>
-              {(activeTab === "active" || activeTab === "suspended" || activeTab === "archived") && (
-                <Button icon="cloud_download" variant="filled" size="sm" onClick={handleExportWorkspaceCSV} className="!bg-primary !text-primary-on">Workspace CSV</Button>
-              )}
               <div className="flex items-center gap-2 text-sm text-outline">
                 <span>Show</span>
                 <select
@@ -1034,9 +1018,6 @@ export default function AdminDashboard() {
               <Button icon="download" variant="text" size="sm" loading={downloadingPdf === app.id} onClick={() => handleDownloadSignedPdf(app)}>
                 PDF
               </Button>
-              <Button icon="rocket_launch" variant="filled" size="sm" loading={provisioning === app.id} onClick={() => handleProvision(app)}>
-                Provision
-              </Button>
             </>
           ))}
         </>
@@ -1164,224 +1145,7 @@ export default function AdminDashboard() {
         </>
       )}
 
-      {/* ═══════════════════ TAB: QUOTA & USAGE ═══════════════════ */}
-      {activeTab === "quota" && (
-        <div className="space-y-6">
 
-          {/* ── Row 1: Summary Stats ── */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Total Accounts */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4 shadow-sm">
-              <div className="w-11 h-11 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
-                <span className="material-symbols-rounded text-indigo-600 text-[22px]">group</span>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Accounts</p>
-                <p className="text-2xl font-bold text-gray-900">{quotaStats?.totalAccounts || 0}</p>
-              </div>
-            </div>
-            {/* Total Allocated */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4 shadow-sm">
-              <div className="w-11 h-11 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
-                <span className="material-symbols-rounded text-emerald-600 text-[22px]">hard_drive</span>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Allocated</p>
-                <p className="text-2xl font-bold text-gray-900">{quotaStats?.totalQuotaGB || 0} <span className="text-sm font-medium text-gray-400">GB</span></p>
-              </div>
-            </div>
-            {/* Unallocated Pool */}
-            <div className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4 shadow-sm">
-              <div className="w-11 h-11 rounded-lg bg-amber-50 flex items-center justify-center flex-shrink-0">
-                <span className="material-symbols-rounded text-amber-600 text-[22px]">cloud_off</span>
-              </div>
-              <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Unallocated Pool</p>
-                <p className="text-2xl font-bold text-gray-900">{TOTAL_ORG_CAPACITY_GB - (quotaStats?.totalQuotaGB || 0)} <span className="text-sm font-medium text-gray-400">GB</span></p>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Row 2: Organization Storage Capacity ── */}
-          {(() => {
-            const totalAllocated = quotaStats?.totalQuotaGB || 0;
-            const orgUsagePct = Math.min((totalAllocated / TOTAL_ORG_CAPACITY_GB) * 100, 100);
-            const totalUsedMock = Math.round(totalAllocated * 0.58);
-            const totalFreeMock = totalAllocated - totalUsedMock;
-            const unallocated = TOTAL_ORG_CAPACITY_GB - totalAllocated;
-
-            return (
-              <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 shadow-sm">
-                <div className="flex items-center gap-2.5 mb-5">
-                  <span className="material-symbols-rounded text-gray-700 text-[20px]">cloud</span>
-                  <h3 className="text-sm font-semibold text-gray-900">Organization Storage Capacity</h3>
-                </div>
-
-                {/* Capacity Metrics */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                  <div className="bg-gray-50 rounded-lg px-4 py-3 border border-gray-100">
-                    <p className="text-[11px] text-gray-500 font-medium mb-0.5">Pool Size</p>
-                    <p className="text-lg font-bold text-gray-900">{TOTAL_ORG_CAPACITY_GB.toLocaleString()} GB</p>
-                  </div>
-                  <div className="bg-blue-50/60 rounded-lg px-4 py-3 border border-blue-100">
-                    <p className="text-[11px] text-blue-600 font-medium mb-0.5">Allocated</p>
-                    <p className="text-lg font-bold text-blue-700">{totalAllocated} GB</p>
-                  </div>
-                  <div className="bg-amber-50/60 rounded-lg px-4 py-3 border border-amber-100">
-                    <p className="text-[11px] text-amber-600 font-medium mb-0.5">Used (Est.)</p>
-                    <p className="text-lg font-bold text-amber-700">{totalUsedMock} GB</p>
-                  </div>
-                  <div className="bg-emerald-50/60 rounded-lg px-4 py-3 border border-emerald-100">
-                    <p className="text-[11px] text-emerald-600 font-medium mb-0.5">Free</p>
-                    <p className="text-lg font-bold text-emerald-700">{unallocated} GB</p>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs font-medium text-gray-500">Capacity Breakdown</span>
-                    <span className="text-xs font-semibold text-gray-700">{orgUsagePct.toFixed(1)}% Allocated</span>
-                  </div>
-                  <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden flex">
-                    <div
-                      className="h-full bg-amber-400 rounded-l-full"
-                      style={{ width: `${(totalUsedMock / TOTAL_ORG_CAPACITY_GB) * 100}%` }}
-                      title={`Used: ${totalUsedMock} GB`}
-                    />
-                    <div
-                      className="h-full bg-blue-400"
-                      style={{ width: `${(totalFreeMock / TOTAL_ORG_CAPACITY_GB) * 100}%` }}
-                      title={`Allocated (unused): ${totalFreeMock} GB`}
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-4 mt-2.5">
-                    <span className="flex items-center gap-1.5 text-[11px] text-gray-600">
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-400" /> Used (Est.)
-                    </span>
-                    <span className="flex items-center gap-1.5 text-[11px] text-gray-600">
-                      <span className="w-2.5 h-2.5 rounded-full bg-blue-400" /> Allocated (Unused)
-                    </span>
-                    <span className="flex items-center gap-1.5 text-[11px] text-gray-600">
-                      <span className="w-2.5 h-2.5 rounded-full bg-gray-200" /> Unallocated
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* ── Row 3: Category Policy Limits (Table) ── */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-100">
-              <span className="material-symbols-rounded text-gray-700 text-[20px]">policy</span>
-              <h3 className="text-sm font-semibold text-gray-900">Category Policy Limits (BHU IT Rules)</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 text-left">
-                    <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Category</th>
-                    <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Quota / User</th>
-                    <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Active Users</th>
-                    <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Total Allocated</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {Object.entries(quotaMap).map(([cat, gb]) => {
-                    const catData = quotaStats?.categoryBreakdown?.[cat];
-                    const userCount = catData?.count || 0;
-                    const totalAllocatedCat = catData?.totalGB || 0;
-                    return (
-                      <tr key={cat} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="px-5 py-3.5 text-sm font-medium text-gray-900">{categoryLabels[cat] || cat}</td>
-                        <td className="px-5 py-3.5 text-sm text-gray-700 text-right font-semibold">{gb} GB</td>
-                        <td className="px-5 py-3.5 text-right">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${userCount > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                            {userCount > 0 && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
-                            {userCount}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3.5 text-sm text-gray-700 text-right font-semibold">{totalAllocatedCat} GB</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* ── Row 4: Category-wise Allocation & Usage (Horizontal Bars) ── */}
-          {quotaStats && (() => {
-            const entries = Object.entries(quotaStats.categoryBreakdown);
-            const maxGB = Math.max(...entries.map(([, v]) => v.totalGB), 1);
-            const barColors = [
-              { used: "#4f46e5", unused: "#e0e7ff" },   // Indigo
-              { used: "#059669", unused: "#d1fae5" },   // Emerald
-              { used: "#d97706", unused: "#fef3c7" },   // Amber
-              { used: "#e11d48", unused: "#ffe4e6" },   // Rose
-              { used: "#0284c7", unused: "#e0f2fe" },   // Sky
-            ];
-
-            return (
-              <div className="bg-white rounded-xl border border-gray-200 p-5 sm:p-6 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-                  <div className="flex items-center gap-2.5">
-                    <span className="material-symbols-rounded text-gray-700 text-[20px]">bar_chart</span>
-                    <h3 className="text-sm font-semibold text-gray-900">Category-wise Allocation & Usage</h3>
-                  </div>
-                  <div className="flex gap-4">
-                    <span className="flex items-center gap-1.5 text-[11px] text-gray-600 font-medium">
-                      <span className="w-2.5 h-2.5 rounded bg-gray-700" /> Used (Est.)
-                    </span>
-                    <span className="flex items-center gap-1.5 text-[11px] text-gray-600 font-medium">
-                      <span className="w-2.5 h-2.5 rounded bg-gray-200" /> Allocated (Unused)
-                    </span>
-                  </div>
-                </div>
-
-                <div className="space-y-5">
-                  {entries.map(([cat, val], i) => {
-                    const mockUsedGB = Math.round(val.totalGB * (0.4 + (i * 0.1) % 0.5));
-                    const unusedGB = val.totalGB - mockUsedGB;
-                    const color = barColors[i % barColors.length];
-
-                    return (
-                      <div key={cat}>
-                        <div className="flex justify-between items-baseline mb-1.5">
-                          <span className="text-sm font-medium text-gray-800">{categoryLabels[cat] || cat}</span>
-                          <span className="text-xs text-gray-500">
-                            <span className="font-semibold text-gray-800">{mockUsedGB}</span> / {val.totalGB} GB
-                            <span className="text-gray-400 mx-1">·</span>
-                            {val.count} users
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden flex">
-                          <div
-                            className="h-full rounded-l-full transition-all duration-500"
-                            style={{
-                              width: `${Math.max((mockUsedGB / maxGB) * 100, 1)}%`,
-                              backgroundColor: color.used,
-                            }}
-                          />
-                          <div
-                            className="h-full transition-all duration-500"
-                            style={{
-                              width: `${Math.max((unusedGB / maxGB) * 100, 0.5)}%`,
-                              backgroundColor: color.unused,
-                            }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
-
-        </div>
-      )}
 
 
       {/* ═══════════════════ TAB: ANALYTICS ═══════════════════ */}
