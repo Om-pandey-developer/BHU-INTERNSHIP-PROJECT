@@ -32,13 +32,7 @@ export default function CountryCodeSelect({ value, onChange }: CountryCodeSelect
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <img
-            src={`https://flagcdn.com/w20/${selectedCountry.iso}.png`}
-            srcSet={`https://flagcdn.com/w40/${selectedCountry.iso}.png 2x`}
-            width="20"
-            alt={selectedCountry.name}
-            className="rounded-sm shrink-0"
-          />
+          <span className={`fi fi-${selectedCountry.iso.toLowerCase()} rounded-sm shrink-0 text-lg`}></span>
           <span className="font-medium text-xs sm:text-sm">{selectedCountry.code}</span>
         </div>
         <span className="material-symbols-rounded text-[16px] sm:text-[18px] text-outline shrink-0">
@@ -59,13 +53,7 @@ export default function CountryCodeSelect({ value, onChange }: CountryCodeSelect
                 setIsOpen(false);
               }}
             >
-              <img
-                src={`https://flagcdn.com/w20/${c.iso}.png`}
-                srcSet={`https://flagcdn.com/w40/${c.iso}.png 2x`}
-                width="20"
-                alt={c.name}
-                className="rounded-sm shadow-sm"
-              />
+              <span className={`fi fi-${c.iso.toLowerCase()} rounded-sm shadow-sm text-lg`}></span>
               <span className="w-10">{c.code}</span>
               <span className="truncate text-xs text-outline">{c.name}</span>
             </div>

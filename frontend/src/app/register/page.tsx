@@ -131,7 +131,7 @@ export default function RegisterPage() {
     form.confirmPassword &&
     form.password === form.confirmPassword &&
     passwordValid &&
-    captchaToken &&
+    // captchaToken &&
     !honeypot;
 
   // ── Phase 1: Send OTP ──
@@ -464,7 +464,7 @@ export default function RegisterPage() {
 
                 {/* Cloudflare Turnstile CAPTCHA */}
                 <div className="flex justify-center opacity-[0.6]">
-                  {TURNSTILE_SITE_KEY ? (
+                  {/* {TURNSTILE_SITE_KEY ? (
                     <Turnstile
                       siteKey={TURNSTILE_SITE_KEY}
                       onSuccess={(token) => setCaptchaToken(token)}
@@ -479,7 +479,7 @@ export default function RegisterPage() {
                     <div className="text-error text-sm p-3 border border-error rounded-md bg-error-container">
                       Security Configuration Error: CAPTCHA is missing. Registration disabled.
                     </div>
-                  )}
+                  )} */}
                 </div>
 
                 {error && (

@@ -47,12 +47,14 @@ export default function LoginPage() {
   // ── Login form state ──
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const isPhase1Valid = email && password; // && captchaToken;
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileInstance | null>(null);
   const errorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // ── Forgot password state ──
   const [resetEmail, setResetEmail] = useState("");
+  const isForgotPhase1Valid = resetEmail; // && resetCaptchaToken;
   const [resetCaptchaToken, setResetCaptchaToken] = useState<string | null>(null);
 
   // ── OTP state ──
@@ -136,7 +138,7 @@ export default function LoginPage() {
       const { data } = await api.post("/auth/login", {
         email,
         password,
-        captchaToken: captchaToken || undefined,
+        // captchaToken: captchaToken || undefined,
       });
       if (data.success) {
         login(data.data.user, data.data.accessToken, data.data.refreshToken);
@@ -508,7 +510,7 @@ export default function LoginPage() {
 
                 {/* Cloudflare Turnstile CAPTCHA */}
                 <div className="flex justify-center opacity-[0.6]">
-                  {TURNSTILE_SITE_KEY ? (
+                  {/* {TURNSTILE_SITE_KEY ? (
                     <Turnstile
                       ref={turnstileRef}
                       siteKey={TURNSTILE_SITE_KEY}
@@ -524,7 +526,7 @@ export default function LoginPage() {
                     <div className="text-error text-sm p-3 border border-error rounded-md bg-error-container">
                       Security Configuration Error: CAPTCHA is missing. Registration disabled.
                     </div>
-                  )}
+                  )} */}
                 </div>
 
                 {error && (
@@ -540,7 +542,7 @@ export default function LoginPage() {
                   icon="login"
                   className="w-full"
                   size="lg"
-                  disabled={!captchaToken}
+                  // disabled={!captchaToken}
                 >
                   Sign In
                 </Button>

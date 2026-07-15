@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { generateApplicationPdf } from "@/lib/pdfGenerator";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import { generateAvatar } from "@/utils/avatar";
 
 interface Application {
   id: string;
@@ -70,8 +71,8 @@ function AuthImage({ itemId, type, storagePath, imageCache, loadAuthImage, setPr
   const cacheKey = `${itemId}-${type}`;
   const isDummy = storagePath.startsWith('/dummy');
   const dummyUrl = type === "photo"
-    ? 'https://ui-avatars.com/api/?name=Photo&background=random&size=200'
-    : 'https://ui-avatars.com/api/?name=Sign&background=random&size=200';
+    ? generateAvatar("Photo")
+    : generateAvatar("Signature");
   const imgSrc = isDummy ? dummyUrl : imageCache[cacheKey] || '';
 
   useEffect(() => {

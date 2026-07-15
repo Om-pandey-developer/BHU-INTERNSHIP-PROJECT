@@ -9,7 +9,7 @@ export default function VideoBackground() {
         loop
         muted
         playsInline
-        className="absolute top-0 left-0 w-full h-full object-cover bg-black/50 "
+        className="absolute top-0 left-0 w-full h-full object-cover "
       >
         <source src="/BHUTour.mp4" type="video/mp4" />
       </video>

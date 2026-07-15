@@ -27,8 +27,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=http://localhost:4000/api/v1 # Change to your production API URL if needed
-        - NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4AAAAAADwd2MRkwzf_c792
+        - NEXT_PUBLIC_API_URL=http://10.32.25.137:4000/api/v1 # Change to your production API URL if needed
+        # - NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4AAAAAADwd2MRkwzf_c792
     container_name: bhu_frontend
     restart: always
     ports:

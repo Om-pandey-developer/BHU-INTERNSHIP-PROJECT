@@ -26,10 +26,17 @@ RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
 WORKDIR /app
 RUN chown -R nodejs:nodejs /app
-COPY --from=builder --chown=nodejs:nodejs /app/package.json ./package.json
-COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nodejs:nodejs /app/.next ./.next
+# Copy public folder for static assets
 COPY --from=builder --chown=nodejs:nodejs /app/public ./public
+
+# Create .next directory and ensure proper permissions
+RUN mkdir .next
+RUN chown nodejs:nodejs .next
+
+# Copy standalone output
+COPY --from=builder --chown=nodejs:nodejs /app/.next/standalone ./
+# Copy static assets
+COPY --from=builder --chown=nodejs:nodejs /app/.next/static ./.next/static
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s \
@@ -39,4 +46,4 @@ USER nodejs
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["node", "server.js"]

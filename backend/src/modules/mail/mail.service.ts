@@ -308,7 +308,7 @@ export class MailService {
         
         <!-- Header with BHU Logo & Colors -->
         <div style="background-color: #21005D; padding: 24px; text-align: center; border-bottom: 4px solid #FFB81C;">
-          <img src="https://upload.wikimedia.org/wikipedia/en/4/47/Banaras_Hindu_University_Logo.svg" alt="BHU Logo" style="width: 80px; height: auto; margin-bottom: 12px;" />
+          <img src="cid:bhulogo" alt="BHU Logo" style="width: 80px; height: auto; margin-bottom: 12px;" />
           <h1 style="color: #FFFFFF; margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 1px;">BANARAS HINDU UNIVERSITY</h1>
           <p style="color: #EADDFF; margin: 8px 0 0 0; font-size: 14px; text-transform: uppercase; letter-spacing: 2px;">Computer Centre</p>
         </div>
@@ -382,6 +382,13 @@ export class MailService {
         to: applicantEmail,
         subject: `Action Required: Official BHU Email Account Provisioned [Tracking ID: ${trackingId}]`,
         html: htmlBody,
+        attachments: [
+          {
+            filename: 'bhu-logo.png',
+            path: require('path').join(process.cwd(), 'assets', 'bhu-logo.png'),
+            cid: 'bhulogo'
+          }
+        ]
       });
       this.logger.log(`Provisioning notification sent to ${applicantEmail} for ${bhuEmail}`);
     } catch (error) {

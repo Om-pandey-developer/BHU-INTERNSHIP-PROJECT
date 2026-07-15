@@ -42,11 +42,7 @@ export default function NationalitySelect({ value, onChange }: NationalitySelect
         {selectedCountry ? (
           <div className="flex items-center gap-2">
             {selectedCountry.iso && (
-              <img 
-                src={`https://flagcdn.com/w20/${selectedCountry.iso}.png`}
-                alt=""
-                className="w-5 h-auto object-cover rounded-sm shadow-sm"
-              />
+              <span className={`fi fi-${selectedCountry.iso.toLowerCase()} rounded-sm shadow-sm text-lg`}></span>
             )}
             <span className="text-foreground font-medium">{selectedCountry.name}</span>
           </div>
@@ -89,11 +85,7 @@ export default function NationalitySelect({ value, onChange }: NationalitySelect
                     setSearch("");
                   }}
                 >
-                  <img 
-                    src={`https://flagcdn.com/w20/${c.iso}.png`}
-                    alt=""
-                    className="w-5 h-auto object-cover rounded-sm shadow-sm"
-                  />
+                  <span className={`fi fi-${c.iso.toLowerCase()} rounded-sm shadow-sm text-lg`}></span>
                   <span>{c.name}</span>
                 </div>
               ))
