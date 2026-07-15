@@ -570,6 +570,10 @@ export default function ApplicantDashboard() {
         payloadDetails.mobileNo = `${code}-${payloadDetails.mobileNo}`;
         delete payloadDetails.countryCode;
       }
+      
+      if (payloadDetails.applicantPlace) {
+        payloadDetails.applicantPlace = payloadDetails.applicantPlace.toUpperCase();
+      }
 
       const formData = new FormData();
       formData.append("departmentId", departmentId);
@@ -1023,8 +1027,8 @@ export default function ApplicantDashboard() {
                   // Default input field
                   let onChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => handleDetailChange(field, e.target.value);
                   if (field === "facultyInstituteCentre") onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[0-9]/g, ""));
-                  else if (field === "employeeId") onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase());
-                  else if (field === "enrollmentNo") onChangeHandler = (e) => handleDetailChange(field, e.target.value.toUpperCase());
+                  else if (field === "employeeId") onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[^a-zA-Z0-9]/g, ""));
+                  else if (field === "enrollmentNo") onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[^a-zA-Z0-9]/g, ""));
                   else if (field === "designation") onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[0-9]/g, ""));
                   else if (field === "programEnrolled") onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[^a-zA-Z\s.]/g, ""));
                   else if (field === "dateOfBirth") onChangeHandler = (e) => {
@@ -1129,7 +1133,7 @@ export default function ApplicantDashboard() {
                       label="Place *"
                       icon="location_on"
                       value={details.applicantPlace || ""}
-                      onChange={(e) => handleDetailChange("applicantPlace", e.target.value.replace(/[^a-zA-Z\s]/g, "").toUpperCase())}
+                      onChange={(e) => handleDetailChange("applicantPlace", e.target.value.replace(/[^a-zA-Z\s]/g, ""))}
                       required
                       placeholder="e.g. Varanasi"
                     />
