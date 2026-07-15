@@ -243,7 +243,7 @@ export async function generateApplicationPdf(
         <table class="pdf-header-table">
             <tr>
                 <td class="pdf-logo-cell">
-                    <img src="${window.location.origin}/BHUpdfLOGO.png" alt="BHU Logo" class="pdf-logo-img" crossorigin="anonymous">
+                    <img src="${window.location.origin}/BHUpdfLOGO.png" alt="BHU Logo" class="pdf-logo-img">
                 </td>
                 <td class="pdf-title-cell">
                     <span class="pdf-cc-title">COMPUTER CENTRE</span>

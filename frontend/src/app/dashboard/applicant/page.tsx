@@ -518,7 +518,7 @@ export default function ApplicantDashboard() {
       // Validation for staff
       const appointmentDateStr = details["dateOfAppointment"];
       const retirementDateStr = details["dateOfRetirement"];
-      
+
       if (appointmentDateStr && retirementDateStr) {
         const apptDate = new Date(appointmentDateStr);
         const retDate = new Date(retirementDateStr);
@@ -1023,7 +1023,7 @@ export default function ApplicantDashboard() {
                   // Default input field
                   let onChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => handleDetailChange(field, e.target.value);
                   if (field === "facultyInstituteCentre") onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[0-9]/g, ""));
-                  else if (field === "employeeId") onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase());
+                  else if (field === "employeeId") onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[^a-zA-Z0-9]/g, ""));
                   else if (field === "enrollmentNo") onChangeHandler = (e) => handleDetailChange(field, e.target.value.toUpperCase());
                   else if (field === "designation") onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[0-9]/g, ""));
                   else if (field === "programEnrolled") onChangeHandler = (e) => handleDetailChange(field, e.target.value.replace(/[^a-zA-Z\s.]/g, ""));
@@ -1090,35 +1090,35 @@ export default function ApplicantDashboard() {
                     <p className="text-sm font-semibold text-foreground">Certified Signature *</p>
                   </div>
 
-                    <div
-                      onClick={() => signatureInputRef.current?.click()}
-                      className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${fieldErrors["signature"] ? "border-error bg-error-container/5" :
-                        signature ? "border-success bg-success-container/10" : "border-outline-variant hover:border-primary hover:bg-primary/3"
-                        }`}
-                    >
-                      <input ref={signatureInputRef} type="file" accept="image/jpeg,image/jpg,image/png" className="hidden" onChange={handleSignatureChange} />
-                      {signaturePreview ? (
-                        <div className="flex items-center gap-4">
-                          <img src={signaturePreview} alt="Signature Preview" className="w-20 h-20 rounded-xl object-contain border border-outline-variant bg-white" />
-                          <div className="text-left flex-1">
-                            <p className="text-sm font-medium text-foreground">{signature?.name}</p>
-                            <p className="text-xs text-outline mt-0.5">
-                              {((signature?.size || 0) / 1024).toFixed(0)} KB • {signature?.type}
-                              {sigDimensions && ` • ${sigDimensions.width}x${sigDimensions.height} px`}
-                            </p>
-                            <button type="button" onClick={(e) => { e.stopPropagation(); setSignature(null); setSignaturePreview(null); }} className="text-xs text-error font-medium mt-1 hover:underline cursor-pointer">Remove</button>
-                            <button type="button" onClick={(e) => { e.stopPropagation(); setSignatureModalOpen(true); }} className="text-xs text-primary font-medium mt-1 hover:underline cursor-pointer ml-3">View Full Size</button>
-                          </div>
-                          <span className="material-symbols-rounded text-[24px] text-success">check_circle</span>
+                  <div
+                    onClick={() => signatureInputRef.current?.click()}
+                    className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${fieldErrors["signature"] ? "border-error bg-error-container/5" :
+                      signature ? "border-success bg-success-container/10" : "border-outline-variant hover:border-primary hover:bg-primary/3"
+                      }`}
+                  >
+                    <input ref={signatureInputRef} type="file" accept="image/jpeg,image/jpg,image/png" className="hidden" onChange={handleSignatureChange} />
+                    {signaturePreview ? (
+                      <div className="flex items-center gap-4">
+                        <img src={signaturePreview} alt="Signature Preview" className="w-20 h-20 rounded-xl object-contain border border-outline-variant bg-white" />
+                        <div className="text-left flex-1">
+                          <p className="text-sm font-medium text-foreground">{signature?.name}</p>
+                          <p className="text-xs text-outline mt-0.5">
+                            {((signature?.size || 0) / 1024).toFixed(0)} KB • {signature?.type}
+                            {sigDimensions && ` • ${sigDimensions.width}x${sigDimensions.height} px`}
+                          </p>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setSignature(null); setSignaturePreview(null); }} className="text-xs text-error font-medium mt-1 hover:underline cursor-pointer">Remove</button>
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setSignatureModalOpen(true); }} className="text-xs text-primary font-medium mt-1 hover:underline cursor-pointer ml-3">View Full Size</button>
                         </div>
-                      ) : (
-                        <>
-                          <span className="material-symbols-rounded text-[40px] text-outline/50 mb-2">upload_file</span>
-                          <p className="text-sm text-outline">Click to upload your signature</p>
-                          <p className="text-xs text-outline/60 mt-1">JPEG or PNG, max 2MB. Aspect Ratio: 3:1 (e.g. 300x100 pixels)</p>
-                        </>
-                      )}
-                    </div>
+                        <span className="material-symbols-rounded text-[24px] text-success">check_circle</span>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="material-symbols-rounded text-[40px] text-outline/50 mb-2">upload_file</span>
+                        <p className="text-sm text-outline">Click to upload your signature</p>
+                        <p className="text-xs text-outline/60 mt-1">JPEG or PNG, max 2MB. Aspect Ratio: 3:1 (e.g. 300x100 pixels)</p>
+                      </>
+                    )}
+                  </div>
                   {fieldErrors["signature"] && <p className="text-xs text-error mt-1 font-medium animate-fade-in">{fieldErrors["signature"]}</p>}
                 </div>
 
@@ -1129,7 +1129,7 @@ export default function ApplicantDashboard() {
                       label="Place *"
                       icon="location_on"
                       value={details.applicantPlace || ""}
-                      onChange={(e) => handleDetailChange("applicantPlace", e.target.value.replace(/[^a-zA-Z\s]/g, "").toUpperCase())}
+                      onChange={(e) => handleDetailChange("applicantPlace", e.target.value.replace(/[^a-zA-Z\s]/g, ""))}
                       required
                       placeholder="e.g. Varanasi"
                     />
@@ -1664,46 +1664,46 @@ export default function ApplicantDashboard() {
           const idLabel = isStudent ? "Roll / Enrollment Number" : "Employee ID";
           const idPlaceholder = isStudent ? "e.g., 21012345" : "e.g., EMP-12345";
           return (
-        <div className="space-y-5">
-          <div className="bg-primary-container/20 rounded-xl px-4 py-3">
-            <p className="text-xs text-outline">This request will be sent to your department's HOD or Dean. Once approved, you can submit a new application.</p>
-            <p className="text-[11px] text-outline/60 mt-1">Requests used: {reapplyRequests.length} / 5</p>
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-foreground mb-1.5">Full Name <span className="text-error">*</span></label>
-            <input
-              type="text"
-              value={reapplyForm.applicantName}
-              onChange={(e) => setReapplyForm((f) => ({ ...f, applicantName: e.target.value }))}
-              placeholder="Enter your full name"
-              className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-2.5 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-foreground mb-1.5">{idLabel} <span className="text-error">*</span></label>
-            <input
-              type="text"
-              value={reapplyForm.rollEmployeeId}
-              onChange={(e) => setReapplyForm((f) => ({ ...f, rollEmployeeId: e.target.value }))}
-              placeholder={idPlaceholder}
-              className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-2.5 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-foreground mb-1.5">Reason for Re-applying <span className="text-error">*</span></label>
-            <textarea
-              value={reapplyForm.reason}
-              onChange={(e) => setReapplyForm((f) => ({ ...f, reason: e.target.value }))}
-              placeholder="Explain why you need to re-apply..."
-              rows={4}
-              className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-3 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors resize-none"
-            />
-          </div>
-          <div className="flex justify-end gap-3 pt-2">
-            <Button variant="outlined" onClick={() => setShowReapplyModal(false)}>Cancel</Button>
-            <Button icon="send" loading={reapplySubmitting} onClick={handleSubmitReapplyRequest}>Submit Request</Button>
-          </div>
-        </div>
+            <div className="space-y-5">
+              <div className="bg-primary-container/20 rounded-xl px-4 py-3">
+                <p className="text-xs text-outline">This request will be sent to your department's HOD or Dean. Once approved, you can submit a new application.</p>
+                <p className="text-[11px] text-outline/60 mt-1">Requests used: {reapplyRequests.length} / 5</p>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-1.5">Full Name <span className="text-error">*</span></label>
+                <input
+                  type="text"
+                  value={reapplyForm.applicantName}
+                  onChange={(e) => setReapplyForm((f) => ({ ...f, applicantName: e.target.value }))}
+                  placeholder="Enter your full name"
+                  className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-2.5 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-1.5">{idLabel} <span className="text-error">*</span></label>
+                <input
+                  type="text"
+                  value={reapplyForm.rollEmployeeId}
+                  onChange={(e) => setReapplyForm((f) => ({ ...f, rollEmployeeId: e.target.value }))}
+                  placeholder={idPlaceholder}
+                  className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-2.5 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-foreground mb-1.5">Reason for Re-applying <span className="text-error">*</span></label>
+                <textarea
+                  value={reapplyForm.reason}
+                  onChange={(e) => setReapplyForm((f) => ({ ...f, reason: e.target.value }))}
+                  placeholder="Explain why you need to re-apply..."
+                  rows={4}
+                  className="w-full rounded-lg border-2 border-outline-variant bg-surface px-4 py-3 text-sm text-foreground placeholder-outline/50 focus:border-primary focus:outline-none transition-colors resize-none"
+                />
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="outlined" onClick={() => setShowReapplyModal(false)}>Cancel</Button>
+                <Button icon="send" loading={reapplySubmitting} onClick={handleSubmitReapplyRequest}>Submit Request</Button>
+              </div>
+            </div>
           );
         })()}
       </Modal>
