@@ -87,7 +87,7 @@ async function bootstrap() {
   }
 
   // ── Start Server ──
-  const port = process.env.PORT || 4000;
+  const port = process.env.PORT || 4050;
   await app.listen(port);
   logger.log(`🚀 BHU Email Portal API running on http://localhost:${port}`);
   logger.log(`📄 Swagger docs available at http://localhost:${port}/api/docs`);

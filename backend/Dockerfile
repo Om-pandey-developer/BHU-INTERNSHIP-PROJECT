@@ -48,12 +48,12 @@ COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:4000/api/v1/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:4050/api/v1/health || exit 1
 
 USER nodejs
 
-# Expose port
-EXPOSE 4000
+# Expose port (non-default to avoid conflicts)
+EXPOSE 4050
 
 # Start command
 CMD ["npm", "run", "start:prod"]

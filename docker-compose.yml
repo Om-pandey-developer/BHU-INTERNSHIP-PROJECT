@@ -6,11 +6,9 @@ services:
     container_name: bhu_backend
     restart: always
     ports:
-      - "4000:4000"
+      - "4050:4050"
     env_file:
       - ./backend/.env
-    # The backend will now use the DATABASE_URL defined in ./backend/.env
-    # which should point to your containerized db instance (postgresql://bhu_user:password@db:5432/bhu_db)
     volumes:
       - ./backend/uploads:/app/uploads
       - ./backend/keys:/app/keys
@@ -27,12 +25,14 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=http://10.32.25.137:4000/api/v1 # Change to your production API URL if needed
-        # - NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4AAAAAADwd2MRkwzf_c792
+        - NEXT_PUBLIC_API_URL=http://localhost:4050/api/v1
+        - NEXT_PUBLIC_CAPTCHA_TYPE=svg
     container_name: bhu_frontend
     restart: always
     ports:
-      - "3000:3000"
+      - "3050:3050"
+    environment:
+      - PORT=3050
     env_file:
       - ./frontend/.env
     depends_on:
@@ -46,12 +46,11 @@ services:
     image: postgres:15-alpine
     container_name: bhu_db
     environment:
-      # Ensure you set these values in a .env file or hardcode for dev
       - POSTGRES_USER=bhu_user
       - POSTGRES_PASSWORD=securepassword
       - POSTGRES_DB=bhu_db
     ports:
-      - "5432:5432"
+      - "5450:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backups/archive:/var/lib/postgresql/archive

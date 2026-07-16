@@ -40,10 +40,12 @@ COPY --from=builder --chown=nodejs:nodejs /app/.next/static ./.next/static
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=3s \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3050/ || exit 1
 
 USER nodejs
 
-EXPOSE 3000
+# Non-default port to avoid conflicts
+ENV PORT=3050
+EXPOSE 3050
 
 CMD ["node", "server.js"]
