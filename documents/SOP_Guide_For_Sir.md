@@ -7,13 +7,13 @@ Below are step-by-step instructions to run this project on a new system.
 If you have Docker Desktop installed, running the project takes only one command.
 
 ### Steps:
-1. Extract the `BHU_Complete_Project.zip` folder on your machine.
+1. Extract the `BHU_Final_Deployment.zip` folder on your machine.
 2. Open a terminal (or command prompt) inside the extracted project folder (where `docker-compose.yml` is located).
 3. Run the following command:
    ```bash
    docker compose up --build -d
    ```
-4. The system will automatically download all dependencies, build the frontend/backend, and set up the PostgreSQL database.
+4. The system will automatically download all dependencies, build the frontend/backend, set up the PostgreSQL database, and apply the initial seeds.
 5. Once it is running:
    - **Frontend UI:** Open your browser and go to `http://localhost:3000`
    - **Backend API:** The API is available at `http://localhost:4000/api/v1`
@@ -32,7 +32,7 @@ If Docker is not available, you must manually install Node.js and have a Postgre
 ### Step 1: Database Setup
 1. Open PostgreSQL (pgAdmin or terminal) and create a database named `bhu_db`.
 2. Ensure the credentials in `backend/.env` match your local PostgreSQL setup (User, Password, Port).
-   *Example: `DATABASE_URL="postgresql://postgres:yourpassword@localhost:5432/bhu_db?schema=public"`*
+   *Example: `DATABASE_URL="postgresql://bhu_user:securepassword@localhost:5432/bhu_db?schema=public"`*
 
 ### Step 2: Backend Setup
 1. Open a terminal and navigate to the `backend` folder:
@@ -47,7 +47,11 @@ If Docker is not available, you must manually install Node.js and have a Postgre
    ```bash
    npx prisma db push
    ```
-4. Start the backend development server:
+4. Seed the database (Important for initial roles/departments):
+   ```bash
+   npx prisma db seed
+   ```
+5. Start the backend development server:
    ```bash
    npm run start:dev
    ```
@@ -60,7 +64,7 @@ If Docker is not available, you must manually install Node.js and have a Postgre
    ```
 2. Install all dependencies:
    ```bash
-   npm install
+   npm install --legacy-peer-deps
    ```
 3. Start the frontend development server:
    ```bash
@@ -68,9 +72,10 @@ If Docker is not available, you must manually install Node.js and have a Postgre
    ```
    *(Frontend is now running on http://localhost:3000)*
 
-## Notes on `.env` and Keys
+## Notes on `.env` and Security Features
 - All necessary environment files (`.env` for both frontend and backend) and the RSA keys (`backend/keys/`) are already included in this folder. You do not need to generate them again.
-- If there is any issue with Database connection, please check the `DATABASE_URL` in `backend/.env`.
+- **CAPTCHA:** The project currently uses an offline **SVG Captcha** for local testing. If moving to live production, see `documents/Comprehensive_Admin_Manual.md` to re-enable Cloudflare Turnstile.
+- **Backups:** Automatic Write-Ahead Logging (WAL) is enabled by default in Docker. To perform a manual database backup, double click `backup.bat` (Windows) or run `./backup.sh` (Linux).
 
 ---
 
