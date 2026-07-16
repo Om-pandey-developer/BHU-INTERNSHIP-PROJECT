@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Turnstile } from "@marsidev/react-turnstile";
+import SvgCaptcha from "@/components/SvgCaptcha";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/lib/store";
 import Button from "@/components/Button";
@@ -51,6 +52,7 @@ export default function RegisterPage() {
   // ── Validation state ──
   const [passwordValid, setPasswordValid] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaValue, setCaptchaValue] = useState<string>("");
   const [honeypot, setHoneypot] = useState("");
 
   // ── Loading & feedback state ──
@@ -160,6 +162,7 @@ export default function RegisterPage() {
       await api.post("/auth/send-otp", {
         email: form.alternateEmail,
         captchaToken,
+        captchaValue,
       });
 
       setPhase("OTP");
@@ -462,8 +465,15 @@ export default function RegisterPage() {
                   />
                 </div>
 
-                {/* Cloudflare Turnstile CAPTCHA */}
-                <div className="flex justify-center opacity-[0.6]">
+                {/* SVG CAPTCHA (Turnstile commented out) */}
+                <div className="flex justify-center w-full">
+                  <SvgCaptcha 
+                    onVerify={(token, val) => {
+                      setCaptchaToken(token);
+                      setCaptchaValue(val);
+                    }}
+                    className="w-full max-w-sm"
+                  />
                   {/* {TURNSTILE_SITE_KEY ? (
                     <Turnstile
                       siteKey={TURNSTILE_SITE_KEY}

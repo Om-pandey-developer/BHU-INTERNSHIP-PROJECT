@@ -54,6 +54,13 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backups/archive:/var/lib/postgresql/archive
+    command: >
+      postgres
+      -c wal_level=replica
+      -c archive_mode=on
+      -c archive_command='cp %p /var/lib/postgresql/archive/%f'
+      -c archive_timeout=60
     networks:
       - bhu_network
     restart: unless-stopped

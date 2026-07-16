@@ -27,4 +27,9 @@ export class LoginDto {
   @IsString()
   @IsOptional()
   captchaToken?: string;
+
+  @ApiPropertyOptional({ description: 'SVG CAPTCHA input value' })
+  @IsString()
+  @IsOptional()
+  captchaValue?: string;
 }

@@ -7,6 +7,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { OtpService } from './otp.service';
 import { TurnstileService } from './turnstile.service';
 import { MailModule } from '../mail/mail.module';
+import { CaptchaService } from './captcha.service';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -40,7 +41,7 @@ const publicKey = fs.existsSync(path.join(process.cwd(), 'keys', 'public.pem'))
     MailModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, OtpService, TurnstileService],
-  exports: [AuthService, JwtModule, OtpService],
+  providers: [AuthService, JwtStrategy, OtpService, TurnstileService, CaptchaService],
+  exports: [AuthService, JwtModule, OtpService, CaptchaService],
 })
 export class AuthModule {}

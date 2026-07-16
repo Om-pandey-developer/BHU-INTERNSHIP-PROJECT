@@ -1,20 +1,18 @@
 @echo off
-setlocal
+set PGPASSWORD=securepassword
+set BACKUP_DIR=C:\Users\Lenovo\OneDrive\Desktop\BHU INTERNSHIP PROJECT\backups
 
-:: Format date and time for the backup filename
-set TIMESTAMP=%date:~-4,4%%date:~-10,2%%date:~-7,2%_%time:~0,2%%time:~3,2%
-set TIMESTAMP=%TIMESTAMP: =0%
-
-set BACKUP_DIR=C:\Users\harid\OneDrive\Desktop\BHU-INTERNSHIP-PROJECT\backups
-if not exist "%BACKUP_DIR%" mkdir "%BACKUP_DIR%"
-
-set BACKUP_FILE=%BACKUP_DIR%\bhu_db_backup_%TIMESTAMP%.sql
+echo Creating backup directory if it doesn't exist...
+mkdir "%BACKUP_DIR%" 2>nul
 
 echo Starting database backup...
-docker exec bhu_db pg_dump -U bhu_user -d bhu_db > "%BACKUP_FILE%"
+for /f "tokens=2-4 delims=/ " %%a in ('date /t') do (set mydate=%%c-%%a-%%b)
+for /f "tokens=1-2 delims=/:" %%a in ('time /t') do (set mytime=%%a%%b)
+set BACKUP_FILE=%BACKUP_DIR%\bhu_db_backup_%mydate%_%mytime%.sql
 
-if %ERRORLEVEL% equ 0 (
-    echo Backup successful: %BACKUP_FILE%
-) else (
-    echo Backup failed!
-)
+docker exec -i bhu_db pg_dump -U bhu_user bhu_db > "%BACKUP_FILE%"
+
+echo Backup completed successfully: %BACKUP_FILE%
+echo.
+echo For 1-second interval WAL archiving, refer to the documents/Comprehensive_Admin_Manual.md.
+pause

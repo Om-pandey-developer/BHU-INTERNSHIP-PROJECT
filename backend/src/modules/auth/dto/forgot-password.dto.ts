@@ -11,4 +11,9 @@ export class ForgotPasswordDto {
   @IsString()
   @IsOptional()
   captchaToken?: string;
+
+  @ApiPropertyOptional({ description: 'SVG CAPTCHA input value' })
+  @IsString()
+  @IsOptional()
+  captchaValue?: string;
 }

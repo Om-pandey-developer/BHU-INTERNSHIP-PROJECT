@@ -19,6 +19,8 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { OtpService } from './otp.service';
 import { TurnstileService } from './turnstile.service';
+import { CaptchaService } from './captcha.service';
+import { Get } from '@nestjs/common';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -27,7 +29,18 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly otpService: OtpService,
     private readonly turnstileService: TurnstileService,
+    private readonly captchaService: CaptchaService,
   ) {}
+
+  /**
+   * GET /api/v1/auth/captcha
+   * Generates an SVG Captcha and returns the image along with an encrypted token.
+   */
+  @Get('captcha')
+  @ApiOperation({ summary: 'Generate SVG Captcha' })
+  generateCaptcha() {
+    return this.captchaService.generateCaptcha();
+  }
 
   /**
    * POST /api/v1/auth/login
@@ -38,8 +51,9 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with email and password' })
   async login(@Body() loginDto: LoginDto) {
-    // Verify Turnstile CAPTCHA (skipped in dev if not configured)
-    await this.turnstileService.verify(loginDto.captchaToken);
+    // Verify SVG CAPTCHA (Turnstile is commented out per user request)
+    // await this.turnstileService.verify(loginDto.captchaToken);
+    this.captchaService.verifyCaptcha(loginDto.captchaToken, loginDto.captchaValue);
 
     return this.authService.login(loginDto);
   }
@@ -55,8 +69,9 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @ApiOperation({ summary: 'Send email verification OTP' })
   async sendOtp(@Body() dto: SendOtpDto) {
-    // 1. Verify Turnstile CAPTCHA (skipped in dev if not configured)
-    await this.turnstileService.verify(dto.captchaToken);
+    // 1. Verify SVG CAPTCHA (Turnstile commented out)
+    // await this.turnstileService.verify(dto.captchaToken);
+    this.captchaService.verifyCaptcha(dto.captchaToken, dto.captchaValue);
 
     // 2. Generate and send OTP
     await this.otpService.generateAndSend(dto.email);
@@ -75,8 +90,9 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   @ApiOperation({ summary: 'Send password reset OTP' })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
-    // 1. Verify Turnstile CAPTCHA
-    await this.turnstileService.verify(dto.captchaToken);
+    // 1. Verify SVG CAPTCHA (Turnstile commented out)
+    // await this.turnstileService.verify(dto.captchaToken);
+    this.captchaService.verifyCaptcha(dto.captchaToken, dto.captchaValue);
 
     // 2. Generate and send password reset OTP (uses distinct email template)
     await this.otpService.generateAndSendPasswordReset(dto.email);

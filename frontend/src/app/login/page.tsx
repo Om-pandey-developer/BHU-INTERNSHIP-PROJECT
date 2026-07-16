@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Turnstile, TurnstileInstance } from "@marsidev/react-turnstile";
+import SvgCaptcha from "@/components/SvgCaptcha";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/lib/store";
 import Button from "@/components/Button";
@@ -47,15 +48,17 @@ export default function LoginPage() {
   // ── Login form state ──
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const isPhase1Valid = email && password; // && captchaToken;
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaValue, setCaptchaValue] = useState<string>("");
+
+  // Turnstile Ref for manual reset (if needed later)
   const turnstileRef = useRef<TurnstileInstance | null>(null);
   const errorTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // ── Forgot password state ──
   const [resetEmail, setResetEmail] = useState("");
-  const isForgotPhase1Valid = resetEmail; // && resetCaptchaToken;
   const [resetCaptchaToken, setResetCaptchaToken] = useState<string | null>(null);
+  const [resetCaptchaValue, setResetCaptchaValue] = useState<string>("");
 
   // ── OTP state ──
   const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
@@ -138,7 +141,8 @@ export default function LoginPage() {
       const { data } = await api.post("/auth/login", {
         email,
         password,
-        // captchaToken: captchaToken || undefined,
+        captchaToken,
+        captchaValue,
       });
       if (data.success) {
         login(data.data.user, data.data.accessToken, data.data.refreshToken);
@@ -174,7 +178,8 @@ export default function LoginPage() {
     try {
       await api.post("/auth/forgot-password", {
         email: resetEmail,
-        captchaToken: resetCaptchaToken || undefined,
+        captchaToken: resetCaptchaToken,
+        captchaValue: resetCaptchaValue,
       });
       setPhase("FORGOT_OTP");
       setCountdown(60);
@@ -508,8 +513,15 @@ export default function LoginPage() {
                   autoComplete="new-password"
                 />
 
-                {/* Cloudflare Turnstile CAPTCHA */}
-                <div className="flex justify-center opacity-[0.6]">
+                {/* SVG CAPTCHA (Turnstile commented out per instructions) */}
+                <div className="flex justify-center w-full">
+                  <SvgCaptcha 
+                    onVerify={(token, val) => {
+                      setCaptchaToken(token);
+                      setCaptchaValue(val);
+                    }}
+                    className="w-full max-w-sm"
+                  />
                   {/* {TURNSTILE_SITE_KEY ? (
                     <Turnstile
                       ref={turnstileRef}
@@ -616,9 +628,16 @@ export default function LoginPage() {
                   autoComplete="email"
                 />
 
-                {/* Turnstile CAPTCHA */}
-                <div className="flex justify-center">
-                  <Turnstile
+                {/* SVG CAPTCHA */}
+                <div className="flex justify-center w-full">
+                  <SvgCaptcha 
+                    onVerify={(token, val) => {
+                      setResetCaptchaToken(token);
+                      setResetCaptchaValue(val);
+                    }}
+                    className="w-full max-w-sm"
+                  />
+                  {/* <Turnstile
                     siteKey={TURNSTILE_SITE_KEY}
                     onSuccess={(token) => setResetCaptchaToken(token)}
                     onError={() => setResetCaptchaToken(null)}
@@ -627,7 +646,7 @@ export default function LoginPage() {
                       theme: "light",
                       size: "normal",
                     }}
-                  />
+                  /> */}
                 </div>
 
                 {error && (
