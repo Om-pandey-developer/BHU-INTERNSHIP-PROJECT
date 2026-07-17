@@ -13,23 +13,26 @@ graph TD
     HOD((HOD)) -->|HTTPS / UI| Frontend
     Admin((CC Admin)) -->|HTTPS / UI| Frontend
     
-    Frontend[Frontend: Next.js + React] <-->|REST API + JWT| Nginx
+    Frontend["Frontend: Next.js + React"] <-->|REST API + JWT| Nginx
     Nginx[Nginx Reverse Proxy] <-->|Proxy Pass| Backend
     
-    Backend[Backend: NestJS + Node.js] -->|Prisma ORM| DB[(PostgreSQL Database)]
+    Backend["Backend: NestJS + Node.js"] -->|Prisma ORM| DB[(PostgreSQL Database)]
     Backend -->|Puppeteer| PDFGen[PDF Generator Engine]
     Backend -->|SMTP| Email[Nodemailer]
     Backend <-->|Admin Directory API| Google[Google Workspace]
     Backend <-->|Turnstile/SVG| Captcha[Captcha Service]
     
+    pgAdmin["pgAdmin4: Visual DB Manager"] <-->|PostgreSQL Protocol :5050| DB
     DB -->|Continuous Archive| WAL[WAL Backup Storage]
+
+    style pgAdmin fill:#336791,stroke:#fff,color:#fff
 ```
 
 ### 🗂️ Master Directory Structure
 
 ```
 BHU-INTERNSHIP-PROJECT/
-├── docker-compose.yml          ← Main deployment orchestration
+├── docker-compose.yml          ← Main deployment orchestration (includes pgAdmin visual DB manager)
 ├── backup.bat / backup.sh      ← Automated DB backup scripts
 ├── backend/                    ← NestJS Application (API Engine)
 ├── frontend/                   ← Next.js Application (User Interface)

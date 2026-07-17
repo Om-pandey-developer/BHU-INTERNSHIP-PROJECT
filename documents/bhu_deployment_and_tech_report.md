@@ -12,8 +12,8 @@
 ```
 BHU-INTERNSHIP-PROJECT/
 │
-├── docker-compose.yml          # स्थानीय विकास (Local Development) के लिए PostgreSQL और pgAdmin कंटेनर (WAL Archiving के साथ)
-├── docker-compose.prod.yml     # उत्पादन (Production) के लिए संपूर्ण स्टैक कंपोज़ फ़ाइल
+├── docker-compose.yml          # PostgreSQL, pgAdmin4 (Visual DB Manager) और सभी सर्विसेज़ (WAL Archiving के साथ)
+├── docker-compose.staging.yml  # UAT/Staging के लिए संपूर्ण स्टैक कंपोज़ फ़ाइल (pgAdmin port 5051 पर)
 ├── backup.bat / backup.sh      # डेटाबेस बैकअप स्क्रिप्ट्स (Windows & Linux)
 │
 ├── backend/                    # NestJS (Node.js) बैकएंड सर्वर
@@ -71,6 +71,7 @@ BHU-INTERNSHIP-PROJECT/
 | **Puppeteer** | `^25.1.0` | बैकएंड में क्रोमियम (Headless Chrome) चलाकर एचटीएमएल को पिक्सेल-परफेक्ट पीडीएफ में बदलने के लिए। |
 | **Nodemailer** | `^6.9.0` | आवेदकों, HOD और एडमिन को ऑटोमैटिक ईमेल अलर्ट और क्रेडेंशियल भेजने के लिए। |
 | **Passport & JWT** | `^11.0.0` | सुरक्षित लॉगिन, रोल-बेस्ड एक्सेस कंट्रोल (RBAC) और रिफ्रेश टोकन हैंडल करने के लिए। |
+| **pgAdmin4** | `latest` | ब्राउज़र-आधारित विज़ुअल डेटाबेस मैनेजर — PostgreSQL की सभी टेबल्स, डेटा और क्वेरीज़ को GUI से देखने और चलाने के लिए। Docker Compose में शामिल (Port `5050`)। |
 
 ---
 
@@ -126,7 +127,30 @@ sudo systemctl enable --now docker
 ```bash
 docker compose up -d --build
 ```
-*(नोट: यह कमांड स्वतः ही डेटाबेस, Nginx, फ़्रंटएंड और बैकएंड चालू कर देगा)*
+*(नोट: यह कमांड स्वतः ही डेटाबेस, pgAdmin, Nginx, फ़्रंटएंड और बैकएंड चालू कर देगा)*
+
+#### Step 1.3.1: pgAdmin से Database देखें (Visual Interface)
+pgAdmin ब्राउज़र में खोलें — यह Docker Compose में पहले से शामिल है, अलग से इंस्टॉल करने की ज़रूरत नहीं:
+1. **ब्राउज़र में खोलें:** `http://<Server-IP>:5050`
+2. **लॉगिन करें:**
+   - Email: `admin@admin.com`
+   - Password: `admin123`
+3. **Database (Server) कनेक्ट करें:**
+   - Left menu में **Servers** पर Right Click → **Register** → **Server...**
+   - **General Tab:** Name = `BHU Project DB`
+   - **Connection Tab:**
+     - Host name/address: `db` (Docker service का नाम — Root IP नहीं)
+     - Port: `5432`
+     - Maintenance database: `bhu_db`
+     - Username: `bhu_user`
+     - Password: `securepassword`
+   - **Save** दबाएं — पूरा डेटाबेस विज़ुअल रूप से दिखने लगेगा!
+
+> **वैकल्पिक (Alternative):** यदि pgAdmin के बिना, सीधे Ubuntu कमांड शेल से डेटाबेस देखना हो:
+> ```bash
+> docker exec -it bhu_db psql -U bhu_user -d bhu_db
+> ```
+> या Ubuntu पर pgAdmin अलग से इंस्टॉल करें: `sudo apt install pgadmin4`
 
 #### Step 1.4: डेटाबेस माइग्रेशन चलाएं
 ```bash
